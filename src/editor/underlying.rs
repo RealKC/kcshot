@@ -96,7 +96,7 @@ impl ObjectImpl for EditorWindow {
 
                 op!(cairo.paint());
 
-                return Inhibit(false);
+                Inhibit(false)
             }),
         );
 

@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::{ffi::c_void, os::raw::c_char};
-
 use gtk::prelude::*;
 
 mod editor;
