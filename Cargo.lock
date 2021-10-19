@@ -406,6 +406,7 @@ dependencies = [
  "gtk",
  "libc",
  "once_cell",
+ "thiserror",
  "tracing",
  "tracing-subscriber",
  "x11",
