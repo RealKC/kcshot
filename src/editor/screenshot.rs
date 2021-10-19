@@ -1,7 +1,6 @@
 use std::{
     ffi::CString,
     fs::File,
-    io::Read,
     os::{
         raw::{c_char, c_int, c_uint},
         unix::io::FromRawFd,
@@ -10,8 +9,8 @@ use std::{
 
 use cairo::{
     self,
-    ffi::{self, cairo_format_t, cairo_status_t, cairo_surface_t},
-    Error as CairoError, Format, ImageSurface,
+    ffi::{self, cairo_status_t, cairo_surface_t},
+    Error as CairoError, ImageSurface,
 };
 use tracing::{error, info, warn};
 use x11::xlib::{
@@ -26,8 +25,6 @@ extern "C" {
         surface: *mut cairo_surface_t,
         filename: *const c_char,
     ) -> cairo_status_t;
-
-    fn cairo_image_surface_create_from_png(path: *const c_char) -> *mut cairo_surface_t;
 }
 
 struct XDisplay(*mut x11::xlib::_XDisplay);
@@ -52,9 +49,8 @@ pub fn take_screenshot() -> Option<ImageSurface> {
         find_window_where_cursor_is(display.0)?;
 
     let mut attributes: XWindowAttributes = unsafe { std::mem::zeroed() };
-    unsafe {
-        XGetWindowAttributes(display.0, window_where_cursor_is, &mut attributes as _);
-    }
+    // FIXME: Figure out how to handle possible errors
+    unsafe { XGetWindowAttributes(display.0, window_where_cursor_is, &mut attributes as _) };
 
     let visual = unsafe { XDefaultVisual(display.0, screen_where_the_cursor_is) };
 
@@ -91,13 +87,7 @@ pub fn take_screenshot() -> Option<ImageSurface> {
 fn find_window_where_cursor_is(display: *mut Display) -> Option<(Window, c_int)> {
     let screen_count = unsafe { XScreenCount(display) };
 
-    let mut root_windows = Vec::with_capacity(screen_count as usize);
-
     for screen in 0..screen_count {
-        root_windows.push(unsafe { XRootWindow(display, screen) });
-    }
-
-    for (i, window) in root_windows.iter().enumerate() {
         let mut root_x = c_int::default();
         let mut root_y = c_int::default();
         let mut win_x = c_int::default();
@@ -109,7 +99,7 @@ fn find_window_where_cursor_is(display: *mut Display) -> Option<(Window, c_int)>
         let rc = unsafe {
             XQueryPointer(
                 display,
-                *window,
+                XRootWindow(display, screen),
                 &mut window_with_cursor as _,
                 &mut child as _,
                 &mut root_x as _,
@@ -121,7 +111,7 @@ fn find_window_where_cursor_is(display: *mut Display) -> Option<(Window, c_int)>
         };
 
         if rc == x11::xlib::True {
-            return Some((window_with_cursor, i as c_int));
+            return Some((window_with_cursor, screen));
         }
     }
 
