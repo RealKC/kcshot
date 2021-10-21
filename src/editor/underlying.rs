@@ -9,6 +9,8 @@ use gtk::{
 use once_cell::unsync::OnceCell;
 use tracing::{error, info, warn};
 
+use crate::editor::operations::{Colour, Ellipse, Operation};
+
 macro_rules! op {
     ($call:expr) => {
         match $call {
@@ -85,17 +87,13 @@ impl ObjectImpl for EditorWindow {
                 let instance = EditorWindow::from_instance(&obj);
                 let image = &instance.widgets.get().unwrap().image;
 
-                // op!(cairo.restore());
-                // op!(cairo.save());
-
                 cairo.set_operator(cairo::Operator::Source);
-
                 op!(cairo.set_source_surface(image, 0f64,0f64));
-
-                // op!(cairo.show_text("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa"));
-
                 op!(cairo.paint());
-
+                cairo.set_operator(cairo::Operator::Over);
+                
+                op!(Operation::DrawEllipse { ellipse: Ellipse { x: 352.0, y: 36.0, w: 329.9, h: 460.0 }, border: Colour { red: 255, green: 0, blue: 0, alpha: 255 }, fill: Colour { red: 0, green: 0, blue: 255, alpha: 127 } }.execute(image, cairo));
+                
                 Inhibit(false)
             }),
         );
