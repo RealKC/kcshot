@@ -10,6 +10,13 @@ mod stack;
 pub use data::*;
 pub use stack::*;
 
+const HIGHLIGHT_COLOUR: Colour = Colour {
+    red: 255,
+    green: 255,
+    blue: 0,
+    alpha: 63,
+};
+
 #[derive(Clone, Debug)]
 pub enum Operation {
     Finish,
@@ -62,7 +69,10 @@ impl Operation {
             }
             Operation::Text { text, border, fill } => todo!(),
             Operation::DrawArrow { start, end, colour } => todo!(),
-            Operation::Highlight { rect } => todo!(),
+            Operation::Highlight { rect } => {
+                info!("Highlight");
+                draw_rectangle(cairo, rect, &HIGHLIGHT_COLOUR)?;
+            }
             Operation::DrawEllipse {
                 ellipse,
                 border,

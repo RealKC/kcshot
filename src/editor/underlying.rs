@@ -84,6 +84,14 @@ impl EditorWindow {
             }
         }
         .execute(image, cairo));
+
+        op!(Operation::Highlight {
+            rect: Rectangle {
+                upper_left_corner: Point { x: 0.0, y: 0.0 },
+                lower_right_corner: Point { x: 100.0, y: 100.0 },
+            }
+        }
+        .execute(image, cairo));
     }
 }
 
