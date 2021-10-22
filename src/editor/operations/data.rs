@@ -1,3 +1,7 @@
+use self::point::Point;
+
+pub mod point;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Colour {
     pub red: u8,
@@ -25,12 +29,6 @@ impl Colour {
     fn is_invisible(self) -> bool {
         self.alpha == 0
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Point {
-    pub x: f32,
-    pub y: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
