@@ -1,3 +1,6 @@
+use std::{cell::RefCell, rc::Rc};
+
+use cairo::{Context, ImageSurface};
 use gtk::{
     cairo,
     gdk::keys::constants as GdkKey,
@@ -24,9 +27,8 @@ macro_rules! op {
     };
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Widgets {
-    image: cairo::ImageSurface,
     overlay: gtk::Overlay,
     drawing_area: gtk::DrawingArea,
     toolbar: gtk::Fixed,
@@ -37,6 +39,38 @@ struct Widgets {
 #[derive(Default, Debug)]
 pub struct EditorWindow {
     widgets: OnceCell<Widgets>,
+    image: Rc<RefCell<Option<cairo::ImageSurface>>>,
+}
+
+impl EditorWindow {
+    fn do_draw_event(image: &mut ImageSurface, cairo: &Context) {
+        cairo.set_operator(cairo::Operator::Source);
+        op!(cairo.set_source_surface(image, 0f64, 0f64));
+        op!(cairo.paint());
+        cairo.set_operator(cairo::Operator::Over);
+
+        op!(Operation::DrawEllipse {
+            ellipse: Ellipse {
+                x: 352.0,
+                y: 36.0,
+                w: 329.9,
+                h: 460.0
+            },
+            border: Colour {
+                red: 255,
+                green: 0,
+                blue: 0,
+                alpha: 255
+            },
+            fill: Colour {
+                red: 0,
+                green: 0,
+                blue: 255,
+                alpha: 127
+            }
+        }
+        .execute(image, cairo));
+    }
 }
 
 #[glib::object_subclass]
@@ -81,19 +115,9 @@ impl ObjectImpl for EditorWindow {
         // obj.add(&drawing_area);
 
         drawing_area.connect_draw(
-            clone!(@strong obj => @default-return Inhibit(false), move |_widget, cairo| {
-                info!("wa");
+            clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
+                EditorWindow::do_draw_event(image.borrow_mut().as_mut().unwrap(), cairo);
 
-                let instance = EditorWindow::from_instance(&obj);
-                let image = &instance.widgets.get().unwrap().image;
-
-                cairo.set_operator(cairo::Operator::Source);
-                op!(cairo.set_source_surface(image, 0f64,0f64));
-                op!(cairo.paint());
-                cairo.set_operator(cairo::Operator::Over);
-                
-                op!(Operation::DrawEllipse { ellipse: Ellipse { x: 352.0, y: 36.0, w: 329.9, h: 460.0 }, border: Colour { red: 255, green: 0, blue: 0, alpha: 255 }, fill: Colour { red: 0, green: 0, blue: 255, alpha: 127 } }.execute(image, cairo));
-                
                 Inhibit(false)
             }),
         );
@@ -107,7 +131,6 @@ impl ObjectImpl for EditorWindow {
 
         self.widgets
             .set(Widgets {
-                image,
                 overlay,
                 drawing_area,
                 toolbar,
@@ -115,6 +138,7 @@ impl ObjectImpl for EditorWindow {
                 button,
             })
             .expect("Failed to create an editor");
+        self.image.replace(Some(image));
     }
 }
 

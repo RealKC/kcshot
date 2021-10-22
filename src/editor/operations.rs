@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 
-use cairo::{Context, Error as CairoError, Surface};
+use cairo::{Context, Error as CairoError, ImageSurface};
 use tracing::{error, info};
 
 pub struct OperationStack(Vec<Operation>);
@@ -26,7 +26,7 @@ impl OperationStack {
         todo!();
     }
 
-    pub fn execute(&self, surface: &Surface, cairo: &Context) {
+    pub fn execute(&self, surface: &mut ImageSurface, cairo: &Context) {
         for operation in &self.0 {
             if let Err(why) = operation.execute(surface, cairo) {
                 error!("{}", why);
@@ -128,7 +128,7 @@ pub enum Operation {
 
 impl Operation {
     #[allow(unused_variables)]
-    pub fn execute(&self, _surface: &Surface, cairo: &Context) -> Result<(), CairoError> {
+    pub fn execute(&self, surface: &mut ImageSurface, cairo: &Context) -> Result<(), CairoError> {
         match self {
             Operation::Finish => todo!(),
             Operation::Crop(_) => todo!(),
