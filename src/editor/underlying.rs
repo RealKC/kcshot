@@ -12,7 +12,7 @@ use gtk::{
 use once_cell::unsync::OnceCell;
 use tracing::{error, info, warn};
 
-use crate::editor::operations::{Colour, Ellipse, Operation};
+use crate::editor::operations::{point::Point, Colour, Ellipse, Operation, Rectangle};
 
 macro_rules! op {
     ($call:expr) => {
@@ -66,6 +66,20 @@ impl EditorWindow {
                 red: 0,
                 green: 0,
                 blue: 255,
+                alpha: 127
+            }
+        }
+        .execute(image, cairo));
+
+        op!(Operation::DrawRectangle {
+            rect: Rectangle {
+                upper_left_corner: Point { x: 200.0, y: 300.0 },
+                lower_right_corner: Point { x: 400.0, y: 600.0 },
+            },
+            colour: Colour {
+                red: 100,
+                green: 100,
+                blue: 100,
                 alpha: 127
             }
         }
