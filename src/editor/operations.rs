@@ -47,7 +47,7 @@ pub enum Operation {
 
 impl Operation {
     #[allow(unused_variables)]
-    pub fn execute(&self, surface: &mut ImageSurface, cairo: &Context) -> Result<(), CairoError> {
+    pub fn execute(&self, surface: &mut ImageSurface, cairo: &Context) -> Result<(), Error> {
         match self {
             Operation::Finish => todo!(),
             Operation::Crop(_) => todo!(),
@@ -90,4 +90,12 @@ impl Operation {
 
         Ok(())
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Encountered a cairo error: {0}")]
+    Cairo(#[from] CairoError),
+    #[error("Encountered a cairo error while trying to borrow something: {0}")]
+    Borrow(#[from] cairo::BorrowError),
 }
