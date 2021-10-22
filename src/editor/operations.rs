@@ -1,5 +1,6 @@
 use std::f64::consts::PI;
 
+use self::point::Point;
 use cairo::{Context, Error as CairoError, ImageSurface};
 use tracing::{error, info, warn};
 
@@ -55,7 +56,10 @@ impl Operation {
             Operation::Blur(_) => todo!(),
             Operation::Pixelate(_) => todo!(),
             Operation::DrawLine { start, end, colour } => todo!(),
-            Operation::DrawRectangle { rect, colour } => todo!(),
+            Operation::DrawRectangle { rect, colour } => {
+                info!("Rectangle");
+                draw_rectangle(cairo, rect, colour)?;
+            }
             Operation::Text { text, border, fill } => todo!(),
             Operation::DrawArrow { start, end, colour } => todo!(),
             Operation::Highlight { rect } => todo!(),
@@ -98,4 +102,19 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered a cairo error while trying to borrow something: {0}")]
     Borrow(#[from] cairo::BorrowError),
+}
+
+fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<(), Error> {
+    let Point { x, y } = rect.upper_left_corner;
+    let Point {
+        x: width,
+        y: height,
+    } = rect.lower_right_corner - rect.upper_left_corner;
+    cairo.rectangle(x, y, width, height);
+
+    let (r, g, b, a) = colour.to_float_tuple();
+    cairo.set_source_rgba(r, g, b, a);
+    cairo.fill()?;
+
+    Ok(())
 }
