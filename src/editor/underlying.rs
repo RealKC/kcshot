@@ -92,6 +92,18 @@ impl EditorWindow {
             }
         }
         .execute(image, cairo));
+
+        op!(Operation::DrawLine {
+            start: Point { x: 100.0, y: 100.0 },
+            end: Point { x: 200.0, y: 150.0 },
+            colour: Colour {
+                red: 255,
+                green: 0,
+                blue: 0,
+                alpha: 255
+            }
+        }
+        .execute(image, cairo));
     }
 }
 
