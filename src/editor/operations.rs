@@ -126,12 +126,8 @@ pub enum Error {
 }
 
 fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<(), Error> {
-    let Point { x, y } = rect.upper_left_corner;
-    let Point {
-        x: width,
-        y: height,
-    } = rect.lower_right_corner - rect.upper_left_corner;
-    cairo.rectangle(x, y, width, height);
+    let Rectangle { x, y, w, h } = *rect;
+    cairo.rectangle(x, y, w, h);
 
     let (r, g, b, a) = colour.to_float_tuple();
     cairo.set_source_rgba(r, g, b, a);

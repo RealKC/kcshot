@@ -73,8 +73,10 @@ impl EditorWindow {
 
         op!(Operation::DrawRectangle {
             rect: Rectangle {
-                upper_left_corner: Point { x: 200.0, y: 300.0 },
-                lower_right_corner: Point { x: 400.0, y: 600.0 },
+                x: 200.0,
+                y: 300.0,
+                w: 200.0,
+                h: 300.0,
             },
             colour: Colour {
                 red: 100,
@@ -87,8 +89,10 @@ impl EditorWindow {
 
         op!(Operation::Highlight {
             rect: Rectangle {
-                upper_left_corner: Point { x: 0.0, y: 0.0 },
-                lower_right_corner: Point { x: 100.0, y: 100.0 },
+                x: 0.0,
+                y: 0.0,
+                w: 100.0,
+                h: 100.0
             }
         }
         .execute(image, cairo));

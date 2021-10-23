@@ -33,8 +33,10 @@ impl Colour {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Rectangle {
-    pub upper_left_corner: Point,
-    pub lower_right_corner: Point,
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
 }
 
 /// A struct representing an ellipse
