@@ -1,9 +1,15 @@
-use std::ops::{Add, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
+}
+
+impl Point {
+    pub fn dist(&self) -> f64 {
+        (self.x * self.x + self.y + self.y).sqrt()
+    }
 }
 
 impl Add for Point {
@@ -35,6 +41,17 @@ impl Sub for Point {
         Self {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
+        }
+    }
+}
+
+impl Mul<f64> for Point {
+    type Output = Self;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
         }
     }
 }
