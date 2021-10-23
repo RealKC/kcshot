@@ -17,6 +17,11 @@ const HIGHLIGHT_COLOUR: Colour = Colour {
     alpha: 63,
 };
 
+/// The length of the arrowhead will be 1/10th of the length of the body
+const ARROWHEAD_LENGTH_RATIO: f64 = 0.1;
+/// How open/closed the arrowhead will be
+const ARROWHEAD_APERTURE: f64 = PI / 6.0;
+
 #[derive(Clone, Debug)]
 pub enum Operation {
     Finish,
@@ -71,7 +76,10 @@ impl Operation {
                 draw_rectangle(cairo, rect, colour)?;
             }
             Operation::Text { text, border, fill } => todo!(),
-            Operation::DrawArrow { start, end, colour } => todo!(),
+            Operation::DrawArrow { start, end, colour } => {
+                info!("Arrow");
+                draw_arrow(cairo, start, end, colour)?;
+            }
             Operation::Highlight { rect } => {
                 info!("Highlight");
                 draw_rectangle(cairo, rect, &HIGHLIGHT_COLOUR)?;
@@ -146,4 +154,36 @@ fn draw_line(
     cairo.stroke()?;
 
     Ok(())
+}
+
+fn draw_arrow(cairo: &Context, start: &Point, end: &Point, colour: &Colour) -> Result<(), Error> {
+    let angle = get_line_angle(start, end);
+    let length = (end.to_owned() - start.to_owned()).dist();
+    let arrow_length = length * ARROWHEAD_LENGTH_RATIO;
+
+    cairo.move_to(start.x, start.y);
+    cairo.line_to(end.x, end.y);
+
+    // Since cos(theta) = adjacent / hypothenuse, x1 = arrow_length * cos(theta)
+    let x1 = -arrow_length * (angle - ARROWHEAD_APERTURE).cos();
+    let x2 = -arrow_length * (angle + ARROWHEAD_APERTURE).cos();
+
+    // Since sin(theta) = opposite / hypothenuse, y1 = arrow_length * sin(theta)
+    let y1 = -arrow_length * (angle - ARROWHEAD_APERTURE).sin();
+    let y2 = -arrow_length * (angle + ARROWHEAD_APERTURE).sin();
+
+    cairo.rel_move_to(x1, y1);
+    cairo.line_to(end.x, end.y);
+    cairo.rel_line_to(x2, y2);
+
+    let (r, g, b, a) = colour.to_float_tuple();
+    cairo.set_source_rgba(r, g, b, a);
+    cairo.stroke()?;
+
+    Ok(())
+}
+
+fn get_line_angle(start: &Point, end: &Point) -> f64 {
+    let Point { x, y } = end.to_owned() - start.to_owned();
+    (y / x).atan()
 }
