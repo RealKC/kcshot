@@ -62,7 +62,10 @@ impl Operation {
             Operation::WindowSelect(_) => todo!(),
             Operation::Blur(_) => todo!(),
             Operation::Pixelate(_) => todo!(),
-            Operation::DrawLine { start, end, colour } => todo!(),
+            Operation::DrawLine { start, end, colour } => {
+                info!("Line");
+                draw_line(cairo, start, end, colour)?;
+            }
             Operation::DrawRectangle { rect, colour } => {
                 info!("Rectangle");
                 draw_rectangle(cairo, rect, colour)?;
@@ -125,6 +128,22 @@ fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<
     let (r, g, b, a) = colour.to_float_tuple();
     cairo.set_source_rgba(r, g, b, a);
     cairo.fill()?;
+
+    Ok(())
+}
+
+fn draw_line(
+    cairo: &Context,
+    &Point { x: x1, y: y1 }: &Point,
+    &Point { x: x2, y: y2 }: &Point,
+    colour: &Colour,
+) -> Result<(), Error> {
+    cairo.move_to(x1, y1);
+    cairo.line_to(x2, y2);
+
+    let (r, g, b, a) = colour.to_float_tuple();
+    cairo.set_source_rgba(r, g, b, a);
+    cairo.stroke()?;
 
     Ok(())
 }
