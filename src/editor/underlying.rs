@@ -10,7 +10,7 @@ use gtk::{
     Allocation,
 };
 use once_cell::unsync::OnceCell;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 use crate::editor::operations::{point::Point, Colour, Ellipse, Operation, Rectangle};
 

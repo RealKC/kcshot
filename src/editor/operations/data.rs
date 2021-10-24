@@ -1,5 +1,3 @@
-use self::point::Point;
-
 pub mod point;
 
 #[derive(Clone, Copy, Debug)]

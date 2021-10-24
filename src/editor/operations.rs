@@ -11,7 +11,7 @@ use image::{
     flat::{self, SampleLayout},
     imageops, FlatSamples, Rgb,
 };
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 mod data;
 mod stack;
@@ -224,12 +224,7 @@ fn get_line_angle(start: &Point, end: &Point) -> f64 {
     (y / x).atan()
 }
 
-pub fn blur(
-    cairo: &Context,
-    pixbuf: Pixbuf,
-    sigma: f32,
-    Point { x, y }: Point,
-) -> Result<(), Error> {
+fn blur(cairo: &Context, pixbuf: Pixbuf, sigma: f32, Point { x, y }: Point) -> Result<(), Error> {
     let flat_samples = FlatSamples {
         samples: pixbuf.pixel_bytes().ok_or(Error::PixelBytes)?.to_vec(),
         layout: SampleLayout {
