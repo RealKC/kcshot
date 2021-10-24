@@ -2,6 +2,15 @@ use std::f64::consts::PI;
 
 use self::point::Point;
 use cairo::{Context, Error as CairoError, ImageSurface};
+use gtk::{
+    gdk,
+    gdk_pixbuf::{Colorspace, Pixbuf},
+    prelude::GdkContextExt,
+};
+use image::{
+    flat::{self, SampleLayout},
+    imageops, FlatSamples, Rgb,
+};
 use tracing::{error, info, warn};
 
 mod data;
@@ -27,7 +36,10 @@ pub enum Operation {
     Finish,
     Crop(Rectangle),
     WindowSelect(Rectangle),
-    Blur(Rectangle),
+    Blur {
+        rect: Rectangle,
+        radius: f32,
+    },
     Pixelate(Rectangle),
     DrawLine {
         start: Point,
@@ -65,7 +77,29 @@ impl Operation {
             Operation::Finish => todo!(),
             Operation::Crop(_) => todo!(),
             Operation::WindowSelect(_) => todo!(),
-            Operation::Blur(_) => todo!(),
+            Operation::Blur { rect, radius } => {
+                cairo.save()?;
+                let pixbuf = gdk::pixbuf_get_from_surface(
+                    surface,
+                    rect.x as i32,
+                    rect.y as i32,
+                    rect.w as i32,
+                    rect.h as i32,
+                )
+                .ok_or(Error::Pixbuf(*rect))?;
+
+                blur(
+                    cairo,
+                    pixbuf,
+                    *radius,
+                    Point {
+                        x: rect.x,
+                        y: rect.y,
+                    },
+                )?;
+
+                cairo.restore()?;
+            }
             Operation::Pixelate(_) => todo!(),
             Operation::DrawLine { start, end, colour } => {
                 info!("Line");
@@ -123,6 +157,12 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered a cairo error while trying to borrow something: {0}")]
     Borrow(#[from] cairo::BorrowError),
+    #[error("Encountered an error while converting a `image::flat::FlatSamples` to a `image::flat::View: {0}")]
+    Image(#[from] flat::Error),
+    #[error("Couldn't make Pixbuf from ImageSurface with rect: {0:?}")]
+    Pixbuf(Rectangle),
+    #[error("`pixel_bytes` on a Pixbuf returned None")]
+    PixelBytes,
 }
 
 fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<(), Error> {
@@ -182,4 +222,47 @@ fn draw_arrow(cairo: &Context, start: &Point, end: &Point, colour: &Colour) -> R
 fn get_line_angle(start: &Point, end: &Point) -> f64 {
     let Point { x, y } = end.to_owned() - start.to_owned();
     (y / x).atan()
+}
+
+pub fn blur(
+    cairo: &Context,
+    pixbuf: Pixbuf,
+    sigma: f32,
+    Point { x, y }: Point,
+) -> Result<(), Error> {
+    let flat_samples = FlatSamples {
+        samples: pixbuf.pixel_bytes().ok_or(Error::PixelBytes)?.to_vec(),
+        layout: SampleLayout {
+            channels: pixbuf.n_channels() as u8,
+            channel_stride: 1,
+            width: pixbuf.width() as u32,
+            width_stride: 3,
+            height: pixbuf.height() as u32,
+            height_stride: pixbuf.rowstride() as usize,
+        },
+        color_hint: None,
+    };
+    let image = flat_samples.as_view::<Rgb<u8>>()?;
+    let mut blurred_image = imageops::blur(&image, sigma);
+    let width = blurred_image.width() as i32;
+    let height = blurred_image.height() as i32;
+    let blurred_flat_samples = blurred_image.as_flat_samples_mut();
+
+    let blurred_pixbuf = Pixbuf::from_mut_slice(
+        blurred_flat_samples.samples,
+        Colorspace::Rgb,
+        false,
+        8,
+        width,
+        height,
+        blurred_flat_samples.layout.height_stride as i32,
+    );
+
+    cairo.save()?;
+    cairo.set_operator(cairo::Operator::Over);
+    cairo.set_source_pixbuf(&blurred_pixbuf, x, y);
+    cairo.paint()?;
+    cairo.restore()?;
+
+    Ok(())
 }

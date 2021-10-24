@@ -120,6 +120,17 @@ impl EditorWindow {
             }
         }
         .execute(image, cairo));
+
+        op!(Operation::Blur {
+            rect: Rectangle {
+                x: 100.0,
+                y: 250.0,
+                w: 50.0,
+                h: 300.0
+            },
+            radius: 5.0
+        }
+        .execute(image, cairo));
     }
 }
 
