@@ -1,7 +1,7 @@
 use gtk::glib;
 
 mod operations;
-mod screenshot;
+mod display_server;
 mod underlying;
 
 glib::wrapper! {

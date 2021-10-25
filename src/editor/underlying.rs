@@ -144,7 +144,7 @@ impl ObjectSubclass for EditorWindow {
 impl ObjectImpl for EditorWindow {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
-        let image = super::screenshot::take_screenshot().expect("Couldn't take a screenshot");
+        let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
         warn!("Image status {:?}", image.status());
 
         let overlay = gtk::Overlay::new();
