@@ -112,11 +112,11 @@ impl Operation {
             Operation::Pixelate(_) => todo!(),
             Operation::DrawLine { start, end, colour } => {
                 info!("Line");
-                draw_line(cairo, start, end, colour)?;
+                draw_line(cairo, *start, *end, colour)?;
             }
             Operation::DrawRectangle { rect, border, fill } => {
                 info!("Rectangle");
-                draw_rectangle(cairo, rect, border, fill)?;
+                draw_rectangle(cairo, rect, *border, *fill)?;
             }
             Operation::Text {
                 text,
@@ -137,11 +137,11 @@ impl Operation {
             }
             Operation::DrawArrow { start, end, colour } => {
                 info!("Arrow");
-                draw_arrow(cairo, start, end, colour)?;
+                draw_arrow(cairo, *start, *end, *colour)?;
             }
             Operation::Highlight { rect } => {
                 info!("Highlight");
-                draw_rectangle(cairo, rect, &INVISIBLE, &HIGHLIGHT_COLOUR)?;
+                draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR)?;
             }
             Operation::DrawEllipse {
                 ellipse,
@@ -213,17 +213,17 @@ impl CairoExt for Context {
 fn draw_rectangle(
     cairo: &Context,
     rect: &Rectangle,
-    border: &Colour,
-    fill: &Colour,
+    border: Colour,
+    fill: Colour,
 ) -> Result<(), Error> {
     cairo.save()?;
     let Rectangle { x, y, w, h } = *rect;
     cairo.rectangle(x, y, w, h);
 
-    cairo.set_source_colour(*fill);
+    cairo.set_source_colour(fill);
     cairo.fill_preserve()?;
 
-    cairo.set_source_colour(*border);
+    cairo.set_source_colour(border);
     cairo.stroke()?;
     cairo.restore()?;
 
@@ -232,8 +232,8 @@ fn draw_rectangle(
 
 fn draw_line(
     cairo: &Context,
-    &Point { x: x1, y: y1 }: &Point,
-    &Point { x: x2, y: y2 }: &Point,
+    Point { x: x1, y: y1 }: Point,
+    Point { x: x2, y: y2 }: Point,
     colour: &Colour,
 ) -> Result<(), Error> {
     cairo.move_to(x1, y1);
@@ -244,7 +244,7 @@ fn draw_line(
     Ok(())
 }
 
-fn draw_arrow(cairo: &Context, start: &Point, end: &Point, colour: &Colour) -> Result<(), Error> {
+fn draw_arrow(cairo: &Context, start: Point, end: Point, colour: Colour) -> Result<(), Error> {
     let angle = get_line_angle(start, end);
     let length = (end.to_owned() - start.to_owned()).dist();
     let arrow_length = length * ARROWHEAD_LENGTH_RATIO;
@@ -264,13 +264,13 @@ fn draw_arrow(cairo: &Context, start: &Point, end: &Point, colour: &Colour) -> R
     cairo.line_to(end.x, end.y);
     cairo.rel_line_to(x2, y2);
 
-    cairo.set_source_colour(*colour);
+    cairo.set_source_colour(colour);
     cairo.stroke()?;
 
     Ok(())
 }
 
-fn get_line_angle(start: &Point, end: &Point) -> f64 {
+fn get_line_angle(start: Point, end: Point) -> f64 {
     let Point { x, y } = end.to_owned() - start.to_owned();
     (y / x).atan()
 }
