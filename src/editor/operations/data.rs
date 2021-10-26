@@ -8,12 +8,6 @@ pub struct Colour {
     pub alpha: u8,
 }
 
-impl Colour {
-    fn is_invisible(self) -> bool {
-        self.alpha == 0
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct Rectangle {
     pub x: f64,
