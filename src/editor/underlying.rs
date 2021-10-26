@@ -5,6 +5,7 @@ use gtk::{
     cairo,
     gdk::keys::constants as GdkKey,
     glib::{self, clone, signal::Inhibit},
+    pango::FontDescription,
     prelude::*,
     subclass::prelude::*,
     Allocation,
@@ -129,6 +130,20 @@ impl EditorWindow {
                 h: 300.0
             },
             radius: 5.0
+        }
+        .execute(image, cairo));
+
+        let font_description = FontDescription::from_string("Fira Code, 40pt");
+
+        op!(Operation::Text {
+            text: "<b>hello</b> <i>world</i>".into(),
+            colour: Colour {
+                red: 0,
+                green: 255,
+                blue: 0,
+                alpha: 255
+            },
+            font_description
         }
         .execute(image, cairo));
     }

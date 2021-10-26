@@ -5,6 +5,7 @@ use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk::{
     gdk,
     gdk_pixbuf::{Colorspace, Pixbuf},
+    pango::FontDescription,
     prelude::GdkContextExt,
 };
 use image::{
@@ -52,8 +53,8 @@ pub enum Operation {
     },
     Text {
         text: String,
-        border: Colour,
-        fill: Colour,
+        colour: Colour,
+        font_description: FontDescription,
     },
     DrawArrow {
         start: Point,
@@ -109,7 +110,24 @@ impl Operation {
                 info!("Rectangle");
                 draw_rectangle(cairo, rect, colour)?;
             }
-            Operation::Text { text, border, fill } => todo!(),
+            Operation::Text {
+                text,
+                colour,
+                font_description,
+            } => {
+                info!("Text");
+                cairo.save()?;
+                let layout = pangocairo::create_layout(cairo).unwrap();
+
+                layout.set_markup(text);
+                layout.set_font_description(Some(font_description));
+                cairo.move_to(1000.0, 420.0);
+                let (r, g, b, a) = colour.to_float_tuple();
+                cairo.set_source_rgba(r, g, b, a);
+                pangocairo::update_layout(cairo, &layout);
+                pangocairo::show_layout(cairo, &layout);
+                cairo.restore()?;
+            }
             Operation::DrawArrow { start, end, colour } => {
                 info!("Arrow");
                 draw_arrow(cairo, start, end, colour)?;
