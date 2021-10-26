@@ -79,7 +79,13 @@ impl EditorWindow {
                 w: 200.0,
                 h: 300.0,
             },
-            colour: Colour {
+            border: Colour {
+                red: 127,
+                green: 255,
+                blue: 69,
+                alpha: 254
+            },
+            fill: Colour {
                 red: 100,
                 green: 100,
                 blue: 100,

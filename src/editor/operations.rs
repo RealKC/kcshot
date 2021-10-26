@@ -27,6 +27,13 @@ const HIGHLIGHT_COLOUR: Colour = Colour {
     alpha: 63,
 };
 
+const INVISIBLE: Colour = Colour {
+    red: 0,
+    green: 0,
+    blue: 0,
+    alpha: 0,
+};
+
 /// The length of the arrowhead will be 1/10th of the length of the body
 const ARROWHEAD_LENGTH_RATIO: f64 = 0.1;
 /// How open/closed the arrowhead will be
@@ -49,7 +56,8 @@ pub enum Operation {
     },
     DrawRectangle {
         rect: Rectangle,
-        colour: Colour,
+        border: Colour,
+        fill: Colour,
     },
     Text {
         text: String,
@@ -106,9 +114,9 @@ impl Operation {
                 info!("Line");
                 draw_line(cairo, start, end, colour)?;
             }
-            Operation::DrawRectangle { rect, colour } => {
+            Operation::DrawRectangle { rect, border, fill } => {
                 info!("Rectangle");
-                draw_rectangle(cairo, rect, colour)?;
+                draw_rectangle(cairo, rect, border, fill)?;
             }
             Operation::Text {
                 text,
@@ -133,7 +141,7 @@ impl Operation {
             }
             Operation::Highlight { rect } => {
                 info!("Highlight");
-                draw_rectangle(cairo, rect, &HIGHLIGHT_COLOUR)?;
+                draw_rectangle(cairo, rect, &INVISIBLE, &HIGHLIGHT_COLOUR)?;
             }
             Operation::DrawEllipse {
                 ellipse,
@@ -202,12 +210,22 @@ impl CairoExt for Context {
     }
 }
 
-fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<(), Error> {
+fn draw_rectangle(
+    cairo: &Context,
+    rect: &Rectangle,
+    border: &Colour,
+    fill: &Colour,
+) -> Result<(), Error> {
+    cairo.save()?;
     let Rectangle { x, y, w, h } = *rect;
     cairo.rectangle(x, y, w, h);
 
-    cairo.set_source_colour(*colour);
-    cairo.fill()?;
+    cairo.set_source_colour(*fill);
+    cairo.fill_preserve()?;
+
+    cairo.set_source_colour(*border);
+    cairo.stroke()?;
+    cairo.restore()?;
 
     Ok(())
 }
