@@ -9,21 +9,6 @@ pub struct Colour {
 }
 
 impl Colour {
-    pub fn to_float_tuple(self) -> (f64, f64, f64, f64) {
-        let Colour {
-            red,
-            green,
-            blue,
-            alpha,
-        } = self;
-        (
-            red as f64 / 255.0,
-            green as f64 / 255.0,
-            blue as f64 / 255.0,
-            alpha as f64 / 255.0,
-        )
-    }
-
     fn is_invisible(self) -> bool {
         self.alpha == 0
     }

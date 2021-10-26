@@ -122,8 +122,7 @@ impl Operation {
                 layout.set_markup(text);
                 layout.set_font_description(Some(font_description));
                 cairo.move_to(1000.0, 420.0);
-                let (r, g, b, a) = colour.to_float_tuple();
-                cairo.set_source_rgba(r, g, b, a);
+                cairo.set_source_colour(*colour);
                 pangocairo::update_layout(cairo, &layout);
                 pangocairo::show_layout(cairo, &layout);
                 cairo.restore()?;
@@ -151,13 +150,11 @@ impl Operation {
                 cairo.scale(ellipse.w, ellipse.h);
                 // 3. Create it by faking a circle on [0,1]x[0,1] centered on (0.5, 0.5)
                 cairo.arc(0.5, 0.5, 1.0, 0.0, 2.0 * PI);
-                let (r, g, b, a) = fill.to_float_tuple();
-                cairo.set_source_rgba(r, g, b, a);
+                cairo.set_source_colour(*fill);
                 cairo.fill_preserve()?;
                 cairo.restore()?;
 
-                let (r, g, b, a) = border.to_float_tuple();
-                cairo.set_source_rgba(r, g, b, a);
+                cairo.set_source_colour(*border);
                 // 4. Draw a border arround it
                 cairo.stroke()?;
 
@@ -183,12 +180,33 @@ pub enum Error {
     PixelBytes,
 }
 
+trait CairoExt {
+    fn set_source_colour(&self, colour: Colour);
+}
+
+impl CairoExt for Context {
+    fn set_source_colour(&self, colour: Colour) {
+        let Colour {
+            red,
+            green,
+            blue,
+            alpha,
+        } = colour;
+
+        let red = red as f64 / 255.0;
+        let green = green as f64 / 255.0;
+        let blue = blue as f64 / 255.0;
+        let alpha = alpha as f64 / 255.0;
+
+        self.set_source_rgba(red, green, blue, alpha);
+    }
+}
+
 fn draw_rectangle(cairo: &Context, rect: &Rectangle, colour: &Colour) -> Result<(), Error> {
     let Rectangle { x, y, w, h } = *rect;
     cairo.rectangle(x, y, w, h);
 
-    let (r, g, b, a) = colour.to_float_tuple();
-    cairo.set_source_rgba(r, g, b, a);
+    cairo.set_source_colour(*colour);
     cairo.fill()?;
 
     Ok(())
@@ -202,9 +220,7 @@ fn draw_line(
 ) -> Result<(), Error> {
     cairo.move_to(x1, y1);
     cairo.line_to(x2, y2);
-
-    let (r, g, b, a) = colour.to_float_tuple();
-    cairo.set_source_rgba(r, g, b, a);
+    cairo.set_source_colour(*colour);
     cairo.stroke()?;
 
     Ok(())
@@ -230,8 +246,7 @@ fn draw_arrow(cairo: &Context, start: &Point, end: &Point, colour: &Colour) -> R
     cairo.line_to(end.x, end.y);
     cairo.rel_line_to(x2, y2);
 
-    let (r, g, b, a) = colour.to_float_tuple();
-    cairo.set_source_rgba(r, g, b, a);
+    cairo.set_source_colour(*colour);
     cairo.stroke()?;
 
     Ok(())
