@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use cairo::{Context, ImageSurface};
 use gtk::{
     cairo,
-    gdk::keys::constants as GdkKey,
+    gdk::{keys::constants as GdkKey, EventMask, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
     pango::FontDescription,
     prelude::*,
@@ -32,8 +32,7 @@ macro_rules! op {
 struct Widgets {
     overlay: gtk::Overlay,
     drawing_area: gtk::DrawingArea,
-    toolbar: gtk::Fixed,
-    tools: gtk::Box,
+    toolbar: gtk::Box,
     button: gtk::Button,
 }
 
@@ -164,6 +163,36 @@ impl EditorWindow {
         }
         .execute(image, cairo));
     }
+
+    fn do_save_surface(app: &gtk::Application, image: &mut ImageSurface) {
+        let cairo = match Context::new(image) {
+            Ok(cairo) => cairo,
+            Err(err) => {
+                error!(
+                    "Got error constructing cairo context inside button press event: {}",
+                    err
+                );
+                return;
+            }
+        };
+        EditorWindow::do_draw_event(image, &cairo);
+        let now = chrono::Local::now();
+        let stream = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(format!("screenshot_{}.png", now.to_rfc3339()));
+        let mut stream = match stream {
+            Ok(stream) => stream,
+            Err(err) => {
+                error!("Failed to open file: {}", err);
+                return;
+            }
+        };
+        if let Err(err) = image.write_to_png(&mut stream) {
+            error!("Failed to write surface to png: {}", err);
+        }
+        app.quit();
+    }
 }
 
 #[glib::object_subclass]
@@ -180,32 +209,32 @@ impl ObjectImpl for EditorWindow {
         warn!("Image status {:?}", image.status());
 
         let overlay = gtk::Overlay::new();
-        overlay.set_visible(true);
-        let drawing_area = gtk::DrawingArea::builder().can_focus(true).build();
-        let toolbar = gtk::Fixed::new();
+        let drawing_area = gtk::DrawingArea::builder()
+            .can_focus(true)
+            .events(EventMask::ALL_EVENTS_MASK)
+            .build();
         let button = gtk::Button::new();
-        let tools = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-
-        drawing_area.set_visible(true);
-        drawing_area.size_allocate(&Allocation {
-            x: 0,
-            y: 0,
-            width: image.width(),
-            height: image.height(),
-        });
-        drawing_area.set_width_request(image.width());
-        drawing_area.set_height_request(image.height());
-
+        let toolbar = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+        obj.add(&overlay);
         overlay.add(&drawing_area);
+        button.set_label("long text");
+
+        toolbar.add(&button);
         overlay.add_overlay(&toolbar);
 
-        toolbar.put(&tools, 1920 / 2 - 12, 1080 / 3);
-        tools.add(&button);
-
-        button.set_label("a");
-
-        obj.add(&overlay);
-        // obj.add(&drawing_area);
+        overlay.connect_get_child_position(|_this, widget| {
+            warn!(
+                "WxH: {:?}x{:?}",
+                widget.preferred_width(),
+                widget.preferred_height()
+            );
+            Some(Allocation {
+                x: 1920 / 2 - 12,
+                y: 1080 / 3,
+                width: widget.preferred_width().1,
+                height: widget.preferred_height().1,
+            })
+        });
 
         drawing_area.connect_draw(
             clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
@@ -222,12 +251,33 @@ impl ObjectImpl for EditorWindow {
             Inhibit(false)
         }));
 
+        drawing_area.connect_button_press_event(
+            clone!(@strong self.image as image, @strong obj => @default-return {warn!("A");Inhibit(false)}, move |_this, button| {
+                tracing::warn!("y??");
+                if button.button() == BUTTON_PRIMARY {
+                    let mut image = image.borrow_mut();
+                    let image = image.as_mut().unwrap();
+                    let app = match obj.property("application") {
+                        Ok(app) => app,
+                        Err(err) => {
+                            error!("{}", err);
+                            return Inhibit(false);
+                        }
+                    };
+                    match app.get::<gtk::Application>() {
+                        Ok(app) => EditorWindow::do_save_surface(&app, image),
+                        Err(err) => error!("{}", err),
+                    }
+                }
+                Inhibit(false)
+            }),
+        );
+
         self.widgets
             .set(Widgets {
                 overlay,
                 drawing_area,
                 toolbar,
-                tools,
                 button,
             })
             .expect("Failed to create an editor");
