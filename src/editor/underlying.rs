@@ -139,6 +139,17 @@ impl EditorWindow {
         }
         .execute(image, cairo));
 
+        op!(Operation::Pixelate {
+            rect: Rectangle {
+                x: 400.0,
+                y: 400.0,
+                w: 200.0,
+                h: 200.0
+            },
+            seed: 12345,
+        }
+        .execute(image, cairo));
+
         let font_description = FontDescription::from_string("Fira Code, 40pt");
 
         op!(Operation::Text {
