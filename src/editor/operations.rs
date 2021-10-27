@@ -66,6 +66,7 @@ pub enum Operation {
         fill: Colour,
     },
     Text {
+        top_left: Point,
         text: String,
         colour: Colour,
         font_description: FontDescription,
@@ -138,6 +139,7 @@ impl Operation {
                 draw_rectangle(cairo, rect, *border, *fill)?;
             }
             Operation::Text {
+                top_left: Point { x, y },
                 text,
                 colour,
                 font_description,
@@ -148,7 +150,7 @@ impl Operation {
 
                 layout.set_markup(text);
                 layout.set_font_description(Some(font_description));
-                cairo.move_to(1000.0, 420.0);
+                cairo.move_to(*x, *y);
                 cairo.set_source_colour(*colour);
                 pangocairo::update_layout(cairo, &layout);
                 pangocairo::show_layout(cairo, &layout);

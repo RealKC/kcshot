@@ -152,6 +152,10 @@ impl EditorWindow {
         let font_description = FontDescription::from_string("Fira Code, 40pt");
 
         op!(Operation::Text {
+            top_left: Point {
+                x: 1000.0,
+                y: 420.0,
+            },
             text: "<b>hello</b> <i>world</i>".into(),
             colour: Colour {
                 red: 0,
