@@ -163,6 +163,25 @@ impl EditorWindow {
                 blue: 0,
                 alpha: 255
             },
+            font_description: font_description.clone()
+        }
+        .execute(image, cairo));
+
+        op!(Operation::Bubble {
+            centre: Point { x: 600.0, y: 600.0 },
+            bubble_colour: Colour {
+                red: 0,
+                green: 0,
+                blue: 255,
+                alpha: 255
+            },
+            text_colour: Colour {
+                red: 0,
+                green: 0,
+                blue: 0,
+                alpha: 255
+            },
+            number: 123,
             font_description
         }
         .execute(image, cairo));

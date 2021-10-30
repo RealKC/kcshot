@@ -41,6 +41,8 @@ const ARROWHEAD_LENGTH_RATIO: f64 = 0.1;
 const ARROWHEAD_APERTURE: f64 = PI / 6.0;
 /// How big will pixelate boxes be, in this case, we will group the rectangle into 4x4 boxes, which we will set all of its pixels to the same value
 const PIXELATE_SIZE: u64 = 4;
+/// How big the bubbles will be
+const BUBBLE_RADIUS: f64 = 10.0;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -83,6 +85,13 @@ pub enum Operation {
         ellipse: Ellipse,
         border: Colour,
         fill: Colour,
+    },
+    Bubble {
+        centre: Point,
+        bubble_colour: Colour,
+        text_colour: Colour,
+        number: i32,
+        font_description: FontDescription,
     },
 }
 
@@ -166,6 +175,33 @@ impl Operation {
                 cairo.save()?;
                 draw_ellipse(cairo, ellipse, *border, *fill)?;
                 cairo.restore()?;
+            }
+            Operation::Bubble {
+                centre,
+                bubble_colour,
+                text_colour,
+                number,
+                font_description,
+            } => {
+                info!("Bubble");
+                let Point { x, y } = centre;
+                let num_str = number.to_string();
+
+                let ellipse = Ellipse {
+                    x: x - BUBBLE_RADIUS,
+                    y: y - BUBBLE_RADIUS,
+                    w: 2.0 * BUBBLE_RADIUS,
+                    h: 2.0 * BUBBLE_RADIUS,
+                };
+
+                draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour)?;
+                draw_text_centred_at(
+                    cairo,
+                    centre,
+                    num_str.as_str(),
+                    *text_colour,
+                    font_description,
+                )?;
             }
         };
 
