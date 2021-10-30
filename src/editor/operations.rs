@@ -164,22 +164,7 @@ impl Operation {
             } => {
                 info!("Ellipse");
                 cairo.save()?;
-
-                cairo.save()?;
-                // 1. Position our ellipse at (x, y)
-                cairo.translate(ellipse.x, ellipse.y);
-                // 2. Scale its x coordinates by w, and its y coordinates by h
-                cairo.scale(ellipse.w, ellipse.h);
-                // 3. Create it by faking a circle on [0,1]x[0,1] centered on (0.5, 0.5)
-                cairo.arc(0.5, 0.5, 1.0, 0.0, 2.0 * PI);
-                cairo.set_source_colour(*fill);
-                cairo.fill_preserve()?;
-                cairo.restore()?;
-
-                cairo.set_source_colour(*border);
-                // 4. Draw a border arround it
-                cairo.stroke()?;
-
+                draw_ellipse(cairo, ellipse, *border, *fill)?;
                 cairo.restore()?;
             }
         };
@@ -240,6 +225,30 @@ fn draw_rectangle(
     cairo.set_source_colour(border);
     cairo.stroke()?;
     cairo.restore()?;
+
+    Ok(())
+}
+
+fn draw_ellipse(
+    cairo: &Context,
+    ellipse: &Ellipse,
+    border: Colour,
+    fill: Colour,
+) -> Result<(), Error> {
+    cairo.save()?;
+    // 1. Position our ellipse at (x, y)
+    cairo.translate(ellipse.x, ellipse.y);
+    // 2. Scale its x coordinates by w, and its y coordinates by h
+    cairo.scale(ellipse.w, ellipse.h);
+    // 3. Create it by faking a circle on [0,1]x[0,1] centered on (0.5, 0.5)
+    cairo.arc(0.5, 0.5, 1.0, 0.0, 2.0 * PI);
+    cairo.set_source_colour(fill);
+    cairo.fill_preserve()?;
+    cairo.restore()?;
+
+    cairo.set_source_colour(border);
+    // 4. Draw a border arround it
+    cairo.stroke()?;
 
     Ok(())
 }
