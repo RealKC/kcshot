@@ -139,21 +139,14 @@ impl Operation {
                 draw_rectangle(cairo, rect, *border, *fill)?;
             }
             Operation::Text {
-                top_left: Point { x, y },
+                top_left,
                 text,
                 colour,
                 font_description,
             } => {
                 info!("Text");
                 cairo.save()?;
-                let layout = pangocairo::create_layout(cairo).unwrap();
-
-                layout.set_markup(text);
-                layout.set_font_description(Some(font_description));
-                cairo.move_to(*x, *y);
-                cairo.set_source_colour(*colour);
-                pangocairo::update_layout(cairo, &layout);
-                pangocairo::show_layout(cairo, &layout);
+                draw_text_at(cairo, *top_left, text, *colour, font_description)?;
                 cairo.restore()?;
             }
             Operation::DrawArrow { start, end, colour } => {
@@ -294,6 +287,47 @@ fn draw_arrow(cairo: &Context, start: Point, end: Point, colour: Colour) -> Resu
 fn get_line_angle(start: Point, end: Point) -> f64 {
     let Point { x, y } = end.to_owned() - start.to_owned();
     (y / x).atan()
+}
+
+fn draw_text_at(
+    cairo: &Context,
+    Point { x, y }: Point,
+    text: &str,
+    colour: Colour,
+    font_description: &FontDescription,
+) -> Result<(), Error> {
+    let layout = pangocairo::create_layout(cairo).unwrap();
+
+    layout.set_markup(text);
+    layout.set_font_description(Some(font_description));
+    cairo.move_to(x, y);
+    cairo.set_source_colour(colour);
+    pangocairo::update_layout(cairo, &layout);
+    pangocairo::show_layout(cairo, &layout);
+    Ok(())
+}
+
+fn draw_text_centred_at(
+    cairo: &Context,
+    Point { x, y }: Point,
+    text: &str,
+    colour: Colour,
+    font_description: &FontDescription,
+) -> Result<(), Error> {
+    let layout = pangocairo::create_layout(cairo).unwrap();
+
+    layout.set_markup(text);
+    layout.set_font_description(Some(font_description));
+
+    let pixel_extents = layout.pixel_extents().1;
+    let w = pixel_extents.width as f64;
+    let h = pixel_extents.height as f64;
+
+    cairo.move_to(x - w / 2.0, y - h / 2.0);
+    cairo.set_source_colour(colour);
+    pangocairo::update_layout(cairo, &layout);
+    pangocairo::show_layout(cairo, &layout);
+    Ok(())
 }
 
 fn blur(cairo: &Context, pixbuf: Pixbuf, sigma: f32, Point { x, y }: Point) -> Result<(), Error> {
