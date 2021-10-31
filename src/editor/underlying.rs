@@ -246,14 +246,20 @@ impl ObjectImpl for EditorWindow {
         overlay.add_overlay(&toolbar);
 
         overlay.connect_get_child_position(|_this, widget| {
-            warn!(
-                "WxH: {:?}x{:?}",
-                widget.preferred_width(),
-                widget.preferred_height()
-            );
+            let (screen_width, screen_height) = match super::display_server::get_screen_resolution()
+            {
+                Ok(res) => res,
+                Err(why) => {
+                    error!(
+                        "Error getting screen resolution: {}.\n\t\tGoing with 1920x1080",
+                        why
+                    );
+                    (1920, 1080)
+                }
+            };
             Some(Allocation {
-                x: 1920 / 2 - 12,
-                y: 1080 / 3,
+                x: screen_width / 2 - widget.preferred_width().1 / 2,
+                y: screen_height / 5,
                 width: widget.preferred_width().1,
                 height: widget.preferred_height().1,
             })

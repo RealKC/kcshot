@@ -146,6 +146,31 @@ pub fn take_screenshot() -> Result<ImageSurface, Error> {
     Ok(ImageSurface::create_from_png(&mut file)?)
 }
 
+/// Gets the screen resolution
+///
+/// # Returns
+/// The first item of the tuple is the width, the second is the height
+pub fn get_screen_resolution() -> Result<(i32, i32), Error> {
+    let display = XDisplay::open_default()?;
+    let (window_where_cursor_is, _) = find_window_where_cursor_is(display.as_ptr())?;
+    // SAFETY: This is a C struct so this should be a valid byte pattern for it. I hope.
+    let mut attributes: XWindowAttributes = unsafe { std::mem::zeroed() };
+    // SAFETY: All the arguments are valid
+    let rc = unsafe {
+        XGetWindowAttributes(
+            display.as_ptr(),
+            window_where_cursor_is,
+            &mut attributes as _,
+        )
+    };
+
+    if rc == 0 {
+        return Err(Error::FailedToGetWindowAttributes);
+    }
+
+    Ok((attributes.width, attributes.height))
+}
+
 fn find_window_where_cursor_is(display: *mut Display) -> Result<(Window, c_int), Error> {
     // SAFETY: `display` isn't null, and it's obtained from a good call to XOpenDisplay, should be
     //         good?
