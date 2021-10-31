@@ -197,7 +197,7 @@ impl Operation {
                 draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour)?;
                 draw_text_centred_at(
                     cairo,
-                    centre,
+                    *centre,
                     num_str.as_str(),
                     *text_colour,
                     font_description,
