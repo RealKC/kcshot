@@ -6,6 +6,12 @@ pub struct Point {
     pub y: f64,
 }
 
+impl From<(f64, f64)> for Point {
+    fn from(tup: (f64, f64)) -> Self {
+        Self { x: tup.0, y: tup.1 }
+    }
+}
+
 impl Point {
     pub fn dist(&self) -> f64 {
         (self.x * self.x + self.y + self.y).sqrt()
