@@ -46,9 +46,7 @@ const BUBBLE_RADIUS: f64 = 10.0;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
-    Finish,
     Crop(Rectangle),
-    WindowSelect(Rectangle),
     Blur {
         rect: Rectangle,
         radius: f32,
@@ -95,13 +93,92 @@ pub enum Operation {
     },
 }
 
+/// This enum is like [Operations] but without any associated data
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Tool {
+    CropAndSave = 0,
+    Line = 1,
+    Arrow = 2,
+    Rectangle = 3,
+    Highlight = 4,
+    Pixelate = 5,
+    Blur = 6,
+    AutoincrementBubble = 7,
+    Text = 8,
+}
+
 impl Operation {
+    fn create_default_for_tool(tool: Tool, start: Point, bubble_index: &mut i32) -> Self {
+        const DEFAULT_PRIMARY_COLOUR: Colour = Colour {
+            red: 127,
+            green: 0,
+            blue: 127,
+            alpha: 255,
+        };
+
+        const DEFAULT_SECONDARY_COLOUR: Colour = Colour {
+            red: 0,
+            green: 127,
+            blue: 127,
+            alpha: 255,
+        };
+
+        let rect = Rectangle {
+            x: start.x,
+            y: start.y,
+            w: 1.0,
+            h: 1.0,
+        };
+
+        let font_description = FontDescription::from_string("Fira Code, 40pt");
+
+        match tool {
+            Tool::CropAndSave => Self::Crop(rect),
+            Tool::Line => Self::DrawLine {
+                start,
+                end: start,
+                colour: DEFAULT_PRIMARY_COLOUR,
+            },
+            Tool::Arrow => Self::DrawArrow {
+                start,
+                end: start,
+                colour: DEFAULT_PRIMARY_COLOUR,
+            },
+            Tool::Rectangle => Self::DrawRectangle {
+                rect,
+                border: DEFAULT_SECONDARY_COLOUR,
+                fill: DEFAULT_PRIMARY_COLOUR,
+            },
+            Tool::Highlight => Self::Highlight { rect },
+            Tool::Pixelate => Self::Pixelate {
+                rect,
+                seed: rand::thread_rng().gen(),
+            },
+            Tool::Blur => Self::Blur { rect, radius: 5.0 },
+            Tool::AutoincrementBubble => {
+                let bubble = Self::Bubble {
+                    centre: start,
+                    bubble_colour: DEFAULT_SECONDARY_COLOUR,
+                    text_colour: DEFAULT_PRIMARY_COLOUR,
+                    number: *bubble_index,
+                    font_description,
+                };
+                *bubble_index += 1;
+                bubble
+            }
+            Tool::Text => Self::Text {
+                top_left: start,
+                text: "".into(),
+                colour: DEFAULT_PRIMARY_COLOUR,
+                font_description,
+            },
+        }
+    }
+
     #[allow(unused_variables)]
-    pub fn execute(&self, surface: &mut ImageSurface, cairo: &Context) -> Result<(), Error> {
+    pub fn execute(&self, surface: &ImageSurface, cairo: &Context) -> Result<(), Error> {
         match self {
-            Operation::Finish => todo!(),
-            Operation::Crop(_) => todo!(),
-            Operation::WindowSelect(_) => todo!(),
+            Operation::Crop(_) => tracing::warn!("Crop isn't done yet, but let's not crash..."),
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
                 let pixbuf = gdk::pixbuf_get_from_surface(

@@ -1,11 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use cairo::{Context, ImageSurface};
+use cairo::Context;
 use gtk::{
     cairo,
-    gdk::{keys::constants as GdkKey, EventMask, BUTTON_PRIMARY},
+    gdk::{keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
-    pango::FontDescription,
     prelude::*,
     subclass::prelude::*,
     Allocation,
@@ -13,7 +12,9 @@ use gtk::{
 use once_cell::unsync::OnceCell;
 use tracing::{error, warn};
 
-use crate::editor::operations::{point::Point, Colour, Ellipse, Operation, Rectangle};
+use crate::editor::operations::Tool;
+
+use super::operations::OperationStack;
 
 macro_rules! op {
     ($call:expr) => {
@@ -32,163 +33,34 @@ macro_rules! op {
 struct Widgets {
     overlay: gtk::Overlay,
     drawing_area: gtk::DrawingArea,
-    toolbar: gtk::Box,
-    button: gtk::Button,
+    toolbar: gtk::Toolbar,
+    tool_buttons: Vec<gtk::ToolButton>,
+}
+
+#[derive(Debug)]
+struct Image {
+    surface: cairo::ImageSurface,
+    operation_stack: OperationStack,
 }
 
 #[derive(Default, Debug)]
 pub struct EditorWindow {
     widgets: OnceCell<Widgets>,
-    image: Rc<RefCell<Option<cairo::ImageSurface>>>,
+    image: Rc<RefCell<Option<Image>>>,
 }
 
 impl EditorWindow {
-    fn do_draw_event(image: &mut ImageSurface, cairo: &Context) {
+    fn do_draw_event(image: &Image, cairo: &Context) {
         cairo.set_operator(cairo::Operator::Source);
-        op!(cairo.set_source_surface(image, 0f64, 0f64));
+        op!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
         op!(cairo.paint());
         cairo.set_operator(cairo::Operator::Over);
 
-        op!(Operation::DrawEllipse {
-            ellipse: Ellipse {
-                x: 352.0,
-                y: 36.0,
-                w: 329.9,
-                h: 460.0
-            },
-            border: Colour {
-                red: 255,
-                green: 0,
-                blue: 0,
-                alpha: 255
-            },
-            fill: Colour {
-                red: 0,
-                green: 0,
-                blue: 255,
-                alpha: 127
-            }
-        }
-        .execute(image, cairo));
-
-        op!(Operation::DrawRectangle {
-            rect: Rectangle {
-                x: 200.0,
-                y: 300.0,
-                w: 200.0,
-                h: 300.0,
-            },
-            border: Colour {
-                red: 127,
-                green: 255,
-                blue: 69,
-                alpha: 254
-            },
-            fill: Colour {
-                red: 100,
-                green: 100,
-                blue: 100,
-                alpha: 127
-            }
-        }
-        .execute(image, cairo));
-
-        op!(Operation::Highlight {
-            rect: Rectangle {
-                x: 0.0,
-                y: 0.0,
-                w: 100.0,
-                h: 100.0
-            }
-        }
-        .execute(image, cairo));
-
-        op!(Operation::DrawLine {
-            start: Point { x: 100.0, y: 100.0 },
-            end: Point { x: 200.0, y: 150.0 },
-            colour: Colour {
-                red: 255,
-                green: 0,
-                blue: 0,
-                alpha: 255
-            }
-        }
-        .execute(image, cairo));
-
-        op!(Operation::DrawArrow {
-            start: Point { x: 50.0, y: 50.0 },
-            end: Point { x: 200.0, y: 50.0 },
-            colour: Colour {
-                red: 0,
-                green: 0,
-                blue: 255,
-                alpha: 255
-            }
-        }
-        .execute(image, cairo));
-
-        op!(Operation::Blur {
-            rect: Rectangle {
-                x: 100.0,
-                y: 250.0,
-                w: 50.0,
-                h: 300.0
-            },
-            radius: 5.0
-        }
-        .execute(image, cairo));
-
-        op!(Operation::Pixelate {
-            rect: Rectangle {
-                x: 400.0,
-                y: 400.0,
-                w: 200.0,
-                h: 200.0
-            },
-            seed: 12345,
-        }
-        .execute(image, cairo));
-
-        let font_description = FontDescription::from_string("Fira Code, 40pt");
-
-        op!(Operation::Text {
-            top_left: Point {
-                x: 1000.0,
-                y: 420.0,
-            },
-            text: "<b>hello</b> <i>world</i>".into(),
-            colour: Colour {
-                red: 0,
-                green: 255,
-                blue: 0,
-                alpha: 255
-            },
-            font_description: font_description.clone()
-        }
-        .execute(image, cairo));
-
-        op!(Operation::Bubble {
-            centre: Point { x: 600.0, y: 600.0 },
-            bubble_colour: Colour {
-                red: 0,
-                green: 0,
-                blue: 255,
-                alpha: 255
-            },
-            text_colour: Colour {
-                red: 0,
-                green: 0,
-                blue: 0,
-                alpha: 255
-            },
-            number: 123,
-            font_description
-        }
-        .execute(image, cairo));
+        image.operation_stack.execute(&image.surface, cairo);
     }
 
-    fn do_save_surface(app: &gtk::Application, image: &mut ImageSurface) {
-        let cairo = match Context::new(image) {
+    fn do_save_surface(app: &gtk::Application, image: &Image) {
+        let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
                 error!(
@@ -211,7 +83,7 @@ impl EditorWindow {
                 return;
             }
         };
-        if let Err(err) = image.write_to_png(&mut stream) {
+        if let Err(err) = image.surface.write_to_png(&mut stream) {
             error!("Failed to write surface to png: {}", err);
         }
         app.quit();
@@ -232,17 +104,15 @@ impl ObjectImpl for EditorWindow {
         warn!("Image status {:?}", image.status());
 
         let overlay = gtk::Overlay::new();
+        obj.add(&overlay);
         let drawing_area = gtk::DrawingArea::builder()
             .can_focus(true)
             .events(EventMask::ALL_EVENTS_MASK)
             .build();
-        let button = gtk::Button::new();
-        let toolbar = gtk::Box::new(gtk::Orientation::Horizontal, 12);
-        obj.add(&overlay);
-        overlay.add(&drawing_area);
-        button.set_label("long text");
 
-        toolbar.add(&button);
+        let toolbar = gtk::Toolbar::new();
+
+        overlay.add(&drawing_area);
         overlay.add_overlay(&toolbar);
 
         overlay.connect_get_child_position(|_this, widget| {
@@ -267,7 +137,7 @@ impl ObjectImpl for EditorWindow {
 
         drawing_area.connect_draw(
             clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
-                EditorWindow::do_draw_event(image.borrow_mut().as_mut().unwrap(), cairo);
+                EditorWindow::do_draw_event(image.borrow().as_ref().unwrap(), cairo);
 
                 Inhibit(false)
             }),
@@ -281,11 +151,42 @@ impl ObjectImpl for EditorWindow {
         }));
 
         drawing_area.connect_button_press_event(
-            clone!(@strong self.image as image, @strong obj => @default-return {warn!("A");Inhibit(false)}, move |_this, button| {
+            clone!(@strong self.image as image, @strong obj => @default-return Inhibit(false), move |this, button| {
+                tracing::warn!("Got button-press on drawing_area");
+                let mut image = image.borrow_mut();
+                let image = image.as_mut().unwrap();
+                image.operation_stack.start_operation_at(button.position().into());
+                this.queue_draw();
+                Inhibit(false)
+            }),
+        );
+
+        drawing_area.connect_motion_notify_event(
+            clone!(@strong self.image as image => @default-return Inhibit(false), move |this, motion| {
+                let primary_button_is_held = motion.state().contains(ModifierType::BUTTON1_MASK);
+                if primary_button_is_held {
+                    let mut image = image.borrow_mut();
+                    let image = image.as_mut().unwrap();
+                    image.operation_stack.update_current_operation_end_coordinate(motion.position().into());
+                    this.queue_draw();
+                }
+                Inhibit(false)
+            }),
+        );
+
+        drawing_area.connect_button_release_event(
+            clone!(@strong self.image as image, @strong obj => @default-return {warn!("A");Inhibit(false)}, move |this, button| {
                 tracing::warn!("y??");
                 if button.button() == BUTTON_PRIMARY {
                     let mut image = image.borrow_mut();
                     let image = image.as_mut().unwrap();
+                    if image.operation_stack.current_tool() != Tool::CropAndSave {
+                        tracing::info!("This is called");
+                        image.operation_stack.finish_current_operation();
+                        this.queue_draw();
+                        return Inhibit(false);
+                    }
+
                     let app = match obj.property("application") {
                         Ok(app) => app,
                         Err(err) => {
@@ -299,18 +200,53 @@ impl ObjectImpl for EditorWindow {
                     }
                 }
                 Inhibit(false)
-            }),
+            })
         );
+
+        self.image.replace(Some(Image {
+            surface: image,
+            operation_stack: OperationStack::new(),
+        }));
+
+        fn make_tool_button(
+            label: &str,
+            tool: Tool,
+            toolbar: &gtk::Toolbar,
+            image: Rc<RefCell<Option<Image>>>,
+        ) -> gtk::ToolButton {
+            let button = gtk::ToolButton::builder().label(label).build();
+            button.connect_clicked(clone!(@strong image => move |_| {
+                image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
+            }));
+            toolbar.insert(&button, tool as i32);
+            button
+        }
+
+        let tool_buttons = vec![
+            make_tool_button("RectC", Tool::CropAndSave, &toolbar, self.image.clone()),
+            make_tool_button("Line", Tool::Line, &toolbar, self.image.clone()),
+            make_tool_button("Arrow", Tool::Arrow, &toolbar, self.image.clone()),
+            make_tool_button("Rect", Tool::Rectangle, &toolbar, self.image.clone()),
+            make_tool_button("Highlight", Tool::Highlight, &toolbar, self.image.clone()),
+            make_tool_button("Pixelate", Tool::Pixelate, &toolbar, self.image.clone()),
+            make_tool_button("Blur", Tool::Blur, &toolbar, self.image.clone()),
+            make_tool_button(
+                "Bubble",
+                Tool::AutoincrementBubble,
+                &toolbar,
+                self.image.clone(),
+            ),
+            make_tool_button("Text", Tool::Text, &toolbar, self.image.clone()),
+        ];
 
         self.widgets
             .set(Widgets {
                 overlay,
                 drawing_area,
                 toolbar,
-                button,
+                tool_buttons,
             })
             .expect("Failed to create an editor");
-        self.image.replace(Some(image));
     }
 }
 
