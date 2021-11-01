@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use cairo::Context;
 use gtk::{
     cairo,
-    gdk::{keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
+    gdk::{self, keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
     prelude::*,
     subclass::prelude::*,
@@ -12,7 +12,10 @@ use gtk::{
 use once_cell::unsync::OnceCell;
 use tracing::{error, warn};
 
-use crate::editor::operations::Tool;
+use crate::editor::{
+    display_server::get_screen_resolution,
+    operations::{Rectangle, Tool},
+};
 
 use super::operations::OperationStack;
 
@@ -50,13 +53,15 @@ pub struct EditorWindow {
 }
 
 impl EditorWindow {
-    fn do_draw(image: &Image, cairo: &Context) {
+    fn do_draw(image: &Image, cairo: &Context, is_in_draw_event: bool) {
         cairo.set_operator(cairo::Operator::Source);
         op!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
         op!(cairo.paint());
         cairo.set_operator(cairo::Operator::Over);
 
-        image.operation_stack.execute(&image.surface, cairo);
+        image
+            .operation_stack
+            .execute(&image.surface, cairo, is_in_draw_event);
     }
 
     fn do_save_surface(app: &gtk::Application, image: &Image) {
@@ -70,22 +75,49 @@ impl EditorWindow {
                 return;
             }
         };
-        EditorWindow::do_draw(image, &cairo);
-        let now = chrono::Local::now();
-        let stream = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(format!("screenshot_{}.png", now.to_rfc3339()));
-        let mut stream = match stream {
-            Ok(stream) => stream,
-            Err(err) => {
-                error!("Failed to open file: {}", err);
+        EditorWindow::do_draw(image, &cairo, false);
+
+        let Rectangle { x, y, w, h } = image.operation_stack.crop_region().unwrap_or_else(|| {
+            let (w, h) = get_screen_resolution().map_or_else(
+                |why| {
+                    error!(
+                        "Unable to retrieve screen resolution{}\n\t\tgoing with 1920x1080",
+                        why
+                    );
+                    (1920, 1080)
+                },
+                |screen_resolution| screen_resolution,
+            );
+            Rectangle {
+                x: 0.0,
+                y: 0.0,
+                w: w as f64,
+                h: h as f64,
+            }
+        });
+
+        let pixbuf = match gdk::pixbuf_get_from_surface(
+            &image.surface,
+            x as i32,
+            y as i32,
+            w as i32,
+            h as i32,
+        ) {
+            Some(pixbuf) => pixbuf,
+            None => {
+                error!("Failed to create a pixbuf from the surface: {:?} with crop region Rectangle {{ x: {}, y: {}, w: {}, h: {} }}", image.surface, x, y, w, h);
                 return;
             }
         };
-        if let Err(err) = image.surface.write_to_png(&mut stream) {
-            error!("Failed to write surface to png: {}", err);
+
+        let now = chrono::Local::now();
+        let res = pixbuf.savev(format!("screenshot_{}.png", now.to_rfc3339()), "png", &[]);
+
+        match res {
+            Ok(_) => {}
+            Err(why) => error!("Failed to save screenshot to file: {}", why),
         }
+
         app.quit();
     }
 }
@@ -137,7 +169,7 @@ impl ObjectImpl for EditorWindow {
 
         drawing_area.connect_draw(
             clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
-                EditorWindow::do_draw(image.borrow().as_ref().unwrap(), cairo);
+                EditorWindow::do_draw(image.borrow().as_ref().unwrap(), cairo, true);
 
                 Inhibit(false)
             }),

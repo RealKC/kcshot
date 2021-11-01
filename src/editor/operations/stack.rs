@@ -1,4 +1,4 @@
-use super::{Colour, Operation, Point, Tool};
+use super::{Colour, Operation, Point, Rectangle, Tool};
 
 use cairo::{Context, ImageSurface};
 use tracing::error;
@@ -88,16 +88,32 @@ impl OperationStack {
         todo!()
     }
 
-    pub fn execute(&self, surface: &ImageSurface, cairo: &Context) {
+    pub fn crop_region(&self) -> Option<Rectangle> {
+        // We do not look at the top of `self.operations` as cropping should be the last operation
+        // in the UX I want.
+        if let Some(Operation::Crop(rect)) = &self.current_operation {
+            // We reserve (w, h) == (0,0) as special values in order to signal the entire screen as the
+            // crop region
+            if rect.w == 0.0 && rect.h == 0.0 {
+                None
+            } else {
+                Some(*rect)
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn execute(&self, surface: &ImageSurface, cairo: &Context, is_in_draw_event: bool) {
         for operation in &self.operations {
             tracing::warn!("We had at least one operation");
-            if let Err(why) = operation.execute(surface, cairo) {
+            if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
                 error!("{}", why);
             }
         }
 
         if let Some(operation) = &self.current_operation {
-            if let Err(why) = operation.execute(surface, cairo) {
+            if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
                 error!("{}", why);
             }
         }

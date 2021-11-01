@@ -151,7 +151,13 @@ impl Operation {
         let font_description = FontDescription::from_string("Fira Code, 40pt");
 
         match tool {
-            Tool::CropAndSave => Self::Crop(rect),
+            Tool::CropAndSave => Self::Crop(Rectangle {
+                x: start.x,
+                y: start.y,
+                // Width and height are zero to signal `OperationStack::crop_rectangle` to return `None`
+                w: 0.0,
+                h: 0.0,
+            }),
             Tool::Line => Self::DrawLine {
                 start,
                 end: start,
@@ -204,9 +210,34 @@ impl Operation {
     }
 
     #[allow(unused_variables)]
-    pub fn execute(&self, surface: &ImageSurface, cairo: &Context) -> Result<(), Error> {
+    pub fn execute(
+        &self,
+        surface: &ImageSurface,
+        cairo: &Context,
+        is_in_draw_event: bool,
+    ) -> Result<(), Error> {
         match self {
-            Operation::Crop(_) => tracing::warn!("Crop isn't done yet, but let's not crash..."),
+            Operation::Crop(Rectangle { x, y, w, h }) => {
+                if is_in_draw_event {
+                    cairo.save()?;
+
+                    cairo.rectangle(*x, *y, *w, *h);
+                    // When we are in draw events (aka this is being shown to the user), we want to make it clear
+                    // they are selecting the region which will be cropped
+                    cairo.set_source_colour(Colour {
+                        red: 0,
+                        green: 127,
+                        blue: 190,
+                        alpha: 255,
+                    });
+                    cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                    cairo.stroke()?;
+                    cairo.restore()?;
+                } else {
+                    // When we are not in draw events (aka the image is being saved), we just want to crop.
+                    // However, that is not done here, but rather inside EditorWindow::do_save_surface
+                }
+            }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
                 let pixbuf = gdk::pixbuf_get_from_surface(
