@@ -100,11 +100,12 @@ pub enum Tool {
     Line = 1,
     Arrow = 2,
     Rectangle = 3,
-    Highlight = 4,
-    Pixelate = 5,
-    Blur = 6,
-    AutoincrementBubble = 7,
-    Text = 8,
+    Ellipse = 4,
+    Highlight = 5,
+    Pixelate = 6,
+    Blur = 7,
+    AutoincrementBubble = 8,
+    Text = 9,
 }
 
 impl Tool {
@@ -114,6 +115,7 @@ impl Tool {
             Tool::Line => "resources/tool-line.png",
             Tool::Arrow => "resources/tool-arrow.png",
             Tool::Rectangle => "resources/tool-rectangle.png",
+            Tool::Ellipse => "resources/tool-ellipse.png",
             Tool::Highlight => "resources/tool-highlight.png",
             Tool::Pixelate => "resources/tool-pixelate.png",
             Tool::Blur => "resources/tool-blur.png",
@@ -162,6 +164,16 @@ impl Operation {
             },
             Tool::Rectangle => Self::DrawRectangle {
                 rect,
+                border: DEFAULT_SECONDARY_COLOUR,
+                fill: DEFAULT_PRIMARY_COLOUR,
+            },
+            Tool::Ellipse => Self::DrawEllipse {
+                ellipse: Ellipse {
+                    x: start.x,
+                    y: start.y,
+                    w: 1.0,
+                    h: 1.0,
+                },
                 border: DEFAULT_SECONDARY_COLOUR,
                 fill: DEFAULT_PRIMARY_COLOUR,
             },

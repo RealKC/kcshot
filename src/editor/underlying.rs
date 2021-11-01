@@ -230,6 +230,7 @@ impl ObjectImpl for EditorWindow {
             make_tool_button(Tool::Arrow, &toolbar, self.image.clone()),
             make_tool_button(Tool::Rectangle, &toolbar, self.image.clone()),
             make_tool_button(Tool::Highlight, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone()),
             make_tool_button(Tool::Pixelate, &toolbar, self.image.clone()),
             make_tool_button(Tool::Blur, &toolbar, self.image.clone()),
             make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone()),
