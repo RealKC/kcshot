@@ -209,12 +209,14 @@ impl ObjectImpl for EditorWindow {
         }));
 
         fn make_tool_button(
-            label: &str,
             tool: Tool,
             toolbar: &gtk::Toolbar,
             image: Rc<RefCell<Option<Image>>>,
         ) -> gtk::ToolButton {
-            let button = gtk::ToolButton::builder().label(label).build();
+            let button = gtk::ToolButton::builder()
+                .icon_widget(&gtk::Image::from_file(tool.path()))
+                .build();
+            gtk::prelude::ToolItemExt::set_expand(&button, false);
             button.connect_clicked(clone!(@strong image => move |_| {
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
@@ -223,20 +225,15 @@ impl ObjectImpl for EditorWindow {
         }
 
         let tool_buttons = vec![
-            make_tool_button("RectC", Tool::CropAndSave, &toolbar, self.image.clone()),
-            make_tool_button("Line", Tool::Line, &toolbar, self.image.clone()),
-            make_tool_button("Arrow", Tool::Arrow, &toolbar, self.image.clone()),
-            make_tool_button("Rect", Tool::Rectangle, &toolbar, self.image.clone()),
-            make_tool_button("Highlight", Tool::Highlight, &toolbar, self.image.clone()),
-            make_tool_button("Pixelate", Tool::Pixelate, &toolbar, self.image.clone()),
-            make_tool_button("Blur", Tool::Blur, &toolbar, self.image.clone()),
-            make_tool_button(
-                "Bubble",
-                Tool::AutoincrementBubble,
-                &toolbar,
-                self.image.clone(),
-            ),
-            make_tool_button("Text", Tool::Text, &toolbar, self.image.clone()),
+            make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Line, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Arrow, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Highlight, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Blur, &toolbar, self.image.clone()),
+            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Text, &toolbar, self.image.clone()),
         ];
 
         self.widgets

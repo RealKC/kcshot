@@ -107,6 +107,22 @@ pub enum Tool {
     Text = 8,
 }
 
+impl Tool {
+    pub const fn path(self) -> &'static str {
+        match self {
+            Tool::CropAndSave => "resources/tool-rectanglecrop.png",
+            Tool::Line => "resources/tool-line.png",
+            Tool::Arrow => "resources/tool-arrow.png",
+            Tool::Rectangle => "resources/tool-rectangle.png",
+            Tool::Highlight => "resources/tool-highlight.png",
+            Tool::Pixelate => "resources/tool-pixelate.png",
+            Tool::Blur => "resources/tool-blur.png",
+            Tool::AutoincrementBubble => "resources/tool-autoincrementbubble.png",
+            Tool::Text => "resources/tool-text.png",
+        }
+    }
+}
+
 impl Operation {
     fn create_default_for_tool(tool: Tool, start: Point, bubble_index: &mut i32) -> Self {
         const DEFAULT_PRIMARY_COLOUR: Colour = Colour {
