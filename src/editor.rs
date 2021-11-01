@@ -3,6 +3,7 @@ use gtk::glib;
 mod display_server;
 mod operations;
 mod underlying;
+mod utils;
 
 glib::wrapper! {
     pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)

@@ -3,7 +3,6 @@ use std::f64::consts::PI;
 use self::point::Point;
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk::{
-    gdk,
     gdk_pixbuf::{Colorspace, Pixbuf},
     pango::FontDescription,
     prelude::GdkContextExt,
@@ -20,6 +19,8 @@ mod stack;
 
 pub use data::*;
 pub use stack::*;
+
+use super::utils;
 
 const HIGHLIGHT_COLOUR: Colour = Colour {
     red: 255,
@@ -240,14 +241,7 @@ impl Operation {
             }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
-                let pixbuf = gdk::pixbuf_get_from_surface(
-                    surface,
-                    rect.x as i32,
-                    rect.y as i32,
-                    rect.w as i32,
-                    rect.h as i32,
-                )
-                .ok_or(Error::Pixbuf(*rect))?;
+                let pixbuf = utils::pixbuf_for(surface, *rect).ok_or(Error::Pixbuf(*rect))?;
 
                 blur(
                     cairo,
@@ -264,14 +258,7 @@ impl Operation {
             Operation::Pixelate { rect, seed } => {
                 info!("Pixelate");
 
-                let pixbuf = gdk::pixbuf_get_from_surface(
-                    surface,
-                    rect.x as i32,
-                    rect.y as i32,
-                    rect.w as i32,
-                    rect.h as i32,
-                )
-                .ok_or(Error::Pixbuf(*rect))?;
+                let pixbuf = utils::pixbuf_for(surface, *rect).ok_or(Error::Pixbuf(*rect))?;
 
                 pixelate(cairo, pixbuf, rect, *seed)?;
             }

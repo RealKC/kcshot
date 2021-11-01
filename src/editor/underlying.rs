@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use cairo::Context;
 use gtk::{
     cairo,
-    gdk::{self, keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
+    gdk::{keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
     prelude::*,
     subclass::prelude::*,
@@ -15,6 +15,7 @@ use tracing::{error, warn};
 use crate::editor::{
     display_server::get_screen_resolution,
     operations::{Rectangle, Tool},
+    utils,
 };
 
 use super::operations::OperationStack;
@@ -77,7 +78,7 @@ impl EditorWindow {
         };
         EditorWindow::do_draw(image, &cairo, false);
 
-        let Rectangle { x, y, w, h } = image.operation_stack.crop_region().unwrap_or_else(|| {
+        let rectangle = image.operation_stack.crop_region().unwrap_or_else(|| {
             let (w, h) = get_screen_resolution().map_or_else(
                 |why| {
                     error!(
@@ -96,16 +97,13 @@ impl EditorWindow {
             }
         });
 
-        let pixbuf = match gdk::pixbuf_get_from_surface(
-            &image.surface,
-            x as i32,
-            y as i32,
-            w as i32,
-            h as i32,
-        ) {
+        let pixbuf = match utils::pixbuf_for(&image.surface, rectangle) {
             Some(pixbuf) => pixbuf,
             None => {
-                error!("Failed to create a pixbuf from the surface: {:?} with crop region Rectangle {{ x: {}, y: {}, w: {}, h: {} }}", image.surface, x, y, w, h);
+                error!(
+                    "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
+                    image.surface, rectangle
+                );
                 return;
             }
         };
