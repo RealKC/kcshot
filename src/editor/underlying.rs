@@ -50,7 +50,7 @@ pub struct EditorWindow {
 }
 
 impl EditorWindow {
-    fn do_draw_event(image: &Image, cairo: &Context) {
+    fn do_draw(image: &Image, cairo: &Context) {
         cairo.set_operator(cairo::Operator::Source);
         op!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
         op!(cairo.paint());
@@ -70,7 +70,7 @@ impl EditorWindow {
                 return;
             }
         };
-        EditorWindow::do_draw_event(image, &cairo);
+        EditorWindow::do_draw(image, &cairo);
         let now = chrono::Local::now();
         let stream = std::fs::OpenOptions::new()
             .write(true)
@@ -137,7 +137,7 @@ impl ObjectImpl for EditorWindow {
 
         drawing_area.connect_draw(
             clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
-                EditorWindow::do_draw_event(image.borrow().as_ref().unwrap(), cairo);
+                EditorWindow::do_draw(image.borrow().as_ref().unwrap(), cairo);
 
                 Inhibit(false)
             }),
