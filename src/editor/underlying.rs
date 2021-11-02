@@ -37,8 +37,8 @@ macro_rules! op {
 struct Widgets {
     overlay: gtk::Overlay,
     drawing_area: gtk::DrawingArea,
-    toolbar: gtk::Toolbar,
-    tool_buttons: Vec<gtk::ToolButton>,
+    toolbar: gtk::Box,
+    tool_buttons: Vec<gtk::Button>,
 }
 
 #[derive(Debug)]
@@ -140,7 +140,7 @@ impl ObjectImpl for EditorWindow {
             .events(EventMask::ALL_EVENTS_MASK)
             .build();
 
-        let toolbar = gtk::Toolbar::new();
+        let toolbar = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
         overlay.add(&drawing_area);
         overlay.add_overlay(&toolbar);
@@ -240,17 +240,16 @@ impl ObjectImpl for EditorWindow {
 
         fn make_tool_button(
             tool: Tool,
-            toolbar: &gtk::Toolbar,
+            toolbar: &gtk::Box,
             image: Rc<RefCell<Option<Image>>>,
-        ) -> gtk::ToolButton {
-            let button = gtk::ToolButton::builder()
-                .icon_widget(&gtk::Image::from_file(tool.path()))
+        ) -> gtk::Button {
+            let button = gtk::Button::builder()
+                .image(&gtk::Image::from_file(tool.path()))
                 .build();
-            gtk::prelude::ToolItemExt::set_expand(&button, false);
             button.connect_clicked(clone!(@strong image => move |_| {
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
-            toolbar.insert(&button, tool as i32);
+            toolbar.pack_start(&button, false, true, 0);
             button
         }
 
