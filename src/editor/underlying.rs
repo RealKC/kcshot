@@ -38,7 +38,7 @@ struct Widgets {
     overlay: gtk::Overlay,
     drawing_area: gtk::DrawingArea,
     toolbar: gtk::Box,
-    tool_buttons: Vec<gtk::Button>,
+    tool_buttons: Vec<gtk::RadioButton>,
 }
 
 #[derive(Debug)]
@@ -242,13 +242,14 @@ impl ObjectImpl for EditorWindow {
             tool: Tool,
             toolbar: &gtk::Box,
             image: Rc<RefCell<Option<Image>>>,
-        ) -> gtk::Button {
-            let button = gtk::Button::builder()
+        ) -> gtk::RadioButton {
+            let button = gtk::RadioButton::builder()
                 .image(&gtk::Image::from_file(tool.path()))
                 .build();
             button.connect_clicked(clone!(@strong image => move |_| {
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
+            button.set_mode(false);
             toolbar.pack_start(&button, false, true, 0);
             button
         }
@@ -265,6 +266,12 @@ impl ObjectImpl for EditorWindow {
             make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone()),
             make_tool_button(Tool::Text, &toolbar, self.image.clone()),
         ];
+
+        let group_source = &tool_buttons[0];
+
+        for button in tool_buttons.iter().skip(1) {
+            button.join_group(Some(group_source));
+        }
 
         self.widgets
             .set(Widgets {
