@@ -48,10 +48,12 @@ struct Image {
     operation_stack: OperationStack,
 }
 
+type ImageRef = Rc<RefCell<Option<Image>>>;
+
 #[derive(Default, Debug)]
 pub struct EditorWindow {
     widgets: OnceCell<Widgets>,
-    image: Rc<RefCell<Option<Image>>>,
+    image: ImageRef,
 }
 
 impl EditorWindow {
@@ -121,7 +123,7 @@ impl EditorWindow {
     }
 
     fn make_primary_colour_chooser_button(
-        image: Rc<RefCell<Option<Image>>>,
+        image: ImageRef,
         parent_window: &gtk::Window,
     ) -> gtk::Button {
         let drawing_area = gtk::DrawingArea::builder()
@@ -172,10 +174,7 @@ impl EditorWindow {
         Self::make_button::<true>(&drawing_area, parent_window, image)
     }
 
-    fn make_secondary_colour_button(
-        image: Rc<RefCell<Option<Image>>>,
-        parent_window: &gtk::Window,
-    ) -> gtk::Button {
+    fn make_secondary_colour_button(image: ImageRef, parent_window: &gtk::Window) -> gtk::Button {
         let drawing_area = gtk::DrawingArea::builder()
             .events(EventMask::ALL_EVENTS_MASK)
             .build();
@@ -212,7 +211,7 @@ impl EditorWindow {
     fn make_button<const IS_PRIMARY: bool>(
         drawing_area: &gtk::DrawingArea,
         parent_window: &gtk::Window,
-        image: Rc<RefCell<Option<Image>>>,
+        image: ImageRef,
     ) -> gtk::Button {
         let button = gtk::Button::new();
         button.set_image(Some(drawing_area));
@@ -365,11 +364,7 @@ impl ObjectImpl for EditorWindow {
             operation_stack: OperationStack::new(),
         }));
 
-        fn make_tool_button(
-            tool: Tool,
-            toolbar: &gtk::Box,
-            image: Rc<RefCell<Option<Image>>>,
-        ) -> gtk::RadioButton {
+        fn make_tool_button(tool: Tool, toolbar: &gtk::Box, image: ImageRef) -> gtk::RadioButton {
             let button = gtk::RadioButton::builder()
                 .image(&gtk::Image::from_file(tool.path()))
                 .build();
