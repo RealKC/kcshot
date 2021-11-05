@@ -424,7 +424,7 @@ fn draw_arrow(cairo: &Context, start: Point, end: Point, colour: Colour) -> Resu
 
 fn get_line_angle(start: Point, end: Point) -> f64 {
     let Point { x, y } = end.to_owned() - start.to_owned();
-    (y / x).atan()
+    y.atan2(x)
 }
 
 fn draw_text_at(

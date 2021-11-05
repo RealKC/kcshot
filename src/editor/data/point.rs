@@ -14,7 +14,7 @@ impl From<(f64, f64)> for Point {
 
 impl Point {
     pub fn dist(&self) -> f64 {
-        (self.x * self.x + self.y + self.y).sqrt()
+        (self.x * self.x + self.y * self.y).sqrt()
     }
 }
 
