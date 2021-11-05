@@ -26,6 +26,13 @@ impl Colour {
             alpha: (alpha * 255.0).floor() as u8,
         }
     }
+
+    pub const BLACK: Self = Self {
+        red: 0,
+        green: 0,
+        blue: 0,
+        alpha: 255,
+    };
 }
 
 #[derive(Clone, Copy, Debug)]
