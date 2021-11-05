@@ -9,6 +9,8 @@ pub struct OperationStack {
     current_tool: Tool,
     current_operation: Option<Operation>,
     autoincrement_bubble_number: i32,
+    pub primary_colour: Colour,
+    pub secondary_colour: Colour,
 }
 
 impl OperationStack {
@@ -18,6 +20,18 @@ impl OperationStack {
             current_tool: Tool::CropAndSave,
             current_operation: None,
             autoincrement_bubble_number: 1,
+            primary_colour: Colour {
+                red: 127,
+                green: 0,
+                blue: 127,
+                alpha: 255,
+            },
+            secondary_colour: Colour {
+                red: 0,
+                green: 127,
+                blue: 127,
+                alpha: 255,
+            },
         }
     }
 
@@ -38,6 +52,8 @@ impl OperationStack {
             self.current_tool,
             point,
             &mut self.autoincrement_bubble_number,
+            self.primary_colour,
+            self.secondary_colour,
         ));
     }
 

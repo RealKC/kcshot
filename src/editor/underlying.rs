@@ -7,14 +7,14 @@ use gtk::{
     glib::{self, clone, signal::Inhibit},
     prelude::*,
     subclass::prelude::*,
-    Allocation,
+    Allocation, ResponseType,
 };
 use once_cell::unsync::OnceCell;
 use tracing::{error, warn};
 
 use crate::editor::{
     display_server::get_screen_resolution,
-    operations::{Rectangle, Tool},
+    operations::{Colour, Rectangle, Tool},
     utils::{self, CairoExt},
 };
 
@@ -117,6 +117,132 @@ impl EditorWindow {
         }
 
         app.quit();
+    }
+
+    fn make_primary_colour_chooser_button(
+        image: Rc<RefCell<Option<Image>>>,
+        parent_window: &gtk::Window,
+    ) -> gtk::Button {
+        let drawing_area = gtk::DrawingArea::builder()
+            .events(EventMask::ALL_EVENTS_MASK)
+            .build();
+        drawing_area.set_size_request(32, 32);
+        drawing_area.connect_draw(
+            clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
+                let image = image.borrow();
+                let image = image.as_ref().unwrap();
+
+                cairo.set_operator(cairo::Operator::Over);
+
+                if image.operation_stack.primary_colour.alpha != 0 {
+                    cairo.rectangle(0.0, 0.0, 32.0, 32.0);
+                    cairo.set_source_colour(image.operation_stack.primary_colour);
+                    op!(cairo.fill());
+                } else {
+                    // Instead of drawing nothing (what a fully transparent colour is) we draw a
+                    // checkerboard pattern instead
+                    cairo.set_source_colour(Colour {
+                        red: 0xff,
+                        green: 0x00,
+                        blue: 0xdc,
+                        alpha: 0xff
+                    });
+                    cairo.rectangle(0.0, 0.0, 16.0, 16.0);
+                    op!(cairo.fill());
+                    cairo.rectangle(16.0, 16.0, 16.0, 16.0);
+                    op!(cairo.fill());
+
+                    cairo.set_source_colour(Colour::BLACK);
+                    cairo.rectangle(0.0, 16.0, 16.0, 16.0);
+                    op!(cairo.fill());
+                    cairo.rectangle(16.0, 0.0, 16.0, 16.0);
+                    op!(cairo.fill());
+                }
+
+                cairo.set_source_colour(Colour::BLACK);
+                cairo.rectangle(1.0, 1.0, 30.0, 30.0);
+                cairo.set_line_width(1.0);
+                op!(cairo.stroke());
+
+                Inhibit(false)
+            }),
+        );
+
+        Self::make_button::<true>(&drawing_area, parent_window, image)
+    }
+
+    fn make_secondary_colour_button(
+        image: Rc<RefCell<Option<Image>>>,
+        parent_window: &gtk::Window,
+    ) -> gtk::Button {
+        let drawing_area = gtk::DrawingArea::builder()
+            .events(EventMask::ALL_EVENTS_MASK)
+            .build();
+        drawing_area.set_size_request(32, 32);
+        drawing_area.connect_draw(
+            clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
+                let image = image.borrow();
+                let image = image.as_ref().unwrap();
+
+                cairo.set_operator(cairo::Operator::Over);
+
+                cairo.set_source_colour(Colour::BLACK);
+                cairo.rectangle(11.0, 11.0, 10.0, 10.0);
+                cairo.set_line_width(1.0);
+                op!(cairo.stroke());
+
+                cairo.set_source_colour(image.operation_stack.secondary_colour);
+                cairo.rectangle(8.0, 8.0, 16.0, 16.0);
+                cairo.set_line_width(6.0);
+                op!(cairo.stroke());
+
+                cairo.set_source_colour(Colour::BLACK);
+                cairo.rectangle(4.0, 4.0, 24.0, 24.0);
+                cairo.set_line_width(1.0);
+                op!(cairo.stroke());
+
+                Inhibit(false)
+            }),
+        );
+
+        Self::make_button::<false>(&drawing_area, parent_window, image)
+    }
+
+    fn make_button<const IS_PRIMARY: bool>(
+        drawing_area: &gtk::DrawingArea,
+        parent_window: &gtk::Window,
+        image: Rc<RefCell<Option<Image>>>,
+    ) -> gtk::Button {
+        let button = gtk::Button::new();
+        button.set_image(Some(drawing_area));
+
+        button.connect_button_release_event(clone!(@strong parent_window, @strong image => move |_this, event| {
+            if event.button() != BUTTON_PRIMARY {
+                return Inhibit(false);
+            }
+
+            let colour_chooser = gtk::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
+
+            colour_chooser.connect_response(clone!(@strong image => move |this, response| {
+                if response == ResponseType::Ok {
+                    let mut image = image.borrow_mut();
+                    let image = image.as_mut().unwrap();
+                    if IS_PRIMARY {
+                        image.operation_stack.primary_colour = Colour::from_gdk_rgba(this.rgba());
+                    } else {
+                        image.operation_stack.secondary_colour = Colour::from_gdk_rgba(this.rgba());
+                    }
+                }
+
+                this.close();
+            }));
+
+            colour_chooser.show();
+
+            Inhibit(false)
+        }));
+
+        button
     }
 }
 
@@ -272,6 +398,14 @@ impl ObjectImpl for EditorWindow {
         for button in tool_buttons.iter().skip(1) {
             button.join_group(Some(group_source));
         }
+
+        let primary_colour_button =
+            EditorWindow::make_primary_colour_chooser_button(self.image.clone(), obj.upcast_ref());
+        toolbar.pack_start(&primary_colour_button, false, true, 0);
+
+        let secondary_colour_button =
+            EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
+        toolbar.pack_start(&secondary_colour_button, false, true, 0);
 
         self.widgets
             .set(Widgets {

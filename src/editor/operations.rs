@@ -127,21 +127,13 @@ impl Tool {
 }
 
 impl Operation {
-    fn create_default_for_tool(tool: Tool, start: Point, bubble_index: &mut i32) -> Self {
-        const DEFAULT_PRIMARY_COLOUR: Colour = Colour {
-            red: 127,
-            green: 0,
-            blue: 127,
-            alpha: 255,
-        };
-
-        const DEFAULT_SECONDARY_COLOUR: Colour = Colour {
-            red: 0,
-            green: 127,
-            blue: 127,
-            alpha: 255,
-        };
-
+    fn create_default_for_tool(
+        tool: Tool,
+        start: Point,
+        bubble_index: &mut i32,
+        primary_colour: Colour,
+        secondary_colour: Colour,
+    ) -> Self {
         let rect = Rectangle {
             x: start.x,
             y: start.y,
@@ -162,17 +154,17 @@ impl Operation {
             Tool::Line => Self::DrawLine {
                 start,
                 end: start,
-                colour: DEFAULT_PRIMARY_COLOUR,
+                colour: primary_colour,
             },
             Tool::Arrow => Self::DrawArrow {
                 start,
                 end: start,
-                colour: DEFAULT_PRIMARY_COLOUR,
+                colour: primary_colour,
             },
             Tool::Rectangle => Self::DrawRectangle {
                 rect,
-                border: DEFAULT_SECONDARY_COLOUR,
-                fill: DEFAULT_PRIMARY_COLOUR,
+                border: secondary_colour,
+                fill: primary_colour,
             },
             Tool::Ellipse => Self::DrawEllipse {
                 ellipse: Ellipse {
@@ -181,8 +173,8 @@ impl Operation {
                     w: 1.0,
                     h: 1.0,
                 },
-                border: DEFAULT_SECONDARY_COLOUR,
-                fill: DEFAULT_PRIMARY_COLOUR,
+                border: secondary_colour,
+                fill: primary_colour,
             },
             Tool::Highlight => Self::Highlight { rect },
             Tool::Pixelate => Self::Pixelate {
@@ -193,8 +185,8 @@ impl Operation {
             Tool::AutoincrementBubble => {
                 let bubble = Self::Bubble {
                     centre: start,
-                    bubble_colour: DEFAULT_SECONDARY_COLOUR,
-                    text_colour: DEFAULT_PRIMARY_COLOUR,
+                    bubble_colour: secondary_colour,
+                    text_colour: primary_colour,
                     number: *bubble_index,
                     font_description,
                 };
@@ -204,7 +196,7 @@ impl Operation {
             Tool::Text => Self::Text {
                 top_left: start,
                 text: "".into(),
-                colour: DEFAULT_PRIMARY_COLOUR,
+                colour: primary_colour,
                 font_description,
             },
         }
