@@ -1,4 +1,4 @@
-use super::operations::{Colour, Rectangle};
+use super::data::{Colour, Rectangle};
 
 use cairo::Context;
 use gtk::gdk::{self, gdk_pixbuf::Pixbuf};

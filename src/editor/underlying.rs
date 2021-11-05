@@ -13,8 +13,9 @@ use once_cell::unsync::OnceCell;
 use tracing::{error, warn};
 
 use crate::editor::{
+    data::{Colour, Rectangle},
     display_server::get_screen_resolution,
-    operations::{Colour, Rectangle, Tool},
+    operations::Tool,
     utils::{self, CairoExt},
 };
 

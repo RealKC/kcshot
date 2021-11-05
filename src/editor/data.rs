@@ -1,6 +1,7 @@
 use gtk::gdk::RGBA;
 
-pub mod point;
+mod point;
+pub use point::Point;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Colour {

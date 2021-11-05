@@ -1,6 +1,5 @@
 use std::f64::consts::PI;
 
-use self::point::Point;
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk::{
     gdk_pixbuf::{Colorspace, Pixbuf},
@@ -14,13 +13,14 @@ use image::{
 use rand::{prelude::StdRng, Rng, SeedableRng};
 use tracing::{error, info};
 
-mod data;
 mod stack;
 
-pub use data::*;
 pub use stack::*;
 
-use super::utils::{self, CairoExt};
+use super::{
+    data::*,
+    utils::{self, CairoExt},
+};
 
 const HIGHLIGHT_COLOUR: Colour = Colour {
     red: 255,
