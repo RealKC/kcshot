@@ -21,7 +21,7 @@ use crate::editor::{
 
 use super::operations::OperationStack;
 
-macro_rules! op {
+macro_rules! log_if_err {
     ($call:expr) => {
         match $call {
             Ok(_) => {}
@@ -59,8 +59,8 @@ pub struct EditorWindow {
 impl EditorWindow {
     fn do_draw(image: &Image, cairo: &Context, is_in_draw_event: bool) {
         cairo.set_operator(cairo::Operator::Source);
-        op!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
-        op!(cairo.paint());
+        log_if_err!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
+        log_if_err!(cairo.paint());
         cairo.set_operator(cairo::Operator::Over);
 
         image
@@ -140,7 +140,7 @@ impl EditorWindow {
                 if image.operation_stack.primary_colour.alpha != 0 {
                     cairo.rectangle(0.0, 0.0, 32.0, 32.0);
                     cairo.set_source_colour(image.operation_stack.primary_colour);
-                    op!(cairo.fill());
+                    log_if_err!(cairo.fill());
                 } else {
                     // Instead of drawing nothing (what a fully transparent colour is) we draw a
                     // checkerboard pattern instead
@@ -151,21 +151,21 @@ impl EditorWindow {
                         alpha: 0xff
                     });
                     cairo.rectangle(0.0, 0.0, 16.0, 16.0);
-                    op!(cairo.fill());
+                    log_if_err!(cairo.fill());
                     cairo.rectangle(16.0, 16.0, 16.0, 16.0);
-                    op!(cairo.fill());
+                    log_if_err!(cairo.fill());
 
                     cairo.set_source_colour(Colour::BLACK);
                     cairo.rectangle(0.0, 16.0, 16.0, 16.0);
-                    op!(cairo.fill());
+                    log_if_err!(cairo.fill());
                     cairo.rectangle(16.0, 0.0, 16.0, 16.0);
-                    op!(cairo.fill());
+                    log_if_err!(cairo.fill());
                 }
 
                 cairo.set_source_colour(Colour::BLACK);
                 cairo.rectangle(1.0, 1.0, 30.0, 30.0);
                 cairo.set_line_width(1.0);
-                op!(cairo.stroke());
+                log_if_err!(cairo.stroke());
 
                 Inhibit(false)
             }),
@@ -189,17 +189,17 @@ impl EditorWindow {
                 cairo.set_source_colour(Colour::BLACK);
                 cairo.rectangle(11.0, 11.0, 10.0, 10.0);
                 cairo.set_line_width(1.0);
-                op!(cairo.stroke());
+                log_if_err!(cairo.stroke());
 
                 cairo.set_source_colour(image.operation_stack.secondary_colour);
                 cairo.rectangle(8.0, 8.0, 16.0, 16.0);
                 cairo.set_line_width(6.0);
-                op!(cairo.stroke());
+                log_if_err!(cairo.stroke());
 
                 cairo.set_source_colour(Colour::BLACK);
                 cairo.rectangle(4.0, 4.0, 24.0, 24.0);
                 cairo.set_line_width(1.0);
-                op!(cairo.stroke());
+                log_if_err!(cairo.stroke());
 
                 Inhibit(false)
             }),
