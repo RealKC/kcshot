@@ -15,7 +15,7 @@ use tracing::{error, warn};
 use crate::editor::{
     display_server::get_screen_resolution,
     operations::{Rectangle, Tool},
-    utils,
+    utils::{self, CairoExt},
 };
 
 use super::operations::OperationStack;

@@ -20,7 +20,7 @@ mod stack;
 pub use data::*;
 pub use stack::*;
 
-use super::utils;
+use super::utils::{self, CairoExt};
 
 const HIGHLIGHT_COLOUR: Colour = Colour {
     red: 255,
@@ -344,28 +344,6 @@ pub enum Error {
     Pixbuf(Rectangle),
     #[error("`pixel_bytes` on a Pixbuf returned None")]
     PixelBytes,
-}
-
-trait CairoExt {
-    fn set_source_colour(&self, colour: Colour);
-}
-
-impl CairoExt for Context {
-    fn set_source_colour(&self, colour: Colour) {
-        let Colour {
-            red,
-            green,
-            blue,
-            alpha,
-        } = colour;
-
-        let red = red as f64 / 255.0;
-        let green = green as f64 / 255.0;
-        let blue = blue as f64 / 255.0;
-        let alpha = alpha as f64 / 255.0;
-
-        self.set_source_rgba(red, green, blue, alpha);
-    }
 }
 
 fn draw_rectangle(
