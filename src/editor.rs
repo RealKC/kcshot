@@ -3,6 +3,7 @@ use gtk::glib;
 mod data;
 mod display_server;
 mod operations;
+mod textdialog;
 mod underlying;
 mod utils;
 

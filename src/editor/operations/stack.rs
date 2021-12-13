@@ -1,7 +1,9 @@
+use crate::editor::data::Text;
+
 use super::{Colour, Operation, Point, Rectangle, Tool};
 
 use cairo::{Context, ImageSurface};
-use tracing::error;
+use tracing::{error, warn};
 
 #[derive(Debug)]
 pub struct OperationStack {
@@ -92,6 +94,20 @@ impl OperationStack {
             }
             Operation::Bubble { .. } | Operation::Text { .. } => {}
         }
+    }
+
+    pub fn set_text(&mut self, text: Text) {
+        if self.current_tool != Tool::Text {
+            warn!(
+                "Trying to set text when self.current_tool={:?}",
+                self.current_tool
+            );
+            return;
+        }
+        self.current_operation
+            .as_mut()
+            .expect("A current operation should exist if we reach this")
+            .set_text(text);
     }
 
     pub fn finish_current_operation(&mut self) {

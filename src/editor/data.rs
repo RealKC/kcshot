@@ -1,4 +1,4 @@
-use gtk::gdk::RGBA;
+use gtk::{gdk::RGBA, pango::FontDescription};
 
 mod point;
 pub use point::Point;
@@ -56,4 +56,11 @@ pub struct Ellipse {
     pub y: f64,
     pub w: f64,
     pub h: f64,
+}
+
+#[derive(Debug)]
+pub struct Text {
+    pub string: String,
+    pub font_description: FontDescription,
+    pub colour: Colour,
 }

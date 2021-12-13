@@ -322,6 +322,20 @@ impl Operation {
 
         Ok(())
     }
+
+    pub fn set_text(&mut self, input_text: Text) {
+        if let Operation::Text {
+            text,
+            colour,
+            font_description,
+            ..
+        } = self
+        {
+            *text = input_text.string;
+            *font_description = input_text.font_description;
+            *colour = input_text.colour;
+        }
+    }
 }
 
 #[derive(thiserror::Error, Debug)]

@@ -336,11 +336,20 @@ impl ObjectImpl for EditorWindow {
 
         drawing_area.connect_button_release_event(
             clone!(@strong self.image as image, @strong obj => @default-return {warn!("A");Inhibit(false)}, move |this, button| {
-                tracing::warn!("y??");
                 if button.button() == BUTTON_PRIMARY {
-                    let mut image = image.borrow_mut();
-                    let image = image.as_mut().unwrap();
-                    if image.operation_stack.current_tool() != Tool::CropAndSave {
+                    let mut imagerc = image.borrow_mut();
+                    let image = imagerc.as_mut().unwrap();
+                    if image.operation_stack.current_tool() == Tool::Text {
+                        tracing::info!("Text tool has been activated");
+                        let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
+                        match res {
+                            DialogResponse::Text(text) => {
+                                image.operation_stack.set_text(text);
+                            }
+                            DialogResponse::Cancel => { /* do nothing */ }
+                        }
+                        return Inhibit(false);
+                    } else if image.operation_stack.current_tool() != Tool::CropAndSave {
                         tracing::info!("This is called");
                         image.operation_stack.finish_current_operation();
                         this.queue_draw();
@@ -368,36 +377,41 @@ impl ObjectImpl for EditorWindow {
             operation_stack: OperationStack::new(),
         }));
 
-        fn make_tool_button(tool: Tool, toolbar: &gtk::Box, image: ImageRef) -> gtk::RadioButton {
-            let button = gtk::RadioButton::builder()
-                .image(&gtk::Image::from_file(tool.path()))
-                .build();
+        fn make_tool_button(
+            tool: Tool,
+            toolbar: &gtk::Box,
+            image: ImageRef,
+            group_source: Option<&gtk::RadioButton>,
+        ) -> gtk::RadioButton {
+            let button = match group_source {
+                Some(group_source) => gtk::RadioButton::from_widget(group_source),
+                None => gtk::RadioButton::new(),
+            };
+            button.set_image(Some(&gtk::Image::from_file(tool.path())));
             button.connect_clicked(clone!(@strong image => move |_| {
+                info!("Entered on-click handler of {:?}", tool);
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
             button.set_mode(false);
-            toolbar.pack_start(&button, false, true, 0);
+            toolbar.pack_start(&button, true, true, 0);
             button
         }
 
+        let group_source = make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone(), None);
+
+        // rustfmt makes this declaration significantly uglier, so let's tell it to let us handle this :)
+        #[rustfmt::skip]
         let tool_buttons = vec![
-            make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Line, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Arrow, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Highlight, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Blur, &toolbar, self.image.clone()),
-            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone()),
-            make_tool_button(Tool::Text, &toolbar, self.image.clone()),
+            make_tool_button(Tool::Line, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Arrow, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Highlight, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Blur, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Text, &toolbar, self.image.clone(), Some(&group_source))
         ];
-
-        let group_source = &tool_buttons[0];
-
-        for button in tool_buttons.iter().skip(1) {
-            button.join_group(Some(group_source));
-        }
 
         let primary_colour_button =
             EditorWindow::make_primary_colour_chooser_button(self.image.clone(), obj.upcast_ref());
