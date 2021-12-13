@@ -3,6 +3,20 @@ use super::data::{Colour, Rectangle};
 use cairo::Context;
 use gtk::gdk::{self, gdk_pixbuf::Pixbuf};
 
+#[macro_export]
+macro_rules! log_if_err {
+    ($call:expr) => {
+        match $call {
+            Ok(_) => {}
+            Err(err) => ::tracing::error!(
+                "Got error: {:?}\n\twith the following call: {}",
+                err,
+                ::std::stringify!($call)
+            ),
+        }
+    };
+}
+
 pub fn pixbuf_for(surface: &cairo::Surface, rectangle: Rectangle) -> Option<Pixbuf> {
     let Rectangle { x, y, w, h } = rectangle;
     let src_x = x.floor() as i32;

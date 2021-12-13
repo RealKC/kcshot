@@ -10,29 +10,18 @@ use gtk::{
     Allocation, ResponseType,
 };
 use once_cell::unsync::OnceCell;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::editor::{
     data::{Colour, Rectangle},
     display_server::get_screen_resolution,
     operations::Tool,
+    textdialog::DialogResponse,
     utils::{self, CairoExt},
 };
 
 use super::operations::OperationStack;
-
-macro_rules! log_if_err {
-    ($call:expr) => {
-        match $call {
-            Ok(_) => {}
-            Err(err) => error!(
-                "Got error: {:?}\n\twith the following call: {}",
-                err,
-                std::stringify!($call)
-            ),
-        }
-    };
-}
+use crate::log_if_err;
 
 #[derive(Debug, Clone)]
 struct Widgets {
