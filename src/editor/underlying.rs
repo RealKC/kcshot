@@ -132,7 +132,13 @@ impl EditorWindow {
         drawing_area.set_size_request(32, 32);
         drawing_area.connect_draw(
             clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
-                let image = image.borrow();
+                let image = match image.try_borrow() {
+                    Ok(image) => image,
+                    Err(why) => {
+                        info!("image already borrowed: {:?}", why);
+                        return Inhibit(false);
+                    }
+                };
                 let image = image.as_ref().unwrap();
 
                 cairo.set_operator(cairo::Operator::Over);
@@ -181,7 +187,13 @@ impl EditorWindow {
         drawing_area.set_size_request(32, 32);
         drawing_area.connect_draw(
             clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
-                let image = image.borrow();
+                let image = match image.try_borrow() {
+                    Ok(image) => image,
+                    Err(why) => {
+                        info!("image already borrowed: {:?}", why);
+                        return Inhibit(false);
+                    }
+                };
                 let image = image.as_ref().unwrap();
 
                 cairo.set_operator(cairo::Operator::Over);
