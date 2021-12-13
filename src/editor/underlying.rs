@@ -293,8 +293,11 @@ impl ObjectImpl for EditorWindow {
         });
 
         drawing_area.connect_draw(
-            clone!(@strong self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
-                EditorWindow::do_draw(image.borrow().as_ref().unwrap(), cairo, true);
+            clone!(@weak self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
+                match image.try_borrow() {
+                    Ok(image) => EditorWindow::do_draw(image.as_ref().unwrap(), cairo, true),
+                    Err(why) => info!("Image already borrowed: {:?}", why)
+                }
 
                 Inhibit(false)
             }),
