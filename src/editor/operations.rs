@@ -365,6 +365,8 @@ fn draw_ellipse(
     fill: Colour,
 ) -> Result<(), Error> {
     cairo.save()?;
+    // Avoid initial line from previous point if one exists
+    cairo.new_sub_path();
     // 1. Position our ellipse at (x, y)
     cairo.translate(ellipse.x, ellipse.y);
     // 2. Scale its x coordinates by w, and its y coordinates by h
