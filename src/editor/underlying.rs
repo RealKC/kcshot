@@ -1,9 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use cairo::Context;
-use gtk::{
-    cairo,
-    gdk::{keys::constants as GdkKey, EventMask, ModifierType, BUTTON_PRIMARY},
+use gtk4::{
+    gdk::{keys::constants as GdkKey, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
     prelude::*,
     subclass::prelude::*,
@@ -13,7 +12,7 @@ use once_cell::unsync::OnceCell;
 use tracing::{error, info, warn};
 
 use crate::editor::{
-    data::{Colour, Rectangle},
+    data::{Colour, Point, Rectangle},
     display_server::get_screen_resolution,
     operations::Tool,
     textdialog::DialogResponse,
@@ -25,10 +24,10 @@ use crate::log_if_err;
 
 #[derive(Debug, Clone)]
 struct Widgets {
-    overlay: gtk::Overlay,
-    drawing_area: gtk::DrawingArea,
-    toolbar: gtk::Box,
-    tool_buttons: Vec<gtk::RadioButton>,
+    overlay: gtk4::Overlay,
+    drawing_area: gtk4::DrawingArea,
+    toolbar: gtk4::Box,
+    tool_buttons: Vec<gtk4::ToggleButton>,
 }
 
 #[derive(Debug)]
@@ -57,7 +56,7 @@ impl EditorWindow {
             .execute(&image.surface, cairo, is_in_draw_event);
     }
 
-    fn do_save_surface(app: &gtk::Application, image: &Image) {
+    fn do_save_surface(app: &gtk4::Application, image: &Image) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
@@ -113,118 +112,104 @@ impl EditorWindow {
 
     fn make_primary_colour_chooser_button(
         image: ImageRef,
-        parent_window: &gtk::Window,
-    ) -> gtk::Button {
-        let drawing_area = gtk::DrawingArea::builder()
-            .events(EventMask::ALL_EVENTS_MASK)
-            .build();
+        parent_window: &gtk4::Window,
+    ) -> gtk4::Button {
+        let drawing_area = gtk4::DrawingArea::new();
         drawing_area.set_size_request(32, 32);
-        drawing_area.connect_draw(
-            clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
-                let image = match image.try_borrow() {
-                    Ok(image) => image,
-                    Err(why) => {
-                        info!("image already borrowed: {:?}", why);
-                        return Inhibit(false);
-                    }
-                };
-                let image = image.as_ref().unwrap();
-
-                cairo.set_operator(cairo::Operator::Over);
-
-                if image.operation_stack.primary_colour.alpha != 0 {
-                    cairo.rectangle(0.0, 0.0, 32.0, 32.0);
-                    cairo.set_source_colour(image.operation_stack.primary_colour);
-                    log_if_err!(cairo.fill());
-                } else {
-                    // Instead of drawing nothing (what a fully transparent colour is) we draw a
-                    // checkerboard pattern instead
-                    cairo.set_source_colour(Colour {
-                        red: 0xff,
-                        green: 0x00,
-                        blue: 0xdc,
-                        alpha: 0xff
-                    });
-                    cairo.rectangle(0.0, 0.0, 16.0, 16.0);
-                    log_if_err!(cairo.fill());
-                    cairo.rectangle(16.0, 16.0, 16.0, 16.0);
-                    log_if_err!(cairo.fill());
-
-                    cairo.set_source_colour(Colour::BLACK);
-                    cairo.rectangle(0.0, 16.0, 16.0, 16.0);
-                    log_if_err!(cairo.fill());
-                    cairo.rectangle(16.0, 0.0, 16.0, 16.0);
-                    log_if_err!(cairo.fill());
+        drawing_area.set_draw_func(clone!(@strong image =>  move |_this, cairo, _w, _h| {
+            let image = match image.try_borrow() {
+                Ok(image) => image,
+                Err(why) => {
+                    info!("image already borrowed: {:?}", why);
+                    return;
                 }
+            };
+            let image = image.as_ref().unwrap();
+
+            cairo.set_operator(cairo::Operator::Over);
+
+            if image.operation_stack.primary_colour.alpha != 0 {
+                cairo.rectangle(0.0, 0.0, 32.0, 32.0);
+                cairo.set_source_colour(image.operation_stack.primary_colour);
+                log_if_err!(cairo.fill());
+            } else {
+                // Instead of drawing nothing (what a fully transparent colour is) we draw a
+                // checkerboard pattern instead
+                cairo.set_source_colour(Colour {
+                    red: 0xff,
+                    green: 0x00,
+                    blue: 0xdc,
+                    alpha: 0xff
+                });
+                cairo.rectangle(0.0, 0.0, 16.0, 16.0);
+                log_if_err!(cairo.fill());
+                cairo.rectangle(16.0, 16.0, 16.0, 16.0);
+                log_if_err!(cairo.fill());
 
                 cairo.set_source_colour(Colour::BLACK);
-                cairo.rectangle(1.0, 1.0, 30.0, 30.0);
-                cairo.set_line_width(1.0);
-                log_if_err!(cairo.stroke());
+                cairo.rectangle(0.0, 16.0, 16.0, 16.0);
+                log_if_err!(cairo.fill());
+                cairo.rectangle(16.0, 0.0, 16.0, 16.0);
+                log_if_err!(cairo.fill());
+            }
 
-                Inhibit(false)
-            }),
-        );
+            cairo.set_source_colour(Colour::BLACK);
+            cairo.rectangle(1.0, 1.0, 30.0, 30.0);
+            cairo.set_line_width(1.0);
+            log_if_err!(cairo.stroke());
+
+        }));
 
         Self::make_button::<true>(&drawing_area, parent_window, image)
     }
 
-    fn make_secondary_colour_button(image: ImageRef, parent_window: &gtk::Window) -> gtk::Button {
-        let drawing_area = gtk::DrawingArea::builder()
-            .events(EventMask::ALL_EVENTS_MASK)
-            .build();
+    fn make_secondary_colour_button(image: ImageRef, parent_window: &gtk4::Window) -> gtk4::Button {
+        let drawing_area = gtk4::DrawingArea::new();
         drawing_area.set_size_request(32, 32);
-        drawing_area.connect_draw(
-            clone!(@strong image  => @default-return Inhibit(false), move |_this, cairo| {
-                let image = match image.try_borrow() {
-                    Ok(image) => image,
-                    Err(why) => {
-                        info!("image already borrowed: {:?}", why);
-                        return Inhibit(false);
-                    }
-                };
-                let image = image.as_ref().unwrap();
+        drawing_area.set_draw_func(clone!(@strong image =>  move |_this, cairo, _w, _h| {
+            let image = match image.try_borrow() {
+                Ok(image) => image,
+                Err(why) => {
+                    info!("image already borrowed: {:?}", why);
+                    return;
+                }
+            };
+            let image = image.as_ref().unwrap();
 
-                cairo.set_operator(cairo::Operator::Over);
+            cairo.set_operator(cairo::Operator::Over);
 
-                cairo.set_source_colour(Colour::BLACK);
-                cairo.rectangle(11.0, 11.0, 10.0, 10.0);
-                cairo.set_line_width(1.0);
-                log_if_err!(cairo.stroke());
+            cairo.set_source_colour(Colour::BLACK);
+            cairo.rectangle(11.0, 11.0, 10.0, 10.0);
+            cairo.set_line_width(1.0);
+            log_if_err!(cairo.stroke());
 
-                cairo.set_source_colour(image.operation_stack.secondary_colour);
-                cairo.rectangle(8.0, 8.0, 16.0, 16.0);
-                cairo.set_line_width(6.0);
-                log_if_err!(cairo.stroke());
+            cairo.set_source_colour(image.operation_stack.secondary_colour);
+            cairo.rectangle(8.0, 8.0, 16.0, 16.0);
+            cairo.set_line_width(6.0);
+            log_if_err!(cairo.stroke());
 
-                cairo.set_source_colour(Colour::BLACK);
-                cairo.rectangle(4.0, 4.0, 24.0, 24.0);
-                cairo.set_line_width(1.0);
-                log_if_err!(cairo.stroke());
+            cairo.set_source_colour(Colour::BLACK);
+            cairo.rectangle(4.0, 4.0, 24.0, 24.0);
+            cairo.set_line_width(1.0);
+            log_if_err!(cairo.stroke());
 
-                Inhibit(false)
-            }),
-        );
+        }));
 
         Self::make_button::<false>(&drawing_area, parent_window, image)
     }
 
     fn make_button<const IS_PRIMARY: bool>(
-        drawing_area: &gtk::DrawingArea,
-        parent_window: &gtk::Window,
+        drawing_area: &gtk4::DrawingArea,
+        parent_window: &gtk4::Window,
         image: ImageRef,
-    ) -> gtk::Button {
-        let button = gtk::Button::new();
-        button.set_image(Some(drawing_area));
+    ) -> gtk4::Button {
+        let button = gtk4::Button::new();
+        button.set_child(Some(drawing_area));
 
-        button.connect_button_release_event(clone!(@strong parent_window, @strong image => move |_this, event| {
-            if event.button() != BUTTON_PRIMARY {
-                return Inhibit(false);
-            }
+        button.connect_clicked(clone!(@strong parent_window, @strong image, @strong drawing_area => move |_this| {
+            let colour_chooser = gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
 
-            let colour_chooser = gtk::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
-
-            colour_chooser.connect_response(clone!(@strong image => move |this, response| {
+            colour_chooser.connect_response(clone!(@strong image, @strong drawing_area => move |this, response| {
                 if response == ResponseType::Ok {
                     let mut image = image.borrow_mut();
                     let image = image.as_mut().unwrap();
@@ -233,14 +218,13 @@ impl EditorWindow {
                     } else {
                         image.operation_stack.secondary_colour = Colour::from_gdk_rgba(this.rgba());
                     }
+                    drawing_area.queue_draw();
                 }
 
                 this.close();
             }));
 
             colour_chooser.show();
-
-            Inhibit(false)
         }));
 
         button
@@ -251,7 +235,7 @@ impl EditorWindow {
 impl ObjectSubclass for EditorWindow {
     const NAME: &'static str = "EditorWindow";
     type Type = super::EditorWindow;
-    type ParentType = gtk::ApplicationWindow;
+    type ParentType = gtk4::ApplicationWindow;
 }
 
 impl ObjectImpl for EditorWindow {
@@ -260,16 +244,13 @@ impl ObjectImpl for EditorWindow {
         let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
         warn!("Image status {:?}", image.status());
 
-        let overlay = gtk::Overlay::new();
-        obj.add(&overlay);
-        let drawing_area = gtk::DrawingArea::builder()
-            .can_focus(true)
-            .events(EventMask::ALL_EVENTS_MASK)
-            .build();
+        let overlay = gtk4::Overlay::new();
+        obj.set_child(Some(&overlay));
+        let drawing_area = gtk4::DrawingArea::builder().can_focus(true).build();
 
-        let toolbar = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let toolbar = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
-        overlay.add(&drawing_area);
+        overlay.set_child(Some(&drawing_area));
         overlay.add_overlay(&toolbar);
 
         overlay.connect_get_child_position(|_this, widget| {
@@ -285,92 +266,98 @@ impl ObjectImpl for EditorWindow {
                 }
             };
             Some(Allocation {
-                x: screen_width / 2 - widget.preferred_width().1 / 2,
+                x: screen_width / 2 - widget.width() / 2,
                 y: screen_height / 5,
-                width: widget.preferred_width().1,
-                height: widget.preferred_height().1,
+                width: 11 * 32,
+                height: 32,
             })
         });
 
-        drawing_area.connect_draw(
-            clone!(@weak self.image as image => @default-return Inhibit(false), move |_widget, cairo| {
+        drawing_area.set_draw_func(
+            clone!(@strong self.image as image => move |_widget, cairo, _w, _h| {
                 match image.try_borrow() {
                     Ok(image) => EditorWindow::do_draw(image.as_ref().unwrap(), cairo, true),
                     Err(why) => info!("Image already borrowed: {:?}", why)
                 }
-
-                Inhibit(false)
             }),
         );
 
-        obj.connect_key_press_event(clone!(@strong obj => move |_this, key| {
-            if key.keyval() == GdkKey::Escape {
+        let key_event_handler = gtk4::EventControllerKey::new();
+        key_event_handler.connect_key_pressed(clone!(@strong obj => move |_this, key, _, _| {
+            if key == GdkKey::Escape {
                 obj.hide();
             }
             Inhibit(false)
         }));
+        obj.add_controller(&key_event_handler);
 
-        drawing_area.connect_button_press_event(
-            clone!(@strong self.image as image, @strong obj => @default-return Inhibit(false), move |this, button| {
+        let click_event_handler = gtk4::GestureClick::new();
+
+        click_event_handler.set_button(BUTTON_PRIMARY);
+        click_event_handler.connect_pressed(
+            clone!(@strong self.image as image, @strong obj =>  move |_this, _n_clicks, x, y| {
                 tracing::warn!("Got button-press on drawing_area");
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        image.operation_stack.start_operation_at(Point { x, y });
+                        obj.queue_draw();
+                    }
+                    Err(why) => info!("Image already borrowed: {:?}", why),
+                }
+
+            }),
+        );
+        click_event_handler.connect_released(
+            clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, _x, _y| {
+                info!("AAA?");
+                let mut imagerc = image.borrow_mut();
+                let image = imagerc.as_mut().unwrap();
+                if image.operation_stack.current_tool() == Tool::Text {
+                    tracing::info!("Text tool has been activated");
+                    let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
+                    match res {
+                        DialogResponse::Text(text) => {
+                            image.operation_stack.set_text(text);
+                            drawing_area.queue_draw();
+                        }
+                        DialogResponse::Cancel => { /* do nothing */ }
+                    }
+                    return;
+                } else if image.operation_stack.current_tool() != Tool::CropAndSave {
+                    tracing::info!("This is called");
+                    image.operation_stack.finish_current_operation();
+                    drawing_area.queue_draw();
+                    return;
+                }
+
+                let app = match obj.property("application") {
+                    Ok(app) => app,
+                    Err(err) => {
+                        error!("{}", err);
+                        return;
+                    }
+                };
+                match app.get::<gtk4::Application>() {
+                    Ok(app) => EditorWindow::do_save_surface(&app, image),
+                    Err(err) => error!("{}", err),
+                }
+            }),
+        );
+
+        drawing_area.add_controller(&click_event_handler);
+
+        let drag_controller = gtk4::GestureDrag::new();
+        drag_controller.connect_drag_update(
+            clone!(@strong self.image as image, @strong drawing_area =>  move |_this, x, y| {
                 let mut image = image.borrow_mut();
                 let image = image.as_mut().unwrap();
-                image.operation_stack.start_operation_at(button.position().into());
-                this.queue_draw();
-                Inhibit(false)
+                info!("Dragging to {{ {}, {} }}", x, y);
+                image.operation_stack.update_current_operation_end_coordinate(x, y);
+                drawing_area.queue_draw();
             }),
         );
-
-        drawing_area.connect_motion_notify_event(
-            clone!(@strong self.image as image => @default-return Inhibit(false), move |this, motion| {
-                let primary_button_is_held = motion.state().contains(ModifierType::BUTTON1_MASK);
-                if primary_button_is_held {
-                    let mut image = image.borrow_mut();
-                    let image = image.as_mut().unwrap();
-                    image.operation_stack.update_current_operation_end_coordinate(motion.position().into());
-                    this.queue_draw();
-                }
-                Inhibit(false)
-            }),
-        );
-
-        drawing_area.connect_button_release_event(
-            clone!(@strong self.image as image, @strong obj => @default-return {warn!("A");Inhibit(false)}, move |this, button| {
-                if button.button() == BUTTON_PRIMARY {
-                    let mut imagerc = image.borrow_mut();
-                    let image = imagerc.as_mut().unwrap();
-                    if image.operation_stack.current_tool() == Tool::Text {
-                        tracing::info!("Text tool has been activated");
-                        let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
-                        match res {
-                            DialogResponse::Text(text) => {
-                                image.operation_stack.set_text(text);
-                            }
-                            DialogResponse::Cancel => { /* do nothing */ }
-                        }
-                        return Inhibit(false);
-                    } else if image.operation_stack.current_tool() != Tool::CropAndSave {
-                        tracing::info!("This is called");
-                        image.operation_stack.finish_current_operation();
-                        this.queue_draw();
-                        return Inhibit(false);
-                    }
-
-                    let app = match obj.property("application") {
-                        Ok(app) => app,
-                        Err(err) => {
-                            error!("{}", err);
-                            return Inhibit(false);
-                        }
-                    };
-                    match app.get::<gtk::Application>() {
-                        Ok(app) => EditorWindow::do_save_surface(&app, image),
-                        Err(err) => error!("{}", err),
-                    }
-                }
-                Inhibit(false)
-            })
-        );
+        drawing_area.add_controller(&drag_controller);
 
         self.image.replace(Some(Image {
             surface: image,
@@ -379,21 +366,27 @@ impl ObjectImpl for EditorWindow {
 
         fn make_tool_button(
             tool: Tool,
-            toolbar: &gtk::Box,
+            toolbar: &gtk4::Box,
             image: ImageRef,
-            group_source: Option<&gtk::RadioButton>,
-        ) -> gtk::RadioButton {
+            group_source: Option<&gtk4::ToggleButton>,
+        ) -> gtk4::ToggleButton {
             let button = match group_source {
-                Some(group_source) => gtk::RadioButton::from_widget(group_source),
-                None => gtk::RadioButton::new(),
+                Some(group_source) => {
+                    let button = gtk4::ToggleButton::new();
+                    button.set_group(Some(group_source));
+                    button
+                }
+                None => gtk4::ToggleButton::new(),
             };
-            button.set_image(Some(&gtk::Image::from_file(tool.path())));
+            button.set_child(Some(&gtk4::Image::from_file(tool.path())));
+
             button.connect_clicked(clone!(@strong image => move |_| {
                 info!("Entered on-click handler of {:?}", tool);
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
-            button.set_mode(false);
-            toolbar.pack_start(&button, true, true, 0);
+            button.set_active(false);
+            toolbar.append(&button);
+            tracing::info!("waa");
             button
         }
 
@@ -415,11 +408,11 @@ impl ObjectImpl for EditorWindow {
 
         let primary_colour_button =
             EditorWindow::make_primary_colour_chooser_button(self.image.clone(), obj.upcast_ref());
-        toolbar.pack_start(&primary_colour_button, false, true, 0);
+        toolbar.append(&primary_colour_button);
 
         let secondary_colour_button =
             EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
-        toolbar.pack_start(&secondary_colour_button, false, true, 0);
+        toolbar.append(&secondary_colour_button);
 
         self.widgets
             .set(Widgets {
@@ -433,7 +426,5 @@ impl ObjectImpl for EditorWindow {
 }
 
 impl WidgetImpl for EditorWindow {}
-impl ContainerImpl for EditorWindow {}
-impl BinImpl for EditorWindow {}
 impl WindowImpl for EditorWindow {}
 impl ApplicationWindowImpl for EditorWindow {}

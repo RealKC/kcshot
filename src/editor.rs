@@ -1,4 +1,4 @@
-use gtk::glib;
+use gtk4::glib;
 
 mod data;
 mod display_server;
@@ -9,11 +9,11 @@ mod utils;
 
 glib::wrapper! {
     pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)
-        @extends gtk::Widget, gtk::Container, gtk::Bin, gtk::Window, gtk::ApplicationWindow;
+        @extends gtk4::Widget,  gtk4::Window, gtk4::ApplicationWindow;
 }
 
 impl EditorWindow {
-    pub fn new(app: &gtk::Application) -> Self {
+    pub fn new(app: &gtk4::Application) -> Self {
         glib::Object::new(&[("application", app)]).expect("Failed to make an EditorWindow")
     }
 }

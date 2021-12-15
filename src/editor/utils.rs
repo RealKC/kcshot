@@ -1,7 +1,7 @@
 use super::data::{Colour, Rectangle};
 
 use cairo::Context;
-use gtk::gdk::{self, gdk_pixbuf::Pixbuf};
+use gtk4::gdk::{self, gdk_pixbuf::Pixbuf};
 
 #[macro_export]
 macro_rules! log_if_err {

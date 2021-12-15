@@ -59,7 +59,7 @@ impl OperationStack {
         ));
     }
 
-    pub fn update_current_operation_end_coordinate(&mut self, point: Point) {
+    pub fn update_current_operation_end_coordinate(&mut self, new_width: f64, new_height: f64) {
         let current_operation = match self.current_operation.as_mut() {
             Some(curr) => curr,
             None => return,
@@ -67,30 +67,46 @@ impl OperationStack {
 
         match current_operation {
             Operation::Crop(rect) => {
-                rect.w = point.x - rect.x;
-                rect.h = point.y - rect.y;
+                rect.w = new_width;
+                rect.h = new_height;
+                rect.normalise();
             }
             Operation::Blur { rect, .. } => {
-                rect.w = point.x - rect.x;
-                rect.h = point.y - rect.y;
+                rect.w = new_width;
+                rect.h = new_height;
+                rect.normalise();
             }
             Operation::Pixelate { rect, .. } => {
-                rect.w = point.x - rect.x;
-                rect.h = point.y - rect.y;
+                rect.w = new_width;
+                rect.h = new_height;
+                rect.normalise();
             }
-            Operation::DrawLine { end, .. } => *end = point,
+            Operation::DrawLine { start, end, .. } => {
+                *end = Point {
+                    x: start.x + new_width,
+                    y: start.y + new_height,
+                }
+            }
             Operation::DrawRectangle { rect, .. } => {
-                rect.w = point.x - rect.x;
-                rect.h = point.y - rect.y;
+                dbg!(&rect);
+                rect.w = new_width;
+                rect.h = new_height;
+                rect.normalise();
             }
-            Operation::DrawArrow { end, .. } => *end = point,
+            Operation::DrawArrow { start, end, .. } => {
+                *end = Point {
+                    x: start.x + new_width,
+                    y: start.y + new_height,
+                }
+            }
             Operation::Highlight { rect } => {
-                rect.w = point.x - rect.x;
-                rect.h = point.y - rect.y;
+                rect.w = new_width;
+                rect.h = new_height;
+                rect.normalise();
             }
             Operation::DrawEllipse { ellipse, .. } => {
-                ellipse.w = point.x - ellipse.x;
-                ellipse.h = point.y - ellipse.y;
+                ellipse.w = new_width;
+                ellipse.h = new_height;
             }
             Operation::Bubble { .. } | Operation::Text { .. } => {}
         }

@@ -1,10 +1,10 @@
 use std::f64::consts::PI;
 
 use cairo::{Context, Error as CairoError, ImageSurface};
-use gtk::{
+use gtk4::{
+    gdk::prelude::GdkCairoContextExt,
     gdk_pixbuf::{Colorspace, Pixbuf},
     pango::FontDescription,
-    prelude::GdkContextExt,
 };
 use image::{
     flat::{self, SampleLayout},

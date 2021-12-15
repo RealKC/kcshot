@@ -1,4 +1,4 @@
-use gtk::{gdk::RGBA, pango::FontDescription};
+use gtk4::{gdk::RGBA, pango::FontDescription};
 
 mod point;
 pub use point::Point;
@@ -42,6 +42,21 @@ pub struct Rectangle {
     pub y: f64,
     pub w: f64,
     pub h: f64,
+}
+
+impl Rectangle {
+    pub fn normalise(&mut self) {
+        let Self { x, y, w, h } = self;
+        if *w < 0.0 {
+            *x += *w;
+            *w = w.abs();
+        }
+
+        if *h < 0.0 {
+            *y += *h;
+            *h = h.abs();
+        }
+    }
 }
 
 /// A struct representing an ellipse
