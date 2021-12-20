@@ -9,7 +9,7 @@ mod utils;
 
 glib::wrapper! {
     pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)
-        @extends gtk4::Widget,  gtk4::Window, gtk4::ApplicationWindow;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
 }
 
 impl EditorWindow {
