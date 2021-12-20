@@ -1,3 +1,5 @@
+use std::{ffi::OsString, process::Command};
+
 use gtk4::{
     glib::{self, signal::Inhibit, ParamSpec},
     prelude::*,
@@ -154,9 +156,15 @@ fn build_button_pane(application: &gtk4::Application) -> gtk4::Box {
     buttons.append(&settings_button);
 
     let screenshots_folder_button = gtk4::Button::new();
-    screenshots_folder_button.set_child(Some(&make_label("Screenshot folder")));
-    screenshots_folder_button
-        .connect_clicked(|_| tracing::error!("TODO: Implement screenshots folder button"));
+    screenshots_folder_button.set_child(Some(&make_label("Screenshots folder")));
+    screenshots_folder_button.connect_clicked(|_| {
+        let res = Command::new("xdg-open")
+            .arg(&get_screenshot_folder())
+            .spawn();
+        if let Err(why) = res {
+            tracing::error!("Failed to spawn xdg-open: {:?}", why);
+        }
+    });
     buttons.append(&screenshots_folder_button);
 
     let history_button = gtk4::Button::new();
@@ -165,6 +173,11 @@ fn build_button_pane(application: &gtk4::Application) -> gtk4::Box {
     buttons.append(&history_button);
 
     buttons
+}
+
+/// FIXME: Make this function return smth other than the current working directory
+fn get_screenshot_folder() -> OsString {
+    std::env::current_dir().unwrap().into_os_string()
 }
 
 fn make_label(text: &str) -> gtk4::Label {
