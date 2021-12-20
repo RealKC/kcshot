@@ -2,12 +2,11 @@
 
 use gtk4::prelude::*;
 
+mod appwindow;
 mod editor;
 
 fn build_ui(app: &gtk4::Application) {
-    let window = editor::EditorWindow::new(app);
-    window.set_decorated(false);
-    window.fullscreen();
+    let window = appwindow::AppWindow::new(app);
 
     window.show();
 }
