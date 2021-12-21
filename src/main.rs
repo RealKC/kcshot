@@ -5,6 +5,7 @@ use gtk4::prelude::*;
 mod appwindow;
 mod editor;
 mod kcshot;
+mod postcapture;
 
 use kcshot::KCShot;
 

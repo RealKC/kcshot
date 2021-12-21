@@ -11,12 +11,15 @@ use gtk4::{
 use once_cell::unsync::OnceCell;
 use tracing::{error, info, warn};
 
-use crate::editor::{
-    data::{Colour, Point, Rectangle},
-    display_server::get_screen_resolution,
-    operations::Tool,
-    textdialog::DialogResponse,
-    utils::{self, CairoExt},
+use crate::{
+    editor::{
+        data::{Colour, Point, Rectangle},
+        display_server::get_screen_resolution,
+        operations::Tool,
+        textdialog::DialogResponse,
+        utils::{self, CairoExt},
+    },
+    postcapture,
 };
 
 use super::operations::OperationStack;
@@ -88,8 +91,8 @@ impl EditorWindow {
             }
         });
 
-        let pixbuf = match utils::pixbuf_for(&image.surface, rectangle) {
-            Some(pixbuf) => pixbuf,
+        match utils::pixbuf_for(&image.surface, rectangle) {
+            Some(pixbuf) => postcapture::current_action().handle(pixbuf),
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
@@ -98,14 +101,6 @@ impl EditorWindow {
                 return;
             }
         };
-
-        let now = chrono::Local::now();
-        let res = pixbuf.savev(format!("screenshot_{}.png", now.to_rfc3339()), "png", &[]);
-
-        match res {
-            Ok(_) => {}
-            Err(why) => error!("Failed to save screenshot to file: {}", why),
-        }
 
         window.close();
     }
