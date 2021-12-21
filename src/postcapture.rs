@@ -1,4 +1,7 @@
-use gtk4::gdk_pixbuf::Pixbuf;
+use gtk4::{
+    gdk::{self, prelude::*},
+    gdk_pixbuf::Pixbuf,
+};
 
 pub trait PostCaptureAction {
     fn handle(&self, pixbuf: Pixbuf);
@@ -20,5 +23,16 @@ impl PostCaptureAction for Save {
             Ok(_) => {}
             Err(why) => tracing::error!("Failed to save screenshot to file: {}", why),
         }
+
+        let display = match gdk::Display::default() {
+            Some(display) => display,
+            None => {
+                tracing::error!("Failed to fetch gdk::Display, bailing...");
+                return;
+            }
+        };
+        let clipboard = display.clipboard();
+
+        clipboard.set_texture(&gdk::Texture::for_pixbuf(&pixbuf));
     }
 }
