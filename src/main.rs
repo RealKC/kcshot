@@ -4,9 +4,12 @@ use gtk4::prelude::*;
 
 mod appwindow;
 mod editor;
+mod kcshot;
 
-fn build_ui(app: &gtk4::Application) {
-    let window = appwindow::AppWindow::new(app);
+use kcshot::KCShot;
+
+fn build_ui(app: &KCShot) {
+    let window = appwindow::AppWindow::new(app.upcast_ref());
 
     window.show();
 }
@@ -14,7 +17,7 @@ fn build_ui(app: &gtk4::Application) {
 fn main() {
     tracing_subscriber::fmt::init();
 
-    let application = gtk4::Application::new(Some("kc.kcshot"), Default::default());
+    let application = KCShot::new();
 
     application.connect_activate(build_ui);
 

@@ -11,7 +11,7 @@ use gtk4::{
 };
 use once_cell::sync::{Lazy, OnceCell};
 
-use crate::editor::EditorWindow;
+use crate::{editor::EditorWindow, kcshot::KCShot};
 
 use super::rowdata::RowData;
 
@@ -67,7 +67,7 @@ impl ObjectImpl for AppWindow {
                 "application",
                 "Application",
                 "Application",
-                gtk4::Application::static_type(),
+                KCShot::static_type(),
                 glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
             )]
         });
@@ -90,7 +90,7 @@ impl ObjectImpl for AppWindow {
     fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
         match pspec.name() {
             "application" => {
-                let application = value.get::<gtk4::Application>().ok();
+                let application = value.get::<KCShot>().ok();
                 obj.set_application(application.as_ref());
             }
             name => tracing::warn!("Unknown property: {}", name),

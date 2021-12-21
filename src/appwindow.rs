@@ -1,5 +1,7 @@
 use gtk4::glib;
 
+use crate::kcshot::KCShot;
+
 mod model;
 mod rowdata;
 mod underlying;
@@ -10,7 +12,7 @@ glib::wrapper! {
 }
 
 impl AppWindow {
-    pub fn new(app: &gtk4::Application) -> Self {
+    pub fn new(app: &KCShot) -> Self {
         glib::Object::new(&[("application", app)]).expect("Failed to make an AppWindow")
     }
 }
