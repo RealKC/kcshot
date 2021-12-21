@@ -8,18 +8,12 @@ mod kcshot;
 
 use kcshot::KCShot;
 
-fn build_ui(app: &KCShot) {
-    let window = appwindow::AppWindow::new(app.upcast_ref());
-
-    window.show();
-}
-
 fn main() {
     tracing_subscriber::fmt::init();
 
     let application = KCShot::new();
 
-    application.connect_activate(build_ui);
+    application.connect_activate(kcshot::build_ui);
 
     application.run();
 }
