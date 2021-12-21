@@ -56,7 +56,7 @@ impl EditorWindow {
             .execute(&image.surface, cairo, is_in_draw_event);
     }
 
-    fn do_save_surface(app: &gtk4::Application, image: &Image) {
+    fn do_save_surface(window: &gtk4::Window, image: &Image) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
@@ -107,7 +107,7 @@ impl EditorWindow {
             Err(why) => error!("Failed to save screenshot to file: {}", why),
         }
 
-        app.quit();
+        window.close();
     }
 
     fn make_primary_colour_chooser_button(
@@ -331,17 +331,7 @@ impl ObjectImpl for EditorWindow {
                     return;
                 }
 
-                let app = match obj.property("application") {
-                    Ok(app) => app,
-                    Err(err) => {
-                        error!("{}", err);
-                        return;
-                    }
-                };
-                match app.get::<gtk4::Application>() {
-                    Ok(app) => EditorWindow::do_save_surface(&app, image),
-                    Err(err) => error!("{}", err),
-                }
+                EditorWindow::do_save_surface(obj.upcast_ref(), image);
             }),
         );
 
