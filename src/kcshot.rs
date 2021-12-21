@@ -3,7 +3,7 @@ use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 use crate::{appwindow, editor};
 
 glib::wrapper! {
-    pub struct KCShot(ObjectSubclass<imp::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
+    pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
 }
 
 impl Default for KCShot {
@@ -23,7 +23,7 @@ impl KCShot {
 }
 
 pub fn build_ui(app: &KCShot) {
-    let instance = imp::KCShot::from_instance(app);
+    let instance = underlying::KCShot::from_instance(app);
 
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
@@ -43,7 +43,7 @@ pub fn build_ui(app: &KCShot) {
     }
 }
 
-mod imp {
+mod underlying {
     use std::{cell::RefCell, ffi::OsString};
 
     use gtk4::{
