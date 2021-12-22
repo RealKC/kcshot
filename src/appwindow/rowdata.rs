@@ -3,17 +3,27 @@ use gtk4::{
     subclass::prelude::*,
 };
 
+use crate::db::models::Screenshot;
+
 glib::wrapper! {
     pub struct RowData(ObjectSubclass<underlying::RowData>);
 }
 
 impl RowData {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        glib::Object::new(&[("path", &"orange.jpg".to_value())]).unwrap()
+    pub fn new(screenshot: Screenshot) -> Self {
+        let Screenshot {
+            path, time, url, ..
+        } = screenshot;
+        glib::Object::new(&[
+            ("path", &path.to_value()),
+            ("time", &time.to_value()),
+            ("url", &url.to_value()),
+        ])
+        .unwrap()
     }
 
-    pub fn path(&self) -> String {
+    pub fn path(&self) -> Option<String> {
         let this = underlying::RowData::from_instance(self);
 
         this.path.borrow().clone()
@@ -28,7 +38,9 @@ mod underlying {
 
     #[derive(Default, Debug)]
     pub struct RowData {
-        pub(super) path: RefCell<String>,
+        pub(super) path: RefCell<Option<String>>,
+        pub(super) time: RefCell<String>,
+        pub(super) url: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -41,13 +53,29 @@ mod underlying {
     impl ObjectImpl for RowData {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_string(
-                    "path",
-                    "Path",
-                    "Path",
-                    Some(""), // Default value
-                    glib::ParamFlags::READWRITE,
-                )]
+                vec![
+                    glib::ParamSpec::new_string(
+                        "path",
+                        "Path",
+                        "Path",
+                        None,
+                        glib::ParamFlags::READWRITE,
+                    ),
+                    glib::ParamSpec::new_string(
+                        "time",
+                        "Time",
+                        "Time",
+                        Some(""),
+                        glib::ParamFlags::READWRITE,
+                    ),
+                    glib::ParamSpec::new_string(
+                        "url",
+                        "URL",
+                        "URL",
+                        None,
+                        glib::ParamFlags::READWRITE,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -56,6 +84,8 @@ mod underlying {
         fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "path" => self.path.borrow().to_value(),
+                "time" => self.time.borrow().to_value(),
+                "url" => self.url.borrow().to_value(),
                 name => panic!("Tried to get property {} which does not exist", name),
             }
         }
@@ -69,8 +99,16 @@ mod underlying {
         ) {
             match pspec.name() {
                 "path" => {
-                    let path = value.get().unwrap();
+                    let path = value.get::<Option<String>>().unwrap();
                     self.path.replace(path);
+                }
+                "time" => {
+                    let time = value.get().unwrap();
+                    self.time.replace(time);
+                }
+                "url" => {
+                    let url = value.get::<Option<String>>().unwrap();
+                    self.url.replace(url);
                 }
                 name => {
                     tracing::warn!(

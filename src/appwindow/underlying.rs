@@ -44,7 +44,8 @@ impl ObjectImpl for AppWindow {
 
         let factory = build_item_factory();
 
-        let list_model = super::model::ListModel::new();
+        let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
+        let list_model = super::model::ListModel::new(&app);
         let selection_model = gtk4::SingleSelection::new(Some(&list_model));
 
         let image_grid = gtk4::GridView::new(Some(&selection_model), Some(&factory));
@@ -130,7 +131,9 @@ fn build_item_factory() -> SignalListItemFactory {
             .downcast::<gtk4::Picture>()
             .expect("The child has to be a gtk4::Picture");
 
-        picture.set_filename(&object.path());
+        if let Some(path) = object.path() {
+            picture.set_filename(&path);
+        }
     });
 
     factory
