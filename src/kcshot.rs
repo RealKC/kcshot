@@ -94,17 +94,19 @@ mod underlying {
             command_line: &gio::ApplicationCommandLine,
         ) -> i32 {
             tracing::info!("hm");
+            let mut show_main_window = true;
             for argument in command_line.arguments() {
                 // FIXME: Right now, if we specify `-n` for the first instance, it doesn't keep running
                 //        in background, we should fix that.
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
-                    self.show_main_window.replace(false);
+                    show_main_window = false;
                     self.take_screenshot.replace(false);
                 } else if SCREENSHOT_FLAGS_OS.contains(&argument) {
                     self.take_screenshot.replace(true);
-                    self.show_main_window.replace(false);
+                    show_main_window = false;
                 }
             }
+            self.show_main_window.replace(show_main_window);
 
             app.activate();
 
