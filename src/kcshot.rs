@@ -1,3 +1,4 @@
+use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
 use crate::{appwindow, editor};
@@ -19,6 +20,11 @@ impl KCShot {
             ("flags", &gio::ApplicationFlags::HANDLES_COMMAND_LINE),
         ])
         .expect("Failed to create KCShot")
+    }
+
+    pub fn conn(&self) -> &SqliteConnection {
+        let impl_ = underlying::KCShot::from_instance(self);
+        impl_.database_connection.get().unwrap()
     }
 }
 
@@ -46,17 +52,20 @@ pub fn build_ui(app: &KCShot) {
 mod underlying {
     use std::{cell::RefCell, ffi::OsString};
 
+    use diesel::SqliteConnection;
     use gtk4::{
         gio::{self, prelude::*},
         glib,
         subclass::prelude::*,
     };
-    use once_cell::sync::Lazy;
+    use once_cell::sync::{Lazy, OnceCell};
 
-    #[derive(Debug)]
+    use crate::db;
+
     pub struct KCShot {
         pub(super) show_main_window: RefCell<bool>,
         pub(super) take_screenshot: RefCell<bool>,
+        pub(super) database_connection: OnceCell<SqliteConnection>,
     }
 
     impl Default for KCShot {
@@ -64,7 +73,18 @@ mod underlying {
             Self {
                 show_main_window: RefCell::new(true),
                 take_screenshot: RefCell::new(false),
+                database_connection: Default::default(),
             }
+        }
+    }
+
+    impl std::fmt::Debug for KCShot {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("KCShot")
+                .field("show_main_window", &self.show_main_window)
+                .field("take_screenshot", &self.take_screenshot)
+                .field("database_connection", &"<sqlite connection>")
+                .finish()
         }
     }
 
@@ -75,7 +95,18 @@ mod underlying {
         type ParentType = gtk4::Application;
     }
 
-    impl ObjectImpl for KCShot {}
+    impl ObjectImpl for KCShot {
+        fn constructed(&self, _: &Self::Type) {
+            tracing::info!("Entered KCShot::constructed");
+            let res = self
+                .database_connection
+                .set(db::open(&database_path()).unwrap());
+
+            if res.is_err() {
+                tracing::error!("Failed setting self.database_connection");
+            }
+        }
+    }
 
     const LONG: usize = 1;
 
@@ -157,4 +188,13 @@ Application Options:
     }
 
     impl GtkApplicationImpl for KCShot {}
+
+    /// FIXME: Make this not return a hardcoded path in the current directory
+    fn database_path() -> String {
+        std::env::current_dir()
+            .unwrap()
+            .join("history.db")
+            .to_string_lossy()
+            .into()
+    }
 }
