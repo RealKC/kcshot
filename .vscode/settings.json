@@ -1,3 +1,7 @@
 {
-    "rust-analyzer.checkOnSave.command": "clippy"
+    "rust-analyzer.checkOnSave.command": "clippy",
+    // VSCode tries to format my sql in a very weird way, so let's just put an end to that
+    "[sql]": {
+        "editor.formatOnSave": false
+    }
 }
