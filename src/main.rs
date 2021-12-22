@@ -1,8 +1,12 @@
 #![allow(dead_code)]
 
+#[macro_use]
+extern crate diesel;
+
 use gtk4::prelude::*;
 
 mod appwindow;
+mod db;
 mod editor;
 mod kcshot;
 mod postcapture;
