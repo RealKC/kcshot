@@ -1,10 +1,13 @@
+use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
     gdk_pixbuf::Pixbuf,
 };
 
+use crate::db;
+
 pub trait PostCaptureAction {
-    fn handle(&self, pixbuf: Pixbuf);
+    fn handle(&self, conn: &SqliteConnection, pixbuf: Pixbuf);
 }
 
 pub fn current_action() -> &'static dyn PostCaptureAction {
@@ -17,9 +20,10 @@ pub fn current_action() -> &'static dyn PostCaptureAction {
 struct SaveAndCopy;
 
 impl PostCaptureAction for SaveAndCopy {
-    fn handle(&self, pixbuf: Pixbuf) {
+    fn handle(&self, conn: &SqliteConnection, pixbuf: Pixbuf) {
         let now = chrono::Local::now();
-        let res = pixbuf.savev(format!("screenshot_{}.png", now.to_rfc3339()), "png", &[]);
+        let path = format!("screenshot_{}.png", now.to_rfc3339());
+        let res = pixbuf.savev(&path, "png", &[]);
 
         match res {
             Ok(_) => {}
@@ -36,5 +40,12 @@ impl PostCaptureAction for SaveAndCopy {
         let clipboard = display.clipboard();
 
         clipboard.set_texture(&gdk::Texture::for_pixbuf(&pixbuf));
+
+        if let Err(why) = db::add_screenshot_to_history(conn, Some(path), now.to_rfc3339(), None) {
+            tracing::error!(
+                "Encountered error while saving screenshot in history: {}",
+                why
+            );
+        }
     }
 }

@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use cairo::Context;
+use diesel::SqliteConnection;
 use gtk4::{
     gdk::{keys::constants as GdkKey, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit},
@@ -19,6 +20,7 @@ use crate::{
         textdialog::DialogResponse,
         utils::{self, CairoExt},
     },
+    kcshot::KCShot,
     postcapture,
 };
 
@@ -59,7 +61,7 @@ impl EditorWindow {
             .execute(&image.surface, cairo, is_in_draw_event);
     }
 
-    fn do_save_surface(window: &gtk4::Window, image: &Image) {
+    fn do_save_surface(conn: &SqliteConnection, window: &gtk4::Window, image: &Image) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
@@ -92,7 +94,7 @@ impl EditorWindow {
         });
 
         match utils::pixbuf_for(&image.surface, rectangle) {
-            Some(pixbuf) => postcapture::current_action().handle(pixbuf),
+            Some(pixbuf) => postcapture::current_action().handle(conn, pixbuf),
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
@@ -326,7 +328,8 @@ impl ObjectImpl for EditorWindow {
                     return;
                 }
 
-                EditorWindow::do_save_surface(obj.upcast_ref(), image);
+                let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
+                EditorWindow::do_save_surface(app.conn(), obj.upcast_ref(), image);
             }),
         );
 
