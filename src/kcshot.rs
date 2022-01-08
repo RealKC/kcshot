@@ -35,6 +35,7 @@ pub fn build_ui(app: &KCShot) {
     let show_main_window = *instance.show_main_window.borrow();
 
     let history_model = HistoryModel::new(app.upcast_ref());
+    let window = appwindow::AppWindow::new(app, &history_model);
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
@@ -45,7 +46,6 @@ pub fn build_ui(app: &KCShot) {
         window.show()
     } else if show_main_window {
         instance.show_main_window.replace(false);
-        let window = appwindow::AppWindow::new(app, &history_model);
 
         window.show()
     }
@@ -129,8 +129,6 @@ mod underlying {
             tracing::info!("hm");
             let mut show_main_window = true;
             for argument in command_line.arguments() {
-                // FIXME: Right now, if we specify `-n` for the first instance, it doesn't keep running
-                //        in background, we should fix that.
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
                     show_main_window = false;
                     self.take_screenshot.replace(false);
