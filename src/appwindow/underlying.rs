@@ -18,6 +18,7 @@ use super::rowdata::RowData;
 #[derive(Default, Debug)]
 pub struct AppWindow {
     widgets: OnceCell<Widgets>,
+    history_model: OnceCell<super::ListModel>,
 }
 
 #[derive(Debug)]
@@ -37,16 +38,16 @@ impl ObjectImpl for AppWindow {
     fn constructed(&self, obj: &Self::Type) {
         let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
-        let button_list = build_button_pane(&dbg!(obj.application()).unwrap());
+        let list_model = self.history_model.get().unwrap();
+
+        let button_list = build_button_pane(&dbg!(obj.application()).unwrap(), list_model);
         let left_frame = gtk4::Frame::new(None);
         left_frame.set_child(Some(&button_list));
         hbox.append(&left_frame);
 
         let factory = build_item_factory();
 
-        let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
-        let list_model = super::model::ListModel::new(&app);
-        let selection_model = gtk4::SingleSelection::new(Some(&list_model));
+        let selection_model = gtk4::SingleSelection::new(Some(list_model));
 
         let image_grid = gtk4::GridView::new(Some(&selection_model), Some(&factory));
         image_grid.set_min_columns(3);
@@ -64,13 +65,22 @@ impl ObjectImpl for AppWindow {
 
     fn properties() -> &'static [ParamSpec] {
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![ParamSpec::new_object(
-                "application",
-                "Application",
-                "Application",
-                KCShot::static_type(),
-                glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-            )]
+            vec![
+                ParamSpec::new_object(
+                    "application",
+                    "Application",
+                    "Application",
+                    KCShot::static_type(),
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                ),
+                ParamSpec::new_object(
+                    "history-model",
+                    "History Model",
+                    "History Model",
+                    super::ListModel::static_type(),
+                    glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                ),
+            ]
         });
 
         PROPERTIES.as_ref()
@@ -93,6 +103,12 @@ impl ObjectImpl for AppWindow {
             "application" => {
                 let application = value.get::<KCShot>().ok();
                 obj.set_application(application.as_ref());
+            }
+            "history-model" => {
+                let history_model = value.get::<super::ListModel>().unwrap();
+                self.history_model
+                    .set(history_model)
+                    .expect("history-model should only be set once");
             }
             name => tracing::warn!("Unknown property: {}", name),
         }
@@ -139,18 +155,23 @@ fn build_item_factory() -> SignalListItemFactory {
     factory
 }
 
-fn build_button_pane(application: &gtk4::Application) -> gtk4::Box {
+fn build_button_pane(
+    application: &gtk4::Application,
+    history_model: &super::ListModel,
+) -> gtk4::Box {
     let buttons = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
 
     let capture_button = gtk4::Button::new();
     capture_button.set_child(Some(&make_label("Capture")));
-    capture_button.connect_clicked(glib::clone!(@weak application => move |_| {
-        let editor_window = EditorWindow::new(&application);
-        editor_window.set_decorated(false);
-        editor_window.fullscreen();
+    capture_button.connect_clicked(
+        glib::clone!(@weak application, @weak history_model => move |_| {
+            let editor_window = EditorWindow::new(&application, &history_model);
+            editor_window.set_decorated(false);
+            editor_window.fullscreen();
 
-        editor_window.show();
-    }));
+            editor_window.show();
+        }),
+    );
     buttons.append(&capture_button);
 
     let settings_button = gtk4::Button::new();

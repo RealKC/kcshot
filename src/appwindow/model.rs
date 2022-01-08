@@ -1,6 +1,9 @@
-use gtk4::{gio::ListModel as GListModel, glib};
+use diesel::SqliteConnection;
+use gtk4::{
+    gio::ListModel as GListModel, glib, prelude::ListModelExt, subclass::prelude::ObjectSubclassExt,
+};
 
-use crate::kcshot::KCShot;
+use crate::{db, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct ListModel(ObjectSubclass<underlying::ListModel>)
@@ -11,6 +14,22 @@ impl ListModel {
     #[allow(clippy::new_without_default)]
     pub fn new(app: &KCShot) -> Self {
         glib::Object::new(&[("application", app)]).unwrap()
+    }
+
+    pub fn add_item_to_history(
+        &self,
+        conn: &SqliteConnection,
+        path_: Option<String>,
+        time_: String,
+        url_: Option<String>,
+    ) {
+        if let Err(why) = db::add_screenshot_to_history(conn, path_, time_, url_) {
+            tracing::error!("Failed to add screenshot to history: {:?}", why);
+            return;
+        }
+        let impl_ = underlying::ListModel::from_instance(self);
+        impl_.screenshots.borrow_mut().clear();
+        self.items_changed(0, 0, 1)
     }
 }
 
@@ -30,7 +49,7 @@ mod underlying {
     #[derive(Default)]
     pub struct ListModel {
         app: RefCell<KCShot>,
-        screenshots: RefCell<Vec<RowData>>,
+        pub(super) screenshots: RefCell<Vec<RowData>>,
     }
 
     #[glib::object_subclass]
@@ -47,26 +66,59 @@ mod underlying {
         }
 
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            self.screenshots.borrow().len() as u32
+            let n_items = db::number_of_history_itms(self.app.borrow().conn());
+            match n_items {
+                Ok(n_items) => {
+                    assert!(
+                        0 <= n_items && n_items <= u32::MAX as i64,
+                        "n_items was {} which is not within [0, i32::MAX]",
+                        n_items
+                    );
+                    n_items as u32
+                }
+                Err(why) => {
+                    tracing::error!("Failed to get number of screenshots in history: {:?}", why);
+                    panic!() // yolo
+                }
+            }
         }
 
-        fn item(&self, list_model: &Self::Type, position: u32) -> Option<glib::Object> {
-            let n_items = self.n_items(list_model);
-            if position >= n_items {
+        #[tracing::instrument(skip(self))]
+        fn item(&self, _: &Self::Type, position: u32) -> Option<glib::Object> {
+            let last_fetched_screenshot_index = {
+                let len = self.screenshots.borrow().len();
+                if len > 0 {
+                    len - 1
+                } else {
+                    0
+                }
+            };
+
+            tracing::info!("{}", last_fetched_screenshot_index);
+
+            if position as usize > last_fetched_screenshot_index
+                || last_fetched_screenshot_index == 0
+            {
+                tracing::info!("entered");
                 const COUNT: i64 = 15;
-                let new_screenshots =
-                    db::fetch_screenshots(self.app.borrow().conn(), n_items as i64, COUNT);
+                let new_screenshots = db::fetch_screenshots(
+                    self.app.borrow().conn(),
+                    last_fetched_screenshot_index as i64,
+                    COUNT,
+                );
                 let new_screenshots = match new_screenshots {
                     Ok(n) => n,
                     Err(why) => {
-                        tracing::error!("Encountered error: {:?}\n\twhile trying to fetch {} items from the database,\n\tstarting at index: {}", why, COUNT, n_items);
+                        tracing::error!("Encountered error: {:?}\n\twhile trying to fetch {} items from the database,\n\tstarting at index: {}", why, COUNT, last_fetched_screenshot_index);
                         return None;
                     }
                 };
+
                 self.screenshots
                     .borrow_mut()
-                    .extend(new_screenshots.iter().map(|s| RowData::new(s.clone())));
+                    .extend(new_screenshots.into_iter().map(RowData::new));
             }
+
             self.screenshots
                 .borrow()
                 .get(position as usize)

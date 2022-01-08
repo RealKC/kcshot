@@ -34,16 +34,18 @@ pub fn build_ui(app: &KCShot) {
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
 
+    let history_model = appwindow::ListModel::new(app.upcast_ref());
+
     if take_screenshot {
         instance.take_screenshot.replace(false);
-        let window = editor::EditorWindow::new(app.upcast_ref());
+        let window = editor::EditorWindow::new(app.upcast_ref(), &history_model);
         window.set_decorated(false);
         window.fullscreen();
 
         window.show()
     } else if show_main_window {
         instance.show_main_window.replace(false);
-        let window = appwindow::AppWindow::new(app);
+        let window = appwindow::AppWindow::new(app, &history_model);
 
         window.show()
     }

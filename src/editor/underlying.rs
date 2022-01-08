@@ -4,15 +4,16 @@ use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{keys::constants as GdkKey, BUTTON_PRIMARY},
-    glib::{self, clone, signal::Inhibit},
+    glib::{self, clone, signal::Inhibit, ParamSpec},
     prelude::*,
     subclass::prelude::*,
     Allocation, ResponseType,
 };
-use once_cell::unsync::OnceCell;
+use once_cell::{sync::Lazy, unsync::OnceCell};
 use tracing::{error, info, warn};
 
 use crate::{
+    appwindow,
     editor::{
         data::{Colour, Point, Rectangle},
         display_server::get_screen_resolution,
@@ -47,6 +48,7 @@ type ImageRef = Rc<RefCell<Option<Image>>>;
 pub struct EditorWindow {
     widgets: OnceCell<Widgets>,
     image: ImageRef,
+    history_model: OnceCell<appwindow::ListModel>,
 }
 
 impl EditorWindow {
@@ -61,7 +63,12 @@ impl EditorWindow {
             .execute(&image.surface, cairo, is_in_draw_event);
     }
 
-    fn do_save_surface(conn: &SqliteConnection, window: &gtk4::Window, image: &Image) {
+    fn do_save_surface(
+        history_model: &appwindow::ListModel,
+        conn: &SqliteConnection,
+        window: &gtk4::Window,
+        image: &Image,
+    ) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
@@ -94,7 +101,7 @@ impl EditorWindow {
         });
 
         match utils::pixbuf_for(&image.surface, rectangle) {
-            Some(pixbuf) => postcapture::current_action().handle(conn, pixbuf),
+            Some(pixbuf) => postcapture::current_action().handle(history_model, conn, pixbuf),
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
@@ -305,6 +312,12 @@ impl ObjectImpl for EditorWindow {
 
             }),
         );
+
+        let history_model = self
+            .history_model
+            .get()
+            .expect("Should have a history model when taking a screenshot")
+            .clone();
         click_event_handler.connect_released(
             clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, _x, _y| {
                 info!("AAA?");
@@ -329,7 +342,7 @@ impl ObjectImpl for EditorWindow {
                 }
 
                 let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
-                EditorWindow::do_save_surface(app.conn(), obj.upcast_ref(), image);
+                EditorWindow::do_save_surface(&history_model, app.conn(), obj.upcast_ref(), image);
             }),
         );
 
@@ -410,6 +423,33 @@ impl ObjectImpl for EditorWindow {
                 tool_buttons,
             })
             .expect("Failed to create an editor");
+    }
+
+    fn properties() -> &'static [glib::ParamSpec] {
+        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            vec![ParamSpec::new_object(
+                "history-model",
+                "History Model",
+                "History Model",
+                appwindow::ListModel::static_type(),
+                glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+            )]
+        });
+
+        PROPERTIES.as_ref()
+    }
+
+    #[tracing::instrument]
+    fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        match pspec.name() {
+            "history-model" => {
+                let history_model = value.get::<appwindow::ListModel>().unwrap();
+                self.history_model
+                    .set(history_model)
+                    .expect("history-model should only be set once");
+            }
+            name => tracing::warn!("Unknown property: {}", name),
+        }
     }
 }
 

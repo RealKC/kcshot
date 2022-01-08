@@ -33,5 +33,12 @@ pub fn fetch_screenshots(
     screenshots
         .limit(count)
         .offset(start_at)
+        .order(id.desc())
         .load::<Screenshot>(conn)
+}
+
+pub fn number_of_history_itms(conn: &SqliteConnection) -> QueryResult<i64> {
+    use schema::screenshots::dsl::*;
+
+    screenshots.count().get_result(conn)
 }
