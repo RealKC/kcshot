@@ -18,7 +18,7 @@ use super::rowdata::RowData;
 #[derive(Default, Debug)]
 pub struct AppWindow {
     widgets: OnceCell<Widgets>,
-    history_model: OnceCell<super::ListModel>,
+    history_model: OnceCell<super::HistoryModel>,
 }
 
 #[derive(Debug)]
@@ -77,7 +77,7 @@ impl ObjectImpl for AppWindow {
                     "history-model",
                     "History Model",
                     "History Model",
-                    super::ListModel::static_type(),
+                    super::HistoryModel::static_type(),
                     glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
                 ),
             ]
@@ -105,7 +105,7 @@ impl ObjectImpl for AppWindow {
                 obj.set_application(application.as_ref());
             }
             "history-model" => {
-                let history_model = value.get::<super::ListModel>().unwrap();
+                let history_model = value.get::<super::HistoryModel>().unwrap();
                 self.history_model
                     .set(history_model)
                     .expect("history-model should only be set once");
@@ -157,7 +157,7 @@ fn build_item_factory() -> SignalListItemFactory {
 
 fn build_button_pane(
     application: &gtk4::Application,
-    history_model: &super::ListModel,
+    history_model: &super::HistoryModel,
 ) -> gtk4::Box {
     let buttons = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
 

@@ -34,7 +34,7 @@ pub fn build_ui(app: &KCShot) {
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
 
-    let history_model = appwindow::ListModel::new(app.upcast_ref());
+    let history_model = appwindow::HistoryModel::new(app.upcast_ref());
 
     if take_screenshot {
         instance.take_screenshot.replace(false);

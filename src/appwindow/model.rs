@@ -6,11 +6,11 @@ use gtk4::{
 use crate::{db, kcshot::KCShot};
 
 glib::wrapper! {
-    pub struct ListModel(ObjectSubclass<underlying::ListModel>)
+    pub struct HistoryModel(ObjectSubclass<underlying::ListModel>)
         @implements GListModel;
 }
 
-impl ListModel {
+impl HistoryModel {
     #[allow(clippy::new_without_default)]
     pub fn new(app: &KCShot) -> Self {
         glib::Object::new(&[("application", app)]).unwrap()
@@ -55,7 +55,7 @@ mod underlying {
     #[glib::object_subclass]
     impl ObjectSubclass for ListModel {
         const NAME: &'static str = "KcshotListModel";
-        type Type = super::ListModel;
+        type Type = super::HistoryModel;
         type ParentType = Object;
         type Interfaces = (gio::ListModel,);
     }

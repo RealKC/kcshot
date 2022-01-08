@@ -15,7 +15,7 @@ glib::wrapper! {
 }
 
 impl EditorWindow {
-    pub fn new(app: &gtk4::Application, history_model: &appwindow::ListModel) -> Self {
+    pub fn new(app: &gtk4::Application, history_model: &appwindow::HistoryModel) -> Self {
         glib::Object::new(&[("application", app), ("history-model", history_model)])
             .expect("Failed to make an EditorWindow")
     }

@@ -48,7 +48,7 @@ type ImageRef = Rc<RefCell<Option<Image>>>;
 pub struct EditorWindow {
     widgets: OnceCell<Widgets>,
     image: ImageRef,
-    history_model: OnceCell<appwindow::ListModel>,
+    history_model: OnceCell<appwindow::HistoryModel>,
 }
 
 impl EditorWindow {
@@ -64,7 +64,7 @@ impl EditorWindow {
     }
 
     fn do_save_surface(
-        history_model: &appwindow::ListModel,
+        history_model: &appwindow::HistoryModel,
         conn: &SqliteConnection,
         window: &gtk4::Window,
         image: &Image,
@@ -431,7 +431,7 @@ impl ObjectImpl for EditorWindow {
                 "history-model",
                 "History Model",
                 "History Model",
-                appwindow::ListModel::static_type(),
+                appwindow::HistoryModel::static_type(),
                 glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
             )]
         });
@@ -443,7 +443,7 @@ impl ObjectImpl for EditorWindow {
     fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
         match pspec.name() {
             "history-model" => {
-                let history_model = value.get::<appwindow::ListModel>().unwrap();
+                let history_model = value.get::<appwindow::HistoryModel>().unwrap();
                 self.history_model
                     .set(history_model)
                     .expect("history-model should only be set once");
