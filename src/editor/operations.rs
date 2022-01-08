@@ -112,16 +112,16 @@ pub enum Tool {
 impl Tool {
     pub const fn path(self) -> &'static str {
         match self {
-            Tool::CropAndSave => "resources/tool-rectanglecrop.png",
-            Tool::Line => "resources/tool-line.png",
-            Tool::Arrow => "resources/tool-arrow.png",
-            Tool::Rectangle => "resources/tool-rectangle.png",
-            Tool::Ellipse => "resources/tool-ellipse.png",
-            Tool::Highlight => "resources/tool-highlight.png",
-            Tool::Pixelate => "resources/tool-pixelate.png",
-            Tool::Blur => "resources/tool-blur.png",
-            Tool::AutoincrementBubble => "resources/tool-autoincrementbubble.png",
-            Tool::Text => "resources/tool-text.png",
+            Tool::CropAndSave => "resources/editor/tool-rectanglecrop.png",
+            Tool::Line => "resources/editor/tool-line.png",
+            Tool::Arrow => "resources/editor/tool-arrow.png",
+            Tool::Rectangle => "resources/editor/tool-rectangle.png",
+            Tool::Ellipse => "resources/editor/tool-ellipse.png",
+            Tool::Highlight => "resources/editor/tool-highlight.png",
+            Tool::Pixelate => "resources/editor/tool-pixelate.png",
+            Tool::Blur => "resources/editor/tool-blur.png",
+            Tool::AutoincrementBubble => "resources/editor/tool-autoincrementbubble.png",
+            Tool::Text => "resources/editor/tool-text.png",
         }
     }
 }
