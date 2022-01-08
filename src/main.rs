@@ -8,6 +8,7 @@ use gtk4::prelude::*;
 mod appwindow;
 mod db;
 mod editor;
+mod historymodel;
 mod kcshot;
 mod postcapture;
 

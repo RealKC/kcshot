@@ -13,7 +13,7 @@ use once_cell::sync::{Lazy, OnceCell};
 
 use crate::{editor::EditorWindow, kcshot::KCShot};
 
-use super::rowdata::RowData;
+use crate::historymodel::RowData;
 
 #[derive(Default, Debug)]
 pub struct AppWindow {

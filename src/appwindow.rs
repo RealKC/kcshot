@@ -2,11 +2,9 @@ use gtk4::glib;
 
 use crate::kcshot::KCShot;
 
-mod model;
-mod rowdata;
 mod underlying;
 
-pub use model::HistoryModel;
+use crate::historymodel::HistoryModel;
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)

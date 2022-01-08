@@ -1,6 +1,6 @@
 use gtk4::glib;
 
-use crate::appwindow;
+use crate::historymodel::HistoryModel;
 
 mod data;
 mod display_server;
@@ -15,7 +15,7 @@ glib::wrapper! {
 }
 
 impl EditorWindow {
-    pub fn new(app: &gtk4::Application, history_model: &appwindow::HistoryModel) -> Self {
+    pub fn new(app: &gtk4::Application, history_model: &HistoryModel) -> Self {
         glib::Object::new(&[("application", app), ("history-model", history_model)])
             .expect("Failed to make an EditorWindow")
     }

@@ -1,7 +1,7 @@
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::{appwindow, editor};
+use crate::{appwindow, editor, historymodel::HistoryModel};
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
@@ -34,7 +34,7 @@ pub fn build_ui(app: &KCShot) {
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
 
-    let history_model = appwindow::HistoryModel::new(app.upcast_ref());
+    let history_model = HistoryModel::new(app.upcast_ref());
 
     if take_screenshot {
         instance.take_screenshot.replace(false);

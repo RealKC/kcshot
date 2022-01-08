@@ -5,6 +5,10 @@ use gtk4::{
 
 use crate::{db, kcshot::KCShot};
 
+mod rowdata;
+
+pub use rowdata::RowData;
+
 glib::wrapper! {
     pub struct HistoryModel(ObjectSubclass<underlying::ListModel>)
         @implements GListModel;
@@ -44,7 +48,8 @@ mod underlying {
     };
     use once_cell::sync::Lazy;
 
-    use crate::{appwindow::rowdata::RowData, db, kcshot::KCShot};
+    use super::rowdata::RowData;
+    use crate::{db, kcshot::KCShot};
 
     #[derive(Default)]
     pub struct ListModel {

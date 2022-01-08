@@ -4,15 +4,10 @@ use gtk4::{
     gdk_pixbuf::Pixbuf,
 };
 
-use crate::appwindow;
+use crate::historymodel::HistoryModel;
 
 pub trait PostCaptureAction {
-    fn handle(
-        &self,
-        history_model: &appwindow::HistoryModel,
-        conn: &SqliteConnection,
-        pixbuf: Pixbuf,
-    );
+    fn handle(&self, history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: Pixbuf);
 }
 
 pub fn current_action() -> &'static dyn PostCaptureAction {
@@ -25,12 +20,7 @@ pub fn current_action() -> &'static dyn PostCaptureAction {
 struct SaveAndCopy;
 
 impl PostCaptureAction for SaveAndCopy {
-    fn handle(
-        &self,
-        history_model: &appwindow::HistoryModel,
-        conn: &SqliteConnection,
-        pixbuf: Pixbuf,
-    ) {
+    fn handle(&self, history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: Pixbuf) {
         let now = chrono::Local::now();
         let path = format!("screenshot_{}.png", now.to_rfc3339());
         let res = pixbuf.savev(&path, "png", &[]);
