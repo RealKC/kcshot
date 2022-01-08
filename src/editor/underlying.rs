@@ -28,14 +28,6 @@ use crate::{
 use super::operations::OperationStack;
 use crate::log_if_err;
 
-#[derive(Debug, Clone)]
-struct Widgets {
-    overlay: gtk4::Overlay,
-    drawing_area: gtk4::DrawingArea,
-    toolbar: gtk4::Box,
-    tool_buttons: Vec<gtk4::ToggleButton>,
-}
-
 #[derive(Debug)]
 struct Image {
     surface: cairo::ImageSurface,
@@ -46,7 +38,6 @@ type ImageRef = Rc<RefCell<Option<Image>>>;
 
 #[derive(Default, Debug)]
 pub struct EditorWindow {
-    widgets: OnceCell<Widgets>,
     image: ImageRef,
     history_model: OnceCell<HistoryModel>,
 }
@@ -393,19 +384,19 @@ impl ObjectImpl for EditorWindow {
 
         let group_source = make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone(), None);
 
-        // rustfmt makes this declaration significantly uglier, so let's tell it to let us handle this :)
+        // rustfmt make this section of code ugly, tell it to shutup
         #[rustfmt::skip]
-        let tool_buttons = vec![
-            make_tool_button(Tool::Line, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Arrow, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Highlight, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Blur, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone(), Some(&group_source)),
-            make_tool_button(Tool::Text, &toolbar, self.image.clone(), Some(&group_source))
-        ];
+        let _ = {
+            make_tool_button(Tool::Line, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Arrow, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Highlight, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Blur, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone(), Some(&group_source));
+            make_tool_button(Tool::Text, &toolbar, self.image.clone(), Some(&group_source));
+        };
 
         let primary_colour_button =
             EditorWindow::make_primary_colour_chooser_button(self.image.clone(), obj.upcast_ref());
@@ -414,15 +405,6 @@ impl ObjectImpl for EditorWindow {
         let secondary_colour_button =
             EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
         toolbar.append(&secondary_colour_button);
-
-        self.widgets
-            .set(Widgets {
-                overlay,
-                drawing_area,
-                toolbar,
-                tool_buttons,
-            })
-            .expect("Failed to create an editor");
     }
 
     fn properties() -> &'static [glib::ParamSpec] {

@@ -17,14 +17,7 @@ use crate::historymodel::RowData;
 
 #[derive(Default, Debug)]
 pub struct AppWindow {
-    widgets: OnceCell<Widgets>,
     history_model: OnceCell<super::HistoryModel>,
-}
-
-#[derive(Debug)]
-struct Widgets {
-    hbox: gtk4::Box,
-    image_grid: gtk4::GridView,
 }
 
 #[glib::object_subclass]
@@ -57,10 +50,6 @@ impl ObjectImpl for AppWindow {
         hbox.append(&right_frame);
 
         obj.set_child(Some(&hbox));
-
-        self.widgets
-            .set(Widgets { hbox, image_grid })
-            .expect("Failed to create an AppWindow")
     }
 
     fn properties() -> &'static [ParamSpec] {

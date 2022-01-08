@@ -132,10 +132,6 @@ impl OperationStack {
         }
     }
 
-    pub fn change_top_operation_fill_colour(&mut self, _new_colour: Colour) {
-        todo!()
-    }
-
     pub fn crop_region(&self) -> Option<Rectangle> {
         // We do not look at the top of `self.operations` as cropping should be the last operation
         // in the UX I want.
