@@ -70,10 +70,6 @@ mod underlying {
 
             let stack = gtk4::Stack::new();
 
-            let image_grid = gtk4::GridView::new(Some(&selection_model), Some(&factory));
-            image_grid.set_min_columns(3);
-            let right_frame = gtk4::Frame::new(None);
-
             let message = gtk4::Box::new(gtk4::Orientation::Vertical, 2);
 
             let emoji = gtk4::Label::new(Some("(´• ω •`)"));
@@ -100,7 +96,13 @@ mod underlying {
                 .add_provider(&css_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
             message.append(&note);
 
-            stack.add_named(&image_grid, Some("image-grid"));
+            let image_grid = gtk4::GridView::new(Some(&selection_model), Some(&factory));
+            image_grid.set_min_columns(3);
+            let history_view = gtk4::ScrolledWindow::new();
+            history_view.set_child(Some(&image_grid));
+            history_view.set_propagate_natural_width(true);
+            history_view.set_min_content_height(600);
+            stack.add_named(&history_view, Some("image-grid"));
             stack.add_named(&message, Some("message"));
 
             self.settings
@@ -131,6 +133,7 @@ mod underlying {
                 }),
             );
 
+            let right_frame = gtk4::Frame::new(None);
             right_frame.set_child(Some(&stack));
 
             hbox.append(&right_frame);
