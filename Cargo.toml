@@ -9,11 +9,11 @@ license = "EUPL v1.2"
 
 [dependencies]
 # UI-related dependencies
-cairo-rs = { version = "0.14.9", features = ["png", "xlib", "xcb"] }
+cairo-rs = { version = "0.14.9", features = ["png", "xcb"] }
 pangocairo = "0.14.0"
 image = { version = "0.23.14", default-features = false }
 gtk4 = "0.3.1"
-x11 = "2.19"
+xcb = { version = "1.0.0-beta.3", features = ["randr"] }
 
 # User settings, history
 diesel = { version = "1.4.8", features = ["sqlite"] }

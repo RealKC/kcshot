@@ -63,7 +63,6 @@ dependencies = [
  "glib-sys",
  "libc",
  "system-deps 3.2.0",
- "x11",
 ]
 
 [[package]]
@@ -534,7 +533,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "x11",
+ "xcb",
  "xdg",
 ]
 
@@ -568,6 +567,12 @@ checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "memchr"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "memoffset"
@@ -751,6 +756,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edc3358ebc67bc8b7fa0c007f945b0b18226f78437d61bec735a9eb96b61ee70"
 dependencies = [
  "unicode-xid",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8533f14c8382aaad0d592c812ac3b826162128b65662331e1127b45c3d18536b"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -1106,13 +1120,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
-name = "x11"
-version = "2.19.1"
+name = "xcb"
+version = "1.0.0-beta.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6dd0565fa8bfba8c5efe02725b14dff114c866724eff2cfd44d76cea74bcd87a"
+checksum = "d0a3d9d641c4d222430cc77fcab0434cbedd7340a9b90cc5310e078336e25da5"
 dependencies = [
+ "bitflags",
  "libc",
- "pkg-config",
+ "log",
+ "quick-xml",
 ]
 
 [[package]]
