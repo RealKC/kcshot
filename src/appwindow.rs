@@ -265,12 +265,7 @@ mod underlying {
         settings_button.connect_clicked(move |_| settings_window_.show());
         buttons.append(&settings_button);
 
-        let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 1);
-        let screenshots_folder_about =
-            gtk4::Label::new(Some("Choose where the screenshots should be saved"));
-        hbox.append(&screenshots_folder_about);
         let screenshots_folder_button = gtk4::Button::new();
-        hbox.append(&screenshots_folder_button);
         screenshots_folder_button.set_child(Some(&make_label("Screenshots folder")));
         screenshots_folder_button.connect_clicked(|_| {
             let res = Command::new("xdg-open")
@@ -280,7 +275,7 @@ mod underlying {
                 tracing::error!("Failed to spawn xdg-open: {:?}", why);
             }
         });
-        buttons.append(&hbox);
+        buttons.append(&screenshots_folder_button);
 
         let history_button = gtk4::Button::new();
         history_button.set_child(Some(&make_label("History")));
@@ -295,19 +290,8 @@ mod underlying {
         window.set_title(Some("kcshot - Settings"));
         let settings = gio::Settings::new("kc.kcshot");
 
-        let history_enabled_button = gtk4::CheckButton::with_label("Enable history");
-        settings
-            .bind("is-history-enabled", &history_enabled_button, "active")
-            .flags(gio::SettingsBindFlags::DEFAULT)
-            .build();
-
-        let content_area = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-        window.set_child(Some(&content_area));
-
-        content_area.append(&history_enabled_button);
-
         let folder_chooser = gtk4::FileChooserDialog::new(
-            Some("choose a folder for your screenshot history"),
+            Some("Choose a folder for your screenshot history"),
             Some(&window),
             gtk4::FileChooserAction::SelectFolder,
             &[
@@ -330,7 +314,9 @@ mod underlying {
             this.destroy();
         });
 
+        let folder_chooser_about = gtk4::Label::new(Some("Screenshot directory"));
         let folder_chooser_button = gtk4::Button::new();
+
         settings
             .bind("saved-screenshots-path", &folder_chooser_button, "label")
             .flags(gio::SettingsBindFlags::DEFAULT)
@@ -339,7 +325,42 @@ mod underlying {
             folder_chooser.show();
         });
 
-        content_area.append(&folder_chooser_button);
+        let content_area = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+
+        let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        settings
+            .bind("is-history-enabled", &hbox, "sensitive")
+            .flags(gio::SettingsBindFlags::DEFAULT)
+            .build();
+        hbox.append(&folder_chooser_about);
+        hbox.append(&folder_chooser_button);
+
+        content_area.append(&hbox);
+
+        let history_enabled_label = gtk4::Label::new(Some("Enable history"));
+        history_enabled_label.set_halign(gtk4::Align::Start);
+        let history_enabled_button = gtk4::Switch::new();
+        history_enabled_button.set_halign(gtk4::Align::End);
+        settings
+            .bind("is-history-enabled", &history_enabled_button, "active")
+            .flags(gio::SettingsBindFlags::DEFAULT)
+            .build();
+
+        let history_enabled = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        history_enabled.set_homogeneous(true);
+        history_enabled.append(&history_enabled_label);
+        history_enabled.append(&history_enabled_button);
+
+        content_area.append(&history_enabled);
+        content_area.set_margin_top(5);
+        content_area.set_margin_bottom(10);
+        content_area.set_margin_start(10);
+        content_area.set_margin_end(10);
+
+        let notebook = gtk4::Notebook::new();
+        notebook.append_page(&content_area, Some(&gtk4::Label::new(Some("General"))));
+
+        window.set_child(Some(&notebook));
 
         window
     }
