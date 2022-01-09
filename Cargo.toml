@@ -17,6 +17,7 @@ x11 = "2.19"
 
 # User settings, history
 diesel = { version = "1.4.8", features = ["sqlite"] }
+xdg = "2.1"
 
 # Miscelaneous
 once_cell = "1.2.0"

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schemalist>
+    <schema id="kc.kcshot" path="/kc/kcshot/">
+        <key name="is-history-enabled" type="b">
+            <default>true</default>
+            <summary>Whether the history is enabled or not</summary>
+        </key>
+
+        <key name="saved-screenshots-path" type="s">
+            <default>''</default>
+            <summary>The path where screenshots are saved. kcshot sets it to ${XDG_DATA_HOME}/kcshot if empty.</summary>
+        </key>
+    </schema>
+</schemalist>

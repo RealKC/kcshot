@@ -2,6 +2,7 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
     gdk_pixbuf::Pixbuf,
+    gio,
 };
 
 use crate::historymodel::HistoryModel;
@@ -22,7 +23,15 @@ struct SaveAndCopy;
 impl PostCaptureAction for SaveAndCopy {
     fn handle(&self, history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: Pixbuf) {
         let now = chrono::Local::now();
-        let path = format!("screenshot_{}.png", now.to_rfc3339());
+
+        let settings = gio::Settings::new("kc.kcshot");
+        let path = settings.string("saved-screenshots-path");
+        let path = if path.ends_with('/') {
+            format!("{}screenshot_{}.png", path, now.to_rfc3339())
+        } else {
+            format!("{}/screenshot_{}.png", path, now.to_rfc3339())
+        };
+
         let res = pixbuf.savev(&path, "png", &[]);
 
         match res {

@@ -185,6 +185,30 @@ Application Options:
 
             None
         }
+
+        fn startup(&self, application: &Self::Type) {
+            self.parent_startup(application);
+
+            let settings = gio::Settings::new("kc.kcshot");
+
+            if settings.string("saved-screenshots-path").is_empty() {
+                #[cfg(not(feature = "xdg"))]
+                let default_folder = std::env::current_dir().unwrap();
+                #[cfg(feature = "xdg")]
+                let default_folder = xdg::BaseDirectories::new()
+                    .unwrap()
+                    .get_data_home()
+                    .join("kcshot/");
+
+                tracing::info!(
+                    "'saved-screenshots-path' was empty, set it to {:?}",
+                    default_folder
+                );
+                settings
+                    .set_string("saved-screenshots-path", default_folder.to_str().unwrap())
+                    .unwrap();
+            }
+        }
     }
 
     impl GtkApplicationImpl for KCShot {}
