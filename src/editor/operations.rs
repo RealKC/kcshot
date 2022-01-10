@@ -2,7 +2,10 @@ use std::f64::consts::PI;
 
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::{
-    gdk::prelude::GdkCairoContextExt,
+    gdk::{
+        keys::{constants as keys, Key as GdkKey},
+        prelude::GdkCairoContextExt,
+    },
     gdk_pixbuf::{Colorspace, Pixbuf},
     pango::FontDescription,
 };
@@ -123,6 +126,23 @@ impl Tool {
             Tool::AutoincrementBubble => "resources/editor/tool-autoincrementbubble.png",
             Tool::Text => "resources/editor/tool-text.png",
         }
+    }
+
+    pub fn from_unicode(key: char) -> Option<Self> {
+        use Tool::*;
+        Some(match key {
+            'c' | 'C' => CropAndSave,
+            'l' | 'L' => Line,
+            'a' | 'A' => Arrow,
+            'r' | 'R' => Rectangle,
+            'e' | 'E' => Ellipse,
+            'h' | 'H' => Highlight,
+            'p' | 'P' => Pixelate,
+            'b' | 'B' => Blur,
+            'i' | 'I' => AutoincrementBubble,
+            't' | 'T' => Text,
+            _ => None?,
+        })
     }
 }
 

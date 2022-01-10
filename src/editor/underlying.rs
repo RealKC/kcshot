@@ -277,15 +277,6 @@ impl ObjectImpl for EditorWindow {
             }),
         );
 
-        let key_event_handler = gtk4::EventControllerKey::new();
-        key_event_handler.connect_key_pressed(clone!(@strong obj => move |_this, key, _, _| {
-            if key == GdkKey::Escape {
-                obj.hide();
-            }
-            Inhibit(false)
-        }));
-        obj.add_controller(&key_event_handler);
-
         let click_event_handler = gtk4::GestureClick::new();
 
         click_event_handler.set_button(BUTTON_PRIMARY);
@@ -361,7 +352,7 @@ impl ObjectImpl for EditorWindow {
             toolbar: &gtk4::Box,
             image: ImageRef,
             group_source: Option<&gtk4::ToggleButton>,
-        ) -> gtk4::ToggleButton {
+        ) -> (gtk4::ToggleButton, Tool) {
             let button = match group_source {
                 Some(group_source) => {
                     let button = gtk4::ToggleButton::new();
@@ -379,23 +370,25 @@ impl ObjectImpl for EditorWindow {
             button.set_active(false);
             toolbar.append(&button);
             tracing::info!("waa");
-            button
+            (button, tool)
         }
 
-        let group_source = make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone(), None);
+        let (group_source, _) =
+            make_tool_button(Tool::CropAndSave, &toolbar, self.image.clone(), None);
+        group_source.set_active(true);
 
         // rustfmt make this section of code ugly, tell it to shutup
         #[rustfmt::skip]
-        let _ = {
-            make_tool_button(Tool::Line, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Arrow, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Highlight, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Blur, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone(), Some(&group_source));
-            make_tool_button(Tool::Text, &toolbar, self.image.clone(), Some(&group_source));
+        let mut buttons = vec!{
+            make_tool_button(Tool::Line, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Arrow, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Rectangle, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Highlight, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Ellipse, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Pixelate, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Blur, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::AutoincrementBubble, &toolbar, self.image.clone(), Some(&group_source)),
+            make_tool_button(Tool::Text, &toolbar, self.image.clone(), Some(&group_source)),
         };
 
         let primary_colour_button =
@@ -405,6 +398,36 @@ impl ObjectImpl for EditorWindow {
         let secondary_colour_button =
             EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
         toolbar.append(&secondary_colour_button);
+
+        buttons.insert(0, (group_source, Tool::CropAndSave));
+
+        let key_event_handler = gtk4::EventControllerKey::new();
+        key_event_handler.connect_key_pressed(
+            clone!(@strong obj, @weak self.image as image => @default-return Inhibit(false), move |_this, key, _, _| {
+                tracing::info!("bro pls {:?} unicode {:?}", key, key.to_unicode());
+
+                if key == GdkKey::Escape {
+                    obj.hide();
+                } else if let Some(tool) = key.to_unicode().map(Tool::from_unicode).flatten() {
+                    tracing::info!("bro");
+                    match image.try_borrow_mut() {
+                        Ok(mut image) => {
+                            let image = image.as_mut().unwrap();
+                            image.operation_stack.set_current_tool(tool);
+                            for (button, button_tool) in buttons.iter() {
+                                if *button_tool == tool {
+                                    button.set_active(true);
+                                    break;
+                                }
+                            }
+                        }
+                        Err(why) => info!("Image already borrowed: {:?}", why),
+                    }
+                }
+                Inhibit(false)
+            }),
+        );
+        obj.add_controller(&key_event_handler);
     }
 
     fn properties() -> &'static [glib::ParamSpec] {
