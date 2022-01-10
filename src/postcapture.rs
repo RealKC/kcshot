@@ -10,21 +10,31 @@ use crate::{
     historymodel::{ModelNotifier, RowData},
 };
 
+/// Trait for the post capture actions.
 pub trait PostCaptureAction {
-    fn handle(&self, model_notifier: ModelNotifier, conn: &SqliteConnection, pixbuf: Pixbuf);
+    /// The name of the post capture action.
+    fn name(&self) -> String;
+
+    /// Short description of the post capture action.
+    fn description(&self) -> String;
+
+    /// Gets called when executing the post capture action.
+    fn handle(&self, model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf);
 }
 
-pub fn current_action() -> &'static dyn PostCaptureAction {
-    // FIXME: Eventually this should do more than just this, but we'll get there
-    &SaveAndCopy
-}
+/// This struct represents the action of saving the pixbuf to disk.
+pub struct SaveToDisk;
 
-/// This struct represents an action that saves the screenshot to disk and then copies it into
-/// the user's clipboard
-struct SaveAndCopy;
+impl PostCaptureAction for SaveToDisk {
+    fn name(&self) -> String {
+        "Save to disk".to_owned()
+    }
 
-impl PostCaptureAction for SaveAndCopy {
-    fn handle(&self, model_notifier: ModelNotifier, conn: &SqliteConnection, pixbuf: Pixbuf) {
+    fn description(&self) -> String {
+        "Saves the screenshot to the disk".to_owned()
+    }
+
+    fn handle(&self, model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
         let now = chrono::Local::now();
         let now = now.to_rfc3339();
 
@@ -43,6 +53,30 @@ impl PostCaptureAction for SaveAndCopy {
             Err(why) => tracing::error!("Failed to save screenshot to file: {why}"),
         }
 
+        if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
+        {
+            tracing::error!("Failed to add screenshot to history: {why}");
+            return;
+        }
+        if let Err(why) = model_notifier.send(RowData::new_from_components(Some(path), now, None)) {
+            tracing::error!("Failed to notify the history model that a new item was added: {why}");
+        }
+    }
+}
+
+/// This struct represents the action of copying the picture to the users clipboard.
+pub struct CopyToClipboard;
+
+impl PostCaptureAction for CopyToClipboard {
+    fn name(&self) -> String {
+        "Copy to clipboard".to_owned()
+    }
+
+    fn description(&self) -> String {
+        "Copies the picture to the clipboard".to_owned()
+    }
+
+    fn handle(&self, _model_notifier: &ModelNotifier, _conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
         let display = match gdk::Display::default() {
             Some(display) => display,
             None => {
@@ -53,14 +87,10 @@ impl PostCaptureAction for SaveAndCopy {
         let clipboard = display.clipboard();
 
         clipboard.set_texture(&gdk::Texture::for_pixbuf(&pixbuf));
-
-        if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
-        {
-            tracing::error!("Failed to add screenshot to history: {why}");
-            return;
-        }
-        if let Err(why) = model_notifier.send(RowData::new_from_components(Some(path), now, None)) {
-            tracing::error!("Failed to notify the history model that a new item was added: {why}");
-        }
     }
+}
+
+/// Vector of all available post capture actions.
+pub fn get_postcapture_actions() -> Vec<&'static dyn PostCaptureAction> {
+    vec![&SaveToDisk, &CopyToClipboard]
 }
