@@ -57,6 +57,11 @@ impl Rectangle {
             *h = h.abs();
         }
     }
+
+    pub fn contains(&self, Point { x: x1, y: y1 }: Point) -> bool {
+        let &Rectangle { x, y, w, h } = self;
+        (x..x + w).contains(&x1) && (y..y + h).contains(&y1)
+    }
 }
 
 /// A struct representing an ellipse

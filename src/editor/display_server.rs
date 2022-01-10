@@ -14,7 +14,13 @@ use cairo::{
 };
 use gtk4::prelude::{FileExt, IOStreamExt, InputStreamExtManual};
 use tracing::error;
-use xcb::{x, Xid};
+use xcb::{
+    shape,
+    x::{self, MapState, Window as XWindow, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
+    Xid, XidNew,
+};
+
+use super::data::Rectangle;
 
 extern "C" {
     /// cairo-rs doesn't expose it in its ffi module, so I have to write its declaration myself
@@ -41,6 +47,10 @@ pub enum Error {
     FailedToTakeScreenshot,
     #[error("Failed to get screen resolution. (No root screens? No root windows on the screens that exist?")]
     FailedToGetScreenResolution,
+    #[error("WM does not support EWMH")]
+    WmDoesNotSupportEwmh,
+    #[error("Failed to get windows")]
+    FailedToGetWindows,
 }
 
 impl From<cairo::IoError> for Error {
@@ -59,6 +69,14 @@ impl From<xcb::Error> for Error {
             xcb::Error::Protocol(err) => Self::XcbProtocol(err),
         }
     }
+}
+
+#[derive(Debug)]
+pub struct Window {
+    /// This fields contains the rect of the window that also encompasses window decorations
+    pub outer_rect: Rectangle,
+    /// This fields contains the rect of the window that **only** encompasses the content
+    pub content_rect: Rectangle,
 }
 
 // Some things in this file are inspired by the code written here https://giters.com/psychon/x11rb/issues/328
@@ -130,6 +148,128 @@ pub fn take_screenshot() -> Result<ImageSurface, Error> {
     }
 
     Err(Error::FailedToTakeScreenshot)
+}
+
+/// Obtains a list of all windows from the display server, the list is in stacking order.
+pub fn get_windows() -> Result<Vec<Window>, Error> {
+    let (connection, _) = xcb::Connection::connect(None)?;
+    let setup = connection.get_setup();
+
+    // Requires an WM that supports EWMH. Will gracefully fallback if not available
+
+    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391305328
+    let wm_client_list = connection.send_request(&x::InternAtom {
+        only_if_exists: true,
+        name: b"_NET_CLIENT_LIST_STACKING",
+    });
+
+    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391244864
+    let frame_extents = connection.send_request(&x::InternAtom {
+        only_if_exists: true,
+        name: b"_NET_FRAME_EXTENTS",
+    });
+    let wm_client_list = connection.wait_for_reply(wm_client_list)?;
+    let frame_extents = connection.wait_for_reply(frame_extents)?;
+
+    let wm_client_list = if wm_client_list.atom() != ATOM_NONE {
+        wm_client_list.atom()
+    } else {
+        return Err(Error::WmDoesNotSupportEwmh);
+    };
+    let frame_extents = if frame_extents.atom() != ATOM_NONE {
+        frame_extents.atom()
+    } else {
+        return Err(Error::WmDoesNotSupportEwmh);
+    };
+
+    for root_screen in setup.roots() {
+        let root_window = root_screen.root();
+        let pointer_cookie = connection.send_request(&x::QueryPointer {
+            window: root_window,
+        });
+
+        let pointer_reply = connection.wait_for_reply(pointer_cookie)?;
+        if pointer_reply.same_screen() {
+            let list = connection.send_request(&x::GetProperty {
+                delete: false,
+                window: root_window,
+                property: wm_client_list,
+                r#type: ATOM_WINDOW,
+                long_offset: 0,
+                long_length: 128, // If the user has more than 128 windows on their desktop, that's their problem really
+            });
+            let list = connection.wait_for_reply(list)?;
+
+            let mut windows = Vec::with_capacity(128);
+
+            for xid in list.value::<u32>() {
+                // SAFETY: We got this from the X server so it should be a valid resource ID, but if
+                //         the server is lying to us, we can't do anything really.
+                let window = unsafe { XWindow::new(*xid) };
+
+                let attributes = connection.send_request(&x::GetWindowAttributes { window });
+                let attributes = connection.wait_for_reply(attributes)?;
+                if attributes.map_state() != MapState::Viewable {
+                    continue;
+                }
+
+                let window_extents = connection.send_request(&shape::QueryExtents {
+                    destination_window: window,
+                });
+                let window_extents = connection.wait_for_reply(window_extents)?;
+
+                let translated_window_coords = connection.send_request(&x::TranslateCoordinates {
+                    src_window: window,
+                    dst_window: root_window,
+                    src_x: window_extents.bounding_shape_extents_x(),
+                    src_y: window_extents.bounding_shape_extents_y(),
+                });
+
+                let frame_extents = connection.send_request(&x::GetProperty {
+                    delete: false,
+                    window,
+                    property: frame_extents,
+                    r#type: ATOM_CARDINAL,
+                    long_offset: 0,
+                    long_length: 4,
+                });
+
+                // Batch requests when we can
+                let frame_extents = connection.wait_for_reply(frame_extents)?;
+                let translated_window_coords =
+                    connection.wait_for_reply(translated_window_coords)?;
+
+                let left = frame_extents.value::<u32>()[0];
+                let right = frame_extents.value::<u32>()[1];
+                let top = frame_extents.value::<u32>()[2];
+                let bottom = frame_extents.value::<u32>()[3];
+
+                windows.push(Window {
+                    outer_rect: Rectangle {
+                        x: translated_window_coords.dst_x() as f64 - left as f64,
+                        y: translated_window_coords.dst_y() as f64 - top as f64,
+                        // Above these lines we offsetted the content rect to the start of the window decorations
+                        // as such, here we must grow the rect by how much we subtracted in order to cover the whole
+                        // area of the window
+                        w: window_extents.bounding_shape_extents_width() as f64
+                            + (left + right) as f64,
+                        h: window_extents.bounding_shape_extents_height() as f64
+                            + (top + bottom) as f64,
+                    },
+                    content_rect: Rectangle {
+                        x: translated_window_coords.dst_x() as f64,
+                        y: translated_window_coords.dst_y() as f64,
+                        w: window_extents.bounding_shape_extents_width() as f64,
+                        h: window_extents.bounding_shape_extents_height() as f64,
+                    },
+                });
+            }
+
+            return Ok(windows);
+        }
+    }
+
+    Err(Error::FailedToGetWindows)
 }
 
 fn find_xcb_visualtype(conn: &xcb::Connection, visual_id: u32) -> Option<x::Visualtype> {

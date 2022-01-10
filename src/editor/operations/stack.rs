@@ -1,4 +1,9 @@
-use crate::editor::data::Text;
+use std::convert::TryFrom;
+
+use crate::{
+    editor::{data::Text, display_server::Window, utils::CairoExt},
+    log_if_err,
+};
 
 use super::{Colour, Operation, Point, Rectangle, Tool};
 
@@ -13,10 +18,36 @@ pub struct OperationStack {
     autoincrement_bubble_number: i32,
     pub primary_colour: Colour,
     pub secondary_colour: Colour,
+    /// This in in stacking order
+    windows: Vec<Window>,
+    current_window: Option<usize>,
+    is_in_crop_drag: bool,
+    pub selection_mode: SelectionMode,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SelectionMode {
+    WindowsWithDecorations,
+    WindowsWithoutDecorations,
+    IgnoreWindows,
+}
+
+impl TryFrom<u32> for SelectionMode {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        use SelectionMode::*;
+        match value {
+            0 => Ok(WindowsWithDecorations),
+            1 => Ok(WindowsWithoutDecorations),
+            2 => Ok(IgnoreWindows),
+            _ => Err(()),
+        }
+    }
 }
 
 impl OperationStack {
-    pub fn new() -> Self {
+    pub fn new(windows: Vec<Window>) -> Self {
         Self {
             operations: vec![],
             current_tool: Tool::CropAndSave,
@@ -34,6 +65,10 @@ impl OperationStack {
                 blue: 127,
                 alpha: 255,
             },
+            windows,
+            current_window: None,
+            is_in_crop_drag: false,
+            selection_mode: SelectionMode::WindowsWithDecorations,
         }
     }
 
@@ -43,6 +78,20 @@ impl OperationStack {
 
     pub fn current_tool(&self) -> Tool {
         self.current_tool
+    }
+
+    pub fn set_current_window(&mut self, x: f64, y: f64) {
+        if self.selection_mode == SelectionMode::IgnoreWindows {
+            self.current_window = None;
+            return;
+        }
+
+        for (idx, window) in self.windows.iter().enumerate().rev() {
+            if window.outer_rect.contains(Point { x, y }) {
+                self.current_window = Some(idx);
+                break;
+            }
+        }
     }
 
     pub fn start_operation_at(&mut self, point: Point) {
@@ -126,20 +175,39 @@ impl OperationStack {
             .set_text(text);
     }
 
+    pub fn set_is_in_crop_drag(&mut self, is_in_crop_drag: bool) {
+        self.is_in_crop_drag = is_in_crop_drag;
+    }
+
     pub fn finish_current_operation(&mut self) {
         if let Some(operation) = self.current_operation.take() {
             self.operations.push(operation);
         }
     }
 
-    pub fn crop_region(&self) -> Option<Rectangle> {
+    pub fn crop_region(&self, point: Point) -> Option<Rectangle> {
         // We do not look at the top of `self.operations` as cropping should be the last operation
         // in the UX I want.
         if let Some(Operation::Crop(rect)) = &self.current_operation {
-            // We reserve (w, h) == (0,0) as special values in order to signal the entire screen as the
-            // crop region
+            // We reserve (w, h) == (0,0) as special values in order to signal the entire screen or
+            // the window under the mouse as being the crop region
             if rect.w == 0.0 && rect.h == 0.0 {
-                None
+                if self.selection_mode != SelectionMode::IgnoreWindows {
+                    self.windows
+                        .iter()
+                        .rev()
+                        .find(|window| {
+                            tracing::info!("{:#?} point {:#?}", window, point);
+                            window.outer_rect.contains(point)
+                        })
+                        .map(|window| match self.selection_mode {
+                            SelectionMode::WindowsWithDecorations => window.outer_rect,
+                            SelectionMode::WindowsWithoutDecorations => window.content_rect,
+                            _ => unreachable!(),
+                        })
+                } else {
+                    None
+                }
             } else {
                 Some(*rect)
             }
@@ -159,6 +227,32 @@ impl OperationStack {
         if let Some(operation) = &self.current_operation {
             if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
                 error!("{}", why);
+            }
+        }
+
+        // We don't want to "crop indicators" for the windows when we're saving the screenshot (similarly
+        // to what we do for normal crop) or when the user is creating a selection
+        if is_in_draw_event && !self.is_in_crop_drag {
+            if let Some(idx) = self.current_window {
+                let Rectangle { x, y, w, h } = match self.selection_mode {
+                    SelectionMode::WindowsWithDecorations => self.windows[idx].outer_rect,
+                    SelectionMode::WindowsWithoutDecorations => self.windows[idx].content_rect,
+                    _ => unreachable!(),
+                };
+                log_if_err!(cairo.save());
+
+                cairo.rectangle(x, y, w, h);
+                // When we are in draw events (aka this is being shown to the user), we want to make it clear
+                // they are selecting the region which will be cropped
+                cairo.set_source_colour(Colour {
+                    red: 0,
+                    green: 127,
+                    blue: 190,
+                    alpha: 255,
+                });
+                cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                log_if_err!(cairo.stroke());
+                log_if_err!(cairo.restore());
             }
         }
     }

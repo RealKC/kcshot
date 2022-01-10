@@ -1,8 +1,9 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, convert::TryFrom, rc::Rc};
 
 use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
+    ffi::GTK_INVALID_LIST_POSITION,
     gdk::{keys::constants as GdkKey, BUTTON_PRIMARY},
     glib::{self, clone, signal::Inhibit, ParamSpec},
     prelude::*,
@@ -15,18 +16,15 @@ use tracing::{error, info, warn};
 use crate::{
     editor::{
         data::{Colour, Point, Rectangle},
-        display_server::get_screen_resolution,
-        operations::Tool,
+        display_server::{self, get_screen_resolution},
+        operations::{OperationStack, SelectionMode, Tool},
         textdialog::DialogResponse,
         utils::{self, CairoExt},
     },
     historymodel::HistoryModel,
     kcshot::KCShot,
-    postcapture,
+    log_if_err, postcapture,
 };
-
-use super::operations::OperationStack;
-use crate::log_if_err;
 
 #[derive(Debug)]
 struct Image {
@@ -59,6 +57,7 @@ impl EditorWindow {
         conn: &SqliteConnection,
         window: &gtk4::Window,
         image: &Image,
+        point: Point,
     ) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
@@ -72,7 +71,7 @@ impl EditorWindow {
         };
         EditorWindow::do_draw(image, &cairo, false);
 
-        let rectangle = image.operation_stack.crop_region().unwrap_or_else(|| {
+        let rectangle = image.operation_stack.crop_region(point).unwrap_or_else(|| {
             let (w, h) = get_screen_resolution().map_or_else(
                 |why| {
                     error!(
@@ -237,6 +236,8 @@ impl ObjectImpl for EditorWindow {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
         let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
+        warn!("Image status {:?}", image.status());
+        let windows = display_server::get_windows().unwrap();
 
         let overlay = gtk4::Overlay::new();
         obj.set_child(Some(&overlay));
@@ -294,13 +295,28 @@ impl ObjectImpl for EditorWindow {
             }),
         );
 
+        let motion_event_handler = gtk4::EventControllerMotion::new();
+        motion_event_handler.connect_motion(
+            clone!(@strong self.image as image, @strong drawing_area => move |_this, x, y| {
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        image.operation_stack.set_current_window(x, y);
+                        drawing_area.queue_draw();
+                    }
+                    Err(why) => info!("Image already borrowed: {:?}", why),
+                }
+            }),
+        );
+        drawing_area.add_controller(&motion_event_handler);
+
         let history_model = self
             .history_model
             .get()
             .expect("Should have a history model when taking a screenshot")
             .clone();
         click_event_handler.connect_released(
-            clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, _x, _y| {
+            clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, x, y| {
                 let mut imagerc = image.borrow_mut();
                 let image = imagerc.as_mut().unwrap();
                 if image.operation_stack.current_tool() == Tool::Text {
@@ -322,7 +338,7 @@ impl ObjectImpl for EditorWindow {
                 }
 
                 let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
-                EditorWindow::do_save_surface(&history_model, app.conn(), obj.upcast_ref(), image);
+                EditorWindow::do_save_surface(&history_model, app.conn(), obj.upcast_ref(), image, Point {x, y});
             }),
         );
 
@@ -335,6 +351,7 @@ impl ObjectImpl for EditorWindow {
                 let image = image.as_mut().unwrap();
                 info!("Dragging to {{ {}, {} }}", x, y);
                 image.operation_stack.update_current_operation_end_coordinate(x, y);
+                image.operation_stack.set_is_in_crop_drag(true);
                 drawing_area.queue_draw();
             }),
         );
@@ -342,7 +359,7 @@ impl ObjectImpl for EditorWindow {
 
         self.image.replace(Some(Image {
             surface: image,
-            operation_stack: OperationStack::new(),
+            operation_stack: OperationStack::new(windows),
         }));
 
         fn make_tool_button(
@@ -398,6 +415,28 @@ impl ObjectImpl for EditorWindow {
             EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
         secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
         toolbar.append(&secondary_colour_button);
+
+        let drop_down = gtk4::DropDown::from_strings(&[
+            "Windows w/ decorations",
+            "Windows w/o decorations",
+            "Ignore windows",
+        ]);
+        drop_down.set_tooltip_text(Some("Selection mode"));
+        drop_down.connect_selected_item_notify(clone!( @weak self.image as image => move |this| {
+            if this.selected() != GTK_INVALID_LIST_POSITION {
+                match image.try_borrow_mut(){
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        if let Ok(selection_mode) = SelectionMode::try_from(this.selected()) {
+                            image.operation_stack.selection_mode = selection_mode;
+                        }
+                    }
+                    Err(why) => info!("Image already borrowed: {:?}", why),
+                }
+            }
+        }));
+
+        toolbar.append(&drop_down);
 
         buttons.insert(0, (group_source, Tool::CropAndSave));
 
