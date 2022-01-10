@@ -99,7 +99,6 @@ mod underlying {
 
     impl ObjectImpl for KCShot {
         fn constructed(&self, _: &Self::Type) {
-            tracing::info!("Entered KCShot::constructed");
             let res = self
                 .database_connection
                 .set(db::open(&database_path()).unwrap());
@@ -164,8 +163,6 @@ Application Options:
 "#,
                 prog_name
             );
-
-            tracing::info!("Got arguments: {:?}", arguments);
 
             if arguments.contains(&"-h".into()) || arguments.contains(&"--help".into()) {
                 eprintln!("{}", usage);

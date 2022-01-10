@@ -237,7 +237,6 @@ impl ObjectImpl for EditorWindow {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
         let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
-        warn!("Image status {:?}", image.status());
 
         let overlay = gtk4::Overlay::new();
         obj.set_child(Some(&overlay));
@@ -302,7 +301,6 @@ impl ObjectImpl for EditorWindow {
             .clone();
         click_event_handler.connect_released(
             clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, _x, _y| {
-                info!("AAA?");
                 let mut imagerc = image.borrow_mut();
                 let image = imagerc.as_mut().unwrap();
                 if image.operation_stack.current_tool() == Tool::Text {
@@ -370,7 +368,6 @@ impl ObjectImpl for EditorWindow {
             }));
             button.set_active(false);
             toolbar.append(&button);
-            tracing::info!("waa");
             (button, tool)
         }
 
@@ -407,12 +404,9 @@ impl ObjectImpl for EditorWindow {
         let key_event_handler = gtk4::EventControllerKey::new();
         key_event_handler.connect_key_pressed(
             clone!(@strong obj, @weak self.image as image => @default-return Inhibit(false), move |_this, key, _, _| {
-                tracing::info!("bro pls {:?} unicode {:?}", key, key.to_unicode());
-
                 if key == GdkKey::Escape {
                     obj.hide();
                 } else if let Some(tool) = key.to_unicode().map(Tool::from_unicode).flatten() {
-                    tracing::info!("bro");
                     match image.try_borrow_mut() {
                         Ok(mut image) => {
                             let image = image.as_mut().unwrap();

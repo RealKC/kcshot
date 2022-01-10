@@ -2,10 +2,7 @@ use std::f64::consts::PI;
 
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::{
-    gdk::{
-        keys::{constants as keys, Key as GdkKey},
-        prelude::GdkCairoContextExt,
-    },
+    gdk::prelude::GdkCairoContextExt,
     gdk_pixbuf::{Colorspace, Pixbuf},
     pango::FontDescription,
 };
