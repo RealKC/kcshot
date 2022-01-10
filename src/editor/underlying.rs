@@ -362,6 +362,7 @@ impl ObjectImpl for EditorWindow {
                 None => gtk4::ToggleButton::new(),
             };
             button.set_child(Some(&gtk4::Image::from_file(tool.path())));
+            button.set_tooltip_markup(Some(tool.tooltip()));
 
             button.connect_clicked(clone!(@strong image => move |_| {
                 info!("Entered on-click handler of {:?}", tool);
@@ -393,10 +394,12 @@ impl ObjectImpl for EditorWindow {
 
         let primary_colour_button =
             EditorWindow::make_primary_colour_chooser_button(self.image.clone(), obj.upcast_ref());
+        primary_colour_button.set_tooltip_text(Some("Set primary colour"));
         toolbar.append(&primary_colour_button);
 
         let secondary_colour_button =
             EditorWindow::make_secondary_colour_button(self.image.clone(), obj.upcast_ref());
+        secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
         toolbar.append(&secondary_colour_button);
 
         buttons.insert(0, (group_source, Tool::CropAndSave));

@@ -144,6 +144,21 @@ impl Tool {
             _ => None?,
         })
     }
+
+    pub fn tooltip(self) -> &'static str {
+        match self {
+            Tool::CropAndSave => "<u>C</u>rop tool",
+            Tool::Line => "<u>L</u>ine tool",
+            Tool::Arrow => "<u>A</u>rrow tool",
+            Tool::Rectangle => "<u>R</u>ectangle tool",
+            Tool::Ellipse => "<u>E</u>llipse tool",
+            Tool::Highlight => "<u>H</u>ighlight tool",
+            Tool::Pixelate => "<u>P</u>ixelate tool",
+            Tool::Blur => "<u>B</u>lur tool",
+            Tool::AutoincrementBubble => "Auto<u>i</u>crement bubble tool",
+            Tool::Text => "<u>T</u>ext tool",
+        }
+    }
 }
 
 impl Operation {
