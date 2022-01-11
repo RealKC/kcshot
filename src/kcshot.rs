@@ -186,6 +186,10 @@ Application Options:
         fn startup(&self, application: &Self::Type) {
             self.parent_startup(application);
 
+            if let Err(why) = gio::resources_register_include!("compiled.gresource") {
+                tracing::error!("Failed loading resources: {:?}", why);
+            }
+
             let settings = gio::Settings::new("kc.kcshot");
 
             if settings.string("saved-screenshots-path").is_empty() {

@@ -359,7 +359,7 @@ impl ObjectImpl for EditorWindow {
                 }
                 None => gtk4::ToggleButton::new(),
             };
-            button.set_child(Some(&gtk4::Image::from_file(tool.path())));
+            button.set_child(Some(&gtk4::Image::from_resource(tool.path())));
             button.set_tooltip_markup(Some(tool.tooltip()));
 
             button.connect_clicked(clone!(@strong image => move |_| {

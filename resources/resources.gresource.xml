@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/kc/kcshot">
+        <file>editor/tool-arrow.png</file>
+        <file>editor/tool-autoincrementbubble.png</file>
+        <file>editor/tool-blur.png</file>
+        <file>editor/tool-ellipse.png</file>
+        <file>editor/tool-highlight.png</file>
+        <file>editor/tool-line.png</file>
+        <file>editor/tool-pixelate.png</file>
+        <file>editor/tool-rectangle.png</file>
+        <file>editor/tool-rectanglecrop.png</file>
+        <file>editor/tool-text.png</file>
+    </gresource>
+</gresources>
