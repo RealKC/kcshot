@@ -17,7 +17,7 @@ impl AppWindow {
 }
 
 mod underlying {
-    use std::{ffi::OsString, process::Command};
+    use std::process::Command;
 
     use gtk4::{
         gio,
@@ -269,7 +269,7 @@ mod underlying {
         screenshots_folder_button.set_child(Some(&make_label("Screenshots folder")));
         screenshots_folder_button.connect_clicked(|_| {
             let res = Command::new("xdg-open")
-                .arg(&get_screenshot_folder())
+                .arg(&KCShot::screenshot_folder())
                 .spawn();
             if let Err(why) = res {
                 tracing::error!("Failed to spawn xdg-open: {:?}", why);
@@ -363,11 +363,6 @@ mod underlying {
         window.set_child(Some(&notebook));
 
         window
-    }
-
-    /// FIXME: Make this function return smth other than the current working directory
-    fn get_screenshot_folder() -> OsString {
-        std::env::current_dir().unwrap().into_os_string()
     }
 
     fn make_label(text: &str) -> gtk4::Label {

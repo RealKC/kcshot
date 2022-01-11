@@ -26,6 +26,11 @@ impl KCShot {
         let impl_ = underlying::KCShot::from_instance(self);
         impl_.database_connection.get().unwrap()
     }
+
+    pub fn screenshot_folder() -> String {
+        let settings = gio::Settings::new("kc.kcshot");
+        settings.string("saved-screenshots-path").into()
+    }
 }
 
 pub fn build_ui(app: &KCShot) {
