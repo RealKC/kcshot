@@ -81,7 +81,7 @@ impl EditorWindow {
                 for action in postcapture::get_postcapture_actions() {
                     action.handle(model_notifier.clone(), conn, &mut pixbuf)
                 }
-            }
+            },
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {rectangle:#?}",
