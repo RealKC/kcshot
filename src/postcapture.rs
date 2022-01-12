@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
@@ -9,12 +11,6 @@ use crate::{
     db,
     historymodel::{ModelNotifier, RowData},
 };
-
-pub fn do_postcapture_actions(history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
-    for action in get_postcapture_actions() {
-        action.handle(history_model, conn, pixbuf)
-    }
-}
 
 /// Trait for the post capture actions.
 pub trait PostCaptureAction {
@@ -107,7 +103,37 @@ impl PostCaptureAction for CopyToClipboard {
     }
 }
 
+/// Executes the post capture actions in the order they are defined in the settings.
+pub fn run_postcapture_actions(model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
+    for action in get_actions_from_settings() {
+        action.handle(model_notifier, conn, pixbuf)
+    }
+}
+
+fn get_actions_from_settings() -> Vec<&'static dyn PostCaptureAction> {
+    let settings = gio::Settings::new("kc.kcshot");
+    let action_names = settings.strv("post-capture-actions");
+
+    let action_ids_to_objects: HashMap<String, &dyn PostCaptureAction> = get_postcapture_actions()
+        .iter()
+        .map(|action| (action.id(), *action))
+        .collect();
+
+    let mut actions_to_run = Vec::new();
+    for postcapture_action in action_names {
+        if let Some(action) = action_ids_to_objects.get(postcapture_action.as_str()) {
+            actions_to_run.push(*action)
+        } else {
+            tracing::warn!(
+                "Found post capture action `{postcapture_action}` in the settings, but not in list of available post capture actions!"
+            )
+        }
+    }
+
+    actions_to_run
+}
+
 /// Vector of all available post capture actions.
-pub fn get_postcapture_actions() -> Vec<&'static dyn PostCaptureAction> {
+fn get_postcapture_actions() -> Vec<&'static dyn PostCaptureAction> {
     vec![&SaveToDisk, &CopyToClipboard]
 }
