@@ -10,5 +10,10 @@
             <default>''</default>
             <summary>The path where screenshots are saved. kcshot sets it to ${XDG_DATA_HOME}/kcshot if empty.</summary>
         </key>
+
+        <key name="post-capture-actions" type="as">
+            <default>["copy-to-clipboard", "save-to-disk"]</default>
+            <summary>The actions to be performed, in the order they are to be performed</summary>
+        </key>
     </schema>
 </schemalist>

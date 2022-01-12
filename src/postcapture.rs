@@ -18,6 +18,9 @@ pub fn do_postcapture_actions(history_model: &HistoryModel, conn: &SqliteConnect
 
 /// Trait for the post capture actions.
 pub trait PostCaptureAction {
+    /// Returns the ID of the action, this is used for the settings.
+    fn id(&self) -> String;
+
     /// The name of the post capture action.
     fn name(&self) -> String;
 
@@ -32,6 +35,10 @@ pub trait PostCaptureAction {
 pub struct SaveToDisk;
 
 impl PostCaptureAction for SaveToDisk {
+    fn id(&self) -> String {
+        "save-to-disk".to_owned()
+    }
+
     fn name(&self) -> String {
         "Save to disk".to_owned()
     }
@@ -74,6 +81,10 @@ impl PostCaptureAction for SaveToDisk {
 pub struct CopyToClipboard;
 
 impl PostCaptureAction for CopyToClipboard {
+    fn id(&self) -> String {
+        "copy-to-clipboard".to_owned()
+    }
+
     fn name(&self) -> String {
         "Copy to clipboard".to_owned()
     }
