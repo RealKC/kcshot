@@ -23,8 +23,9 @@ use crate::{
     },
     historymodel::ModelNotifier,
     kcshot::KCShot,
-    log_if_err, postcapture,
+    log_if_err
 };
+use crate::postcapture::run_postcapture_actions;
 
 #[derive(Debug)]
 struct Image {
@@ -76,11 +77,8 @@ impl EditorWindow {
 
         match utils::pixbuf_for(&image.surface, rectangle) {
             // Process all post capture actions
-            // TODO: Give the user the option which actions to run and in which order.
             Some(mut pixbuf) => {
-                for action in postcapture::get_postcapture_actions() {
-                    action.handle(model_notifier.clone(), conn, &mut pixbuf)
-                }
+                run_postcapture_actions(model_notifier, conn, &mut pixbuf)
             },
             None => {
                 error!(
