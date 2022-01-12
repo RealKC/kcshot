@@ -12,7 +12,7 @@ pub enum OpenHistoryError {
     #[error("Failed to get xdg directory for state: {0}")]
     Xdg(#[from] xdg::BaseDirectoriesError),
     #[error("Encountered an IO error: {0}")]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error("Failed to open a connection: {0}")]
     Connection(#[from] ConnectionError),
     #[error("Failed to run migrations: {0}")]
