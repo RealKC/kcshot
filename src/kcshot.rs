@@ -201,10 +201,9 @@ Application Options:
                 #[cfg(not(feature = "xdg"))]
                 let default_folder = std::env::current_dir().unwrap();
                 #[cfg(feature = "xdg")]
-                let default_folder = xdg::BaseDirectories::new()
+                let default_folder = xdg::BaseDirectories::with_prefix("kcshot")
                     .unwrap()
-                    .get_data_home()
-                    .join("kcshot/");
+                    .get_data_home();
 
                 tracing::info!(
                     "'saved-screenshots-path' was empty, set it to {:?}",
