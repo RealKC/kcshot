@@ -17,6 +17,7 @@ xcb = { version = "1.0.0-beta.3", features = ["randr"] }
 
 # User settings, history
 diesel = { version = "1.4.8", features = ["sqlite"] }
+diesel_migrations = { version = "1.4.0" }
 xdg = "2.1"
 
 # Miscelaneous

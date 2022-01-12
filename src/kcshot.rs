@@ -104,9 +104,7 @@ mod underlying {
 
     impl ObjectImpl for KCShot {
         fn constructed(&self, _: &Self::Type) {
-            let res = self
-                .database_connection
-                .set(db::open(&database_path()).unwrap());
+            let res = self.database_connection.set(db::open().unwrap());
 
             if res.is_err() {
                 tracing::error!("Failed setting self.database_connection");
@@ -217,13 +215,4 @@ Application Options:
     }
 
     impl GtkApplicationImpl for KCShot {}
-
-    /// FIXME: Make this not return a hardcoded path in the current directory
-    fn database_path() -> String {
-        std::env::current_dir()
-            .unwrap()
-            .join("history.db")
-            .to_string_lossy()
-            .into()
-    }
 }

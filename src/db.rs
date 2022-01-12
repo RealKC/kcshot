@@ -1,12 +1,37 @@
-use diesel::{prelude::*, result::ConnectionResult, SqliteConnection};
+use diesel::{migration::RunMigrationsError, prelude::*, SqliteConnection};
 
 use self::models::Screenshot;
 
 pub mod models;
 pub mod schema;
 
-pub fn open(path: &str) -> ConnectionResult<SqliteConnection> {
-    SqliteConnection::establish(path)
+diesel_migrations::embed_migrations!();
+
+#[derive(thiserror::Error, Debug)]
+pub enum OpenHistoryError {
+    #[error("Failed to get xdg directory for state: {0}")]
+    Xdg(#[from] xdg::BaseDirectoriesError),
+    #[error("Encountered an IO error: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("Failed to open a connection: {0}")]
+    Connection(#[from] ConnectionError),
+    #[error("Failed to run migrations: {0}")]
+    Migration(#[from] RunMigrationsError),
+    #[error("Paths are not UTF-8")]
+    PathsAreNotUtf8,
+}
+
+pub fn open() -> Result<SqliteConnection, OpenHistoryError> {
+    #[cfg(feature = "xdg")]
+    let path = xdg::BaseDirectories::with_prefix("kcshot")?.place_state_file("history.db")?;
+    #[cfg(not(feature = "xdg"))]
+    let path = std::env::current_dir()?.join("history.db");
+    let path = path.to_str().ok_or(OpenHistoryError::PathsAreNotUtf8)?;
+
+    let connection = SqliteConnection::establish(path)?;
+    embedded_migrations::run_with_output(&connection, &mut std::io::stderr())?;
+
+    Ok(connection)
 }
 
 pub fn add_screenshot_to_history(
