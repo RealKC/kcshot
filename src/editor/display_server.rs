@@ -251,10 +251,7 @@ pub fn can_retrieve_windows() -> bool {
     match WmFeatures::get() {
         Ok(wm_features) => wm_features.supports_client_list,
         Err(why) => {
-            tracing::info!(
-                "Encountered {} in can_retrieve_windows\n\treturning false",
-                why
-            );
+            tracing::info!("Encountered {why} in can_retrieve_windows\n\treturning false");
             false
         }
     }

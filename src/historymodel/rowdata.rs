@@ -114,11 +114,7 @@ mod underlying {
                     self.url.replace(url);
                 }
                 name => {
-                    tracing::warn!(
-                        "Tried setting property {} which does not exist on this object: {:?}",
-                        name,
-                        self
-                    )
+                    tracing::warn!("Tried setting property {name} which does not exist on this object: {self:?}")
                 }
             }
         }

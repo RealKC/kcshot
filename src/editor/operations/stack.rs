@@ -196,10 +196,7 @@ impl OperationStack {
                     self.windows
                         .iter()
                         .rev()
-                        .find(|window| {
-                            tracing::info!("{:#?} point {:#?}", window, point);
-                            window.outer_rect.contains(point)
-                        })
+                        .find(|window| window.outer_rect.contains(point))
                         .map(|window| match self.selection_mode {
                             SelectionMode::WindowsWithDecorations => window.outer_rect,
                             SelectionMode::WindowsWithoutDecorations => window.content_rect,
@@ -218,15 +215,14 @@ impl OperationStack {
 
     pub fn execute(&self, surface: &ImageSurface, cairo: &Context, is_in_draw_event: bool) {
         for operation in &self.operations {
-            tracing::warn!("We had at least one operation");
             if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
-                error!("{}", why);
+                error!("Got error trying to execute an operation({operation:?}): {why}");
             }
         }
 
         if let Some(operation) = &self.current_operation {
             if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
-                error!("{}", why);
+                error!("Got error trying to execute self.current_operation({operation:?}): {why}");
             }
         }
 

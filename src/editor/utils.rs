@@ -9,8 +9,7 @@ macro_rules! log_if_err {
         match $call {
             Ok(_) => {}
             Err(err) => ::tracing::error!(
-                "Got error: {:?}\n\twith the following call: {}",
-                err,
+                "Got error: {err:?}\n\twith the following call: {}",
                 ::std::stringify!($call)
             ),
         }

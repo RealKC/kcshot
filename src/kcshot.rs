@@ -180,7 +180,6 @@ mod underlying {
             app: &Self::Type,
             command_line: &gio::ApplicationCommandLine,
         ) -> i32 {
-            tracing::info!("hm");
             let mut show_main_window = true;
             for argument in command_line.arguments() {
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
@@ -242,7 +241,7 @@ Application Options:
             self.parent_startup(application);
 
             if let Err(why) = gio::resources_register_include!("compiled.gresource") {
-                tracing::error!("Failed loading resources: {:?}", why);
+                tracing::error!("Failed loading resources: {why}");
             }
 
             let settings = gio::Settings::new("kc.kcshot");
@@ -255,10 +254,7 @@ Application Options:
                     .unwrap()
                     .get_data_home();
 
-                tracing::info!(
-                    "'saved-screenshots-path' was empty, set it to {:?}",
-                    default_folder
-                );
+                tracing::info!("'saved-screenshots-path' was empty, set it to {default_folder:?}");
                 settings
                     .set_string("saved-screenshots-path", default_folder.to_str().unwrap())
                     .unwrap();

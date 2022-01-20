@@ -10,7 +10,7 @@ use gtk4::{
     subclass::prelude::*,
     Allocation, ResponseType,
 };
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::{
     editor::{
@@ -60,10 +60,7 @@ impl EditorWindow {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
-                error!(
-                    "Got error constructing cairo context inside button press event: {}",
-                    err
-                );
+                error!("Got error constructing cairo context inside button press event: {err}");
                 return;
             }
         };
@@ -72,10 +69,7 @@ impl EditorWindow {
         let rectangle = image.operation_stack.crop_region(point).unwrap_or_else(|| {
             let (w, h) = get_screen_resolution().map_or_else(
                 |why| {
-                    error!(
-                        "Unable to retrieve screen resolution{}\n\t\tgoing with 1920x1080",
-                        why
-                    );
+                    error!("Unable to retrieve screen resolution{why}\n\t\tassuming 1920x1080");
                     (1920, 1080)
                 },
                 |screen_resolution| screen_resolution,
@@ -96,8 +90,8 @@ impl EditorWindow {
             }
             None => {
                 error!(
-                    "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
-                    image.surface, rectangle
+                    "Failed to create a pixbuf from the surface: {:?} with crop region {rectangle:#?}",
+                    image.surface
                 );
             }
         };
@@ -113,7 +107,7 @@ impl EditorWindow {
             let image = match image.try_borrow() {
                 Ok(image) => image,
                 Err(why) => {
-                    info!("image already borrowed: {:?}", why);
+                    info!("image already borrowed: {why}");
                     return;
                 }
             };
@@ -163,7 +157,7 @@ impl EditorWindow {
             let image = match image.try_borrow() {
                 Ok(image) => image,
                 Err(why) => {
-                    info!("image already borrowed: {:?}", why);
+                    info!("image already borrowed: {why}");
                     return;
                 }
             };
@@ -235,9 +229,8 @@ impl ObjectImpl for EditorWindow {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
         let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
-        warn!("Image status {:?}", image.status());
         let windows = display_server::get_windows().unwrap_or_else(|why| {
-            tracing::info!("Got while trying to retrieve windows: {}", why);
+            tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]
         });
 
@@ -255,10 +248,7 @@ impl ObjectImpl for EditorWindow {
             {
                 Ok(res) => res,
                 Err(why) => {
-                    error!(
-                        "Error getting screen resolution: {}.\n\t\tGoing with 1920x1080",
-                        why
-                    );
+                    error!("Error getting screen resolution: {why}.\n\t\tAssuming 1920x1080");
                     (1920, 1080)
                 }
             };
@@ -274,7 +264,7 @@ impl ObjectImpl for EditorWindow {
             clone!(@strong self.image as image => move |_widget, cairo, _w, _h| {
                 match image.try_borrow() {
                     Ok(image) => EditorWindow::do_draw(image.as_ref().unwrap(), cairo, true),
-                    Err(why) => info!("Image already borrowed: {:?}", why)
+                    Err(why) => info!("Image already borrowed: {why}")
                 }
             }),
         );
@@ -291,7 +281,7 @@ impl ObjectImpl for EditorWindow {
                         image.operation_stack.start_operation_at(Point { x, y });
                         obj.queue_draw();
                     }
-                    Err(why) => info!("Image already borrowed: {:?}", why),
+                    Err(why) => info!("Image already borrowed: {why}"),
                 }
 
             }),
@@ -306,7 +296,7 @@ impl ObjectImpl for EditorWindow {
                         image.operation_stack.set_current_window(x, y);
                         drawing_area.queue_draw();
                     }
-                    Err(why) => info!("Image already borrowed: {:?}", why),
+                    Err(why) => info!("Image already borrowed: {why}"),
                 }
             }),
         );
@@ -346,7 +336,7 @@ impl ObjectImpl for EditorWindow {
             clone!(@strong self.image as image, @strong drawing_area =>  move |_this, x, y| {
                 let mut image = image.borrow_mut();
                 let image = image.as_mut().unwrap();
-                info!("Dragging to {{ {}, {} }}", x, y);
+                info!("Dragging to {{ {x}, {y} }}");
                 image.operation_stack.update_current_operation_end_coordinate(x, y);
                 image.operation_stack.set_is_in_crop_drag(true);
                 drawing_area.queue_draw();
@@ -377,7 +367,7 @@ impl ObjectImpl for EditorWindow {
             button.set_tooltip_markup(Some(tool.tooltip()));
 
             button.connect_clicked(clone!(@strong image => move |_| {
-                info!("Entered on-click handler of {:?}", tool);
+                info!("Entered on-click handler of {tool:?}");
                 image.borrow_mut().as_mut().unwrap().operation_stack.set_current_tool(tool);
             }));
             button.set_active(false);
@@ -428,7 +418,7 @@ impl ObjectImpl for EditorWindow {
                             image.operation_stack.selection_mode = selection_mode;
                         }
                     }
-                    Err(why) => info!("Image already borrowed: {:?}", why),
+                    Err(why) => info!("Image already borrowed: {why}"),
                 }
             }
         }));
@@ -457,7 +447,7 @@ impl ObjectImpl for EditorWindow {
                                 }
                             }
                         }
-                        Err(why) => info!("Image already borrowed: {:?}", why),
+                        Err(why) => info!("Image already borrowed: {why}"),
                     }
                 }
                 Inhibit(false)

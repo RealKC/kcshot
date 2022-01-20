@@ -90,7 +90,7 @@ mod underlying {
                     n_items as u32
                 }
                 Err(why) => {
-                    tracing::error!("Failed to get number of screenshots in history: {:?}", why);
+                    tracing::error!("Failed to get number of screenshots in history: {why}");
                     panic!() // yolo
                 }
             }
@@ -107,12 +107,11 @@ mod underlying {
                 }
             };
 
-            tracing::info!("{}", last_fetched_screenshot_index);
+            tracing::info!("{last_fetched_screenshot_index}");
 
             if position as usize > last_fetched_screenshot_index
                 || last_fetched_screenshot_index == 0
             {
-                tracing::info!("entered");
                 const COUNT: i64 = 15;
                 let new_screenshots = db::fetch_screenshots(
                     self.app().conn(),
@@ -122,7 +121,7 @@ mod underlying {
                 let new_screenshots = match new_screenshots {
                     Ok(n) => n,
                     Err(why) => {
-                        tracing::error!("Encountered error: {:?}\n\twhile trying to fetch {} items from the database,\n\tstarting at index: {}", why, COUNT, last_fetched_screenshot_index);
+                        tracing::error!("Encountered error: {why:?}\n\twhile trying to fetch {COUNT} items from the database,\n\tstarting at index: {last_fetched_screenshot_index}");
                         return None;
                     }
                 };
@@ -160,7 +159,7 @@ mod underlying {
             match pspec.name() {
                 "application" => self.app.borrow().to_value(),
                 name => {
-                    tracing::error!("Unknown property: {}", name);
+                    tracing::error!("Unknown property: {name}");
                     panic!()
                 }
             }
@@ -173,7 +172,7 @@ mod underlying {
                     let application = value.get::<KCShot>().ok();
                     self.app.replace(application);
                 }
-                name => tracing::warn!("Unknown property: {}", name),
+                name => tracing::warn!("Unknown property: {name}"),
             }
         }
     }

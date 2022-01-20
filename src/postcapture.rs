@@ -40,7 +40,7 @@ impl PostCaptureAction for SaveAndCopy {
 
         match res {
             Ok(_) => {}
-            Err(why) => tracing::error!("Failed to save screenshot to file: {}", why),
+            Err(why) => tracing::error!("Failed to save screenshot to file: {why}"),
         }
 
         let display = match gdk::Display::default() {
@@ -56,14 +56,11 @@ impl PostCaptureAction for SaveAndCopy {
 
         if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
         {
-            tracing::error!("Failed to add screenshot to history: {:?}", why);
+            tracing::error!("Failed to add screenshot to history: {why}");
             return;
         }
         if let Err(why) = model_notifier.send(RowData::new_from_components(Some(path), now, None)) {
-            tracing::error!(
-                "Failed to notify the history model that a new item was added: {}",
-                why
-            );
+            tracing::error!("Failed to notify the history model that a new item was added: {why}");
         }
     }
 }

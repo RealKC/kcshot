@@ -121,7 +121,7 @@ mod underlying {
             settings.connect_changed(
                 None,
                 clone!(@strong stack => move |settings, key| {
-                    tracing::info!("Called with key: {}", key);
+                    tracing::info!("Called with key: {key}");
                     if key == "is-history-enabled" {
                         let is_history_enabled = settings.boolean(key);
                         if is_history_enabled {
@@ -169,7 +169,7 @@ mod underlying {
             match pspec.name() {
                 "application" => obj.application().to_value(),
                 name => {
-                    tracing::error!("Unknown property: {}", name);
+                    tracing::error!("Unknown property: {name}");
                     panic!()
                 }
             }
@@ -194,7 +194,7 @@ mod underlying {
                         .set(history_model)
                         .expect("history-model should only be set once");
                 }
-                name => tracing::warn!("Unknown property: {}", name),
+                name => tracing::warn!("Unknown property: {name}"),
             }
         }
     }
@@ -272,7 +272,7 @@ mod underlying {
                 .arg(&KCShot::screenshot_folder())
                 .spawn();
             if let Err(why) = res {
-                tracing::error!("Failed to spawn xdg-open: {:?}", why);
+                tracing::error!("Failed to spawn xdg-open: {why}");
             }
         });
         buttons.append(&screenshots_folder_button);
@@ -310,7 +310,6 @@ mod underlying {
                     )
                     .unwrap();
             }
-            tracing::info!("what");
             this.destroy();
         });
 

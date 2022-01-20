@@ -2,7 +2,7 @@
 name = "kcshot-rs"
 version = "0.1.0"
 authors = ["Mițca Dumitru <dumitru0mitca@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "EUPL v1.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
