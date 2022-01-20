@@ -10,7 +10,6 @@ glib::wrapper! {
 }
 
 impl RowData {
-    #[allow(clippy::new_without_default)]
     pub fn new(screenshot: Screenshot) -> Self {
         let Screenshot {
             path, time, url, ..
