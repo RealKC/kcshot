@@ -5,10 +5,13 @@ use gtk4::{
     gio,
 };
 
-use crate::historymodel::HistoryModel;
+use crate::{
+    db,
+    historymodel::{ModelNotifier, RowData},
+};
 
 pub trait PostCaptureAction {
-    fn handle(&self, history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: Pixbuf);
+    fn handle(&self, model_notifier: ModelNotifier, conn: &SqliteConnection, pixbuf: Pixbuf);
 }
 
 pub fn current_action() -> &'static dyn PostCaptureAction {
@@ -21,15 +24,16 @@ pub fn current_action() -> &'static dyn PostCaptureAction {
 struct SaveAndCopy;
 
 impl PostCaptureAction for SaveAndCopy {
-    fn handle(&self, history_model: &HistoryModel, conn: &SqliteConnection, pixbuf: Pixbuf) {
+    fn handle(&self, model_notifier: ModelNotifier, conn: &SqliteConnection, pixbuf: Pixbuf) {
         let now = chrono::Local::now();
+        let now = now.to_rfc3339();
 
         let settings = gio::Settings::new("kc.kcshot");
         let path = settings.string("saved-screenshots-path");
         let path = if path.ends_with('/') {
-            format!("{}screenshot_{}.png", path, now.to_rfc3339())
+            format!("{}screenshot_{}.png", path, now)
         } else {
-            format!("{}/screenshot_{}.png", path, now.to_rfc3339())
+            format!("{}/screenshot_{}.png", path, now)
         };
 
         let res = pixbuf.savev(&path, "png", &[]);
@@ -50,6 +54,16 @@ impl PostCaptureAction for SaveAndCopy {
 
         clipboard.set_texture(&gdk::Texture::for_pixbuf(&pixbuf));
 
-        history_model.add_item_to_history(conn, Some(path), now.to_rfc3339(), None)
+        if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
+        {
+            tracing::error!("Failed to add screenshot to history: {:?}", why);
+            return;
+        }
+        if let Err(why) = model_notifier.send(RowData::new_from_components(Some(path), now, None)) {
+            tracing::error!(
+                "Failed to notify the history model that a new item was added: {}",
+                why
+            );
+        }
     }
 }

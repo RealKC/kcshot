@@ -5,12 +5,11 @@ use diesel::SqliteConnection;
 use gtk4::{
     ffi::GTK_INVALID_LIST_POSITION,
     gdk::{Key, BUTTON_PRIMARY},
-    glib::{self, clone, signal::Inhibit, ParamSpec, ParamSpecObject},
+    glib::{self, clone, signal::Inhibit},
     prelude::*,
     subclass::prelude::*,
     Allocation, ResponseType,
 };
-use once_cell::{sync::Lazy, unsync::OnceCell};
 use tracing::{error, info, warn};
 
 use crate::{
@@ -21,7 +20,7 @@ use crate::{
         textdialog::DialogResponse,
         utils::{self, CairoExt},
     },
-    historymodel::HistoryModel,
+    historymodel::ModelNotifier,
     kcshot::KCShot,
     log_if_err, postcapture,
 };
@@ -37,7 +36,6 @@ type ImageRef = Rc<RefCell<Option<Image>>>;
 #[derive(Default, Debug)]
 pub struct EditorWindow {
     image: ImageRef,
-    history_model: OnceCell<HistoryModel>,
 }
 
 impl EditorWindow {
@@ -53,7 +51,7 @@ impl EditorWindow {
     }
 
     fn do_save_surface(
-        history_model: &HistoryModel,
+        model_notifier: &ModelNotifier,
         conn: &SqliteConnection,
         window: &gtk4::Window,
         image: &Image,
@@ -90,18 +88,19 @@ impl EditorWindow {
             }
         });
 
+        window.close();
+
         match utils::pixbuf_for(&image.surface, rectangle) {
-            Some(pixbuf) => postcapture::current_action().handle(history_model, conn, pixbuf),
+            Some(pixbuf) => {
+                postcapture::current_action().handle(model_notifier.clone(), conn, pixbuf);
+            }
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
                     image.surface, rectangle
                 );
-                return;
             }
         };
-
-        window.close();
     }
 
     fn make_primary_colour_chooser_button(
@@ -313,13 +312,8 @@ impl ObjectImpl for EditorWindow {
         );
         drawing_area.add_controller(&motion_event_handler);
 
-        let history_model = self
-            .history_model
-            .get()
-            .expect("Should have a history model when taking a screenshot")
-            .clone();
         click_event_handler.connect_released(
-            clone!(@strong self.image as image, @strong obj, @strong drawing_area => move |_this, _n_clicks, x, y| {
+            clone!(@strong self.image as image, @strong obj, @strong drawing_area, => move |_this, _n_clicks, x, y| {
                 let mut imagerc = image.borrow_mut();
                 let image = imagerc.as_mut().unwrap();
                 if image.operation_stack.current_tool() == Tool::Text {
@@ -341,7 +335,7 @@ impl ObjectImpl for EditorWindow {
                 }
 
                 let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
-                EditorWindow::do_save_surface(&history_model, app.conn(), obj.upcast_ref(), image, Point {x, y});
+                EditorWindow::do_save_surface(&app.model_notifier(), app.conn(), obj.upcast_ref(), image, Point { x, y });
             }),
         );
 
@@ -470,33 +464,6 @@ impl ObjectImpl for EditorWindow {
             }),
         );
         obj.add_controller(&key_event_handler);
-    }
-
-    fn properties() -> &'static [ParamSpec] {
-        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![ParamSpecObject::new(
-                "history-model",
-                "History Model",
-                "History Model",
-                HistoryModel::static_type(),
-                glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-            )]
-        });
-
-        PROPERTIES.as_ref()
-    }
-
-    #[tracing::instrument]
-    fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
-        match pspec.name() {
-            "history-model" => {
-                let history_model = value.get::<HistoryModel>().unwrap();
-                self.history_model
-                    .set(history_model)
-                    .expect("history-model should only be set once");
-            }
-            name => tracing::warn!("Unknown property: {}", name),
-        }
     }
 }
 

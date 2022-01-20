@@ -14,6 +14,10 @@ impl RowData {
         let Screenshot {
             path, time, url, ..
         } = screenshot;
+        Self::new_from_components(path, time, url)
+    }
+
+    pub fn new_from_components(path: Option<String>, time: String, url: Option<String>) -> Self {
         glib::Object::new(&[
             ("path", &path.to_value()),
             ("time", &time.to_value()),

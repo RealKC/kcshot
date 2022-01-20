@@ -1,7 +1,7 @@
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::{appwindow, editor, historymodel::HistoryModel};
+use crate::{appwindow, editor, historymodel::ModelNotifier};
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
@@ -31,6 +31,13 @@ impl KCShot {
         let settings = gio::Settings::new("kc.kcshot");
         settings.string("saved-screenshots-path").into()
     }
+
+    /// This is to be used for the purpose of notifying the [`crate::historymodel::HistoryMode`]
+    /// that a new screenshot was added, by sending a [`crate::historymodel::RowData`] with the
+    /// newly taken screenshot to it.
+    pub fn model_notifier(&self) -> ModelNotifier {
+        self.imp().model_notifier()
+    }
 }
 
 pub fn build_ui(app: &KCShot) {
@@ -39,12 +46,13 @@ pub fn build_ui(app: &KCShot) {
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
 
-    let history_model = HistoryModel::new(app.upcast_ref());
+    let history_model = instance.history_model();
+
     let window = appwindow::AppWindow::new(app, &history_model);
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
-        let window = editor::EditorWindow::new(app.upcast_ref(), &history_model);
+        let window = editor::EditorWindow::new(app.upcast_ref());
         window.set_decorated(false);
         window.fullscreen();
 
@@ -62,17 +70,32 @@ mod underlying {
     use diesel::SqliteConnection;
     use gtk4::{
         gio::{self, prelude::*},
-        glib,
+        glib::{self},
         subclass::prelude::*,
     };
     use once_cell::sync::{Lazy, OnceCell};
 
-    use crate::db;
+    use crate::{
+        db,
+        historymodel::{HistoryModel, ModelNotifier, RowData},
+    };
 
     pub struct KCShot {
         pub(super) show_main_window: RefCell<bool>,
         pub(super) take_screenshot: RefCell<bool>,
         pub(super) database_connection: OnceCell<SqliteConnection>,
+        history_model: RefCell<Option<HistoryModel>>,
+        model_notifier: OnceCell<ModelNotifier>,
+    }
+
+    impl KCShot {
+        pub(super) fn history_model(&self) -> HistoryModel {
+            self.history_model.borrow().clone().unwrap()
+        }
+
+        pub(super) fn model_notifier(&self) -> ModelNotifier {
+            self.model_notifier.get().cloned().unwrap()
+        }
     }
 
     impl Default for KCShot {
@@ -81,6 +104,8 @@ mod underlying {
                 show_main_window: RefCell::new(true),
                 take_screenshot: RefCell::new(false),
                 database_connection: Default::default(),
+                history_model: Default::default(),
+                model_notifier: Default::default(),
             }
         }
     }
@@ -103,12 +128,39 @@ mod underlying {
     }
 
     impl ObjectImpl for KCShot {
-        fn constructed(&self, _: &Self::Type) {
+        fn constructed(&self, obj: &Self::Type) {
             let res = self.database_connection.set(db::open().unwrap());
 
             if res.is_err() {
                 tracing::error!("Failed setting self.database_connection");
             }
+
+            self.history_model.replace(Some(HistoryModel::new(obj)));
+            let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
+
+            if self.model_notifier.set(tx).is_err() {
+                tracing::error!("KCShot::constructed called multiple times on the same instance!");
+                panic!()
+            }
+
+            let model = self.history_model();
+            // The purpose of this code is to ensure that the model behaves correctly to its consumers
+            // > Stated another way: in general, it is assumed that code making a series of accesses
+            // > to the model via the API, without returning to the mainloop, and without calling
+            // > other code, will continue to view the same contents of the model.
+            // (src: https://docs.gtk.org/gio/method.ListModel.items_changed.html)
+            //
+            // It appears that this is the proper way to achieve that.
+            rx.attach(
+                None,
+                glib::clone!(@weak model => @default-return Continue(false), move |msg| {
+                    model.insert_screenshot(msg);
+                    // I've tried moving this items_changed call inside HistoryModel::insert_screenshot,
+                    // but the items showed up twice in the view if you had two windows opened for some reason.
+                    model.items_changed(0, 0, 1);
+                    Continue(true)
+                }),
+            );
         }
     }
 

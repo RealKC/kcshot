@@ -1,10 +1,10 @@
-use diesel::SqliteConnection;
 use gtk4::{
-    gio::ListModel as GListModel, glib, prelude::ListModelExt,
+    gio::ListModel as GListModel,
+    glib::{self, Sender},
     subclass::prelude::ObjectSubclassIsExt,
 };
 
-use crate::{db, kcshot::KCShot};
+use crate::kcshot::KCShot;
 
 mod rowdata;
 
@@ -16,30 +16,28 @@ glib::wrapper! {
 }
 
 impl HistoryModel {
-    #[allow(clippy::new_without_default)]
-    pub fn new(app: &KCShot) -> Self {
-        glib::Object::new(&[("application", app)]).unwrap()
+    pub fn new(application: &KCShot) -> Self {
+        glib::Object::new(&[("application", application)]).unwrap()
     }
 
-    pub fn add_item_to_history(
-        &self,
-        conn: &SqliteConnection,
-        path_: Option<String>,
-        time_: String,
-        url_: Option<String>,
-    ) {
-        if let Err(why) = db::add_screenshot_to_history(conn, path_, time_, url_) {
-            tracing::error!("Failed to add screenshot to history: {:?}", why);
-            return;
-        }
-        let impl_ = self.imp();
-        impl_.screenshots.borrow_mut().clear();
-        self.items_changed(0, 0, 1)
+    /// Inserts a screenshot to the internally maintained list of screenshots.
+    ///
+    /// # Note
+    /// This does not call `GListModel::items_changed`, you'll have to call it
+    /// yourself properly.
+    pub fn insert_screenshot(&self, screenshot: RowData) {
+        self.imp().screenshots.borrow_mut().insert(0, screenshot);
     }
 }
 
+/// This type is used to notify the HistoryModel that a new screenshot was taken, and it additionally
+/// carries a [`self::RowData`] with the newly taken screenshot.
+///
+/// It caused [`HistoryModel::insert_screenshot`] to be called.
+pub type ModelNotifier = Sender<RowData>;
+
 mod underlying {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, rc::Rc};
 
     use gtk4::{
         gio,
@@ -54,8 +52,17 @@ mod underlying {
 
     #[derive(Default)]
     pub struct ListModel {
-        app: RefCell<KCShot>,
-        pub(super) screenshots: RefCell<Vec<RowData>>,
+        pub(super) app: RefCell<Option<KCShot>>,
+        pub(super) screenshots: Rc<RefCell<Vec<RowData>>>,
+    }
+
+    impl ListModel {
+        fn app(&self) -> KCShot {
+            self.app
+                .borrow()
+                .clone()
+                .expect("ListModel::app must be set for it to work properly")
+        }
     }
 
     #[glib::object_subclass]
@@ -72,7 +79,7 @@ mod underlying {
         }
 
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            let n_items = db::number_of_history_itms(self.app.borrow().conn());
+            let n_items = db::number_of_history_itms(self.app().conn());
             match n_items {
                 Ok(n_items) => {
                     assert!(
@@ -108,7 +115,7 @@ mod underlying {
                 tracing::info!("entered");
                 const COUNT: i64 = 15;
                 let new_screenshots = db::fetch_screenshots(
-                    self.app.borrow().conn(),
+                    self.app().conn(),
                     last_fetched_screenshot_index as i64,
                     COUNT,
                 );
@@ -164,7 +171,7 @@ mod underlying {
             match pspec.name() {
                 "application" => {
                     let application = value.get::<KCShot>().ok();
-                    self.app.replace(application.unwrap());
+                    self.app.replace(application);
                 }
                 name => tracing::warn!("Unknown property: {}", name),
             }
