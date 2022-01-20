@@ -21,7 +21,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, clone, signal::Inhibit, ParamSpec},
+        glib::{self, clone, signal::Inhibit, ParamSpec, ParamSpecObject},
         prelude::*,
         subclass::{
             application_window::ApplicationWindowImpl,
@@ -144,14 +144,14 @@ mod underlying {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
-                    ParamSpec::new_object(
+                    ParamSpecObject::new(
                         "application",
                         "Application",
                         "Application",
                         KCShot::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    ParamSpec::new_object(
+                    ParamSpecObject::new(
                         "history-model",
                         "History Model",
                         "History Model",
@@ -232,7 +232,7 @@ mod underlying {
                 .expect("The child has to be a gtk4::Picture");
 
             if let Some(path) = object.path() {
-                picture.set_filename(&path);
+                picture.set_filename(Some(&path));
             }
         });
 

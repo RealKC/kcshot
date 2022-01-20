@@ -12,19 +12,12 @@ pub struct Colour {
 }
 
 impl Colour {
-    pub fn from_gdk_rgba(
-        RGBA {
-            red,
-            green,
-            blue,
-            alpha,
-        }: RGBA,
-    ) -> Self {
+    pub fn from_gdk_rgba(rgba: RGBA) -> Self {
         Self {
-            red: (red * 255.0).floor() as u8,
-            green: (green * 255.0).floor() as u8,
-            blue: (blue * 255.0).floor() as u8,
-            alpha: (alpha * 255.0).floor() as u8,
+            red: (rgba.red() * 255.0).floor() as u8,
+            green: (rgba.green() * 255.0).floor() as u8,
+            blue: (rgba.blue() * 255.0).floor() as u8,
+            alpha: (rgba.alpha() * 255.0).floor() as u8,
         }
     }
 

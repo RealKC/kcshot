@@ -123,7 +123,7 @@ pub fn take_screenshot() -> Result<ImageSurface, Error> {
                 return Err(CairoError::from(surface_status).into());
             }
 
-            let (file, stream) = gtk4::gio::File::new_tmp("screenshot.XXXXXX.png")?;
+            let (file, stream) = gtk4::gio::File::new_tmp(Some("screenshot.XXXXXX.png"))?;
             let path = file.path().unwrap();
             let path = CString::new(path.as_os_str().as_bytes()).unwrap();
 

@@ -4,8 +4,8 @@ use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     ffi::GTK_INVALID_LIST_POSITION,
-    gdk::{keys::constants as GdkKey, BUTTON_PRIMARY},
-    glib::{self, clone, signal::Inhibit, ParamSpec},
+    gdk::{Key, BUTTON_PRIMARY},
+    glib::{self, clone, signal::Inhibit, ParamSpec, ParamSpecObject},
     prelude::*,
     subclass::prelude::*,
     Allocation, ResponseType,
@@ -260,12 +260,12 @@ impl ObjectImpl for EditorWindow {
                     (1920, 1080)
                 }
             };
-            Some(Allocation {
-                x: screen_width / 2 - widget.width() / 2,
-                y: screen_height / 5,
-                width: 11 * 32,
-                height: 32,
-            })
+            Some(Allocation::new(
+                screen_width / 2 - widget.width() / 2,
+                screen_height / 5,
+                11 * 32,
+                32,
+            ))
         });
 
         drawing_area.set_draw_func(
@@ -443,7 +443,7 @@ impl ObjectImpl for EditorWindow {
         let key_event_handler = gtk4::EventControllerKey::new();
         key_event_handler.connect_key_pressed(
             clone!(@strong obj, @weak self.image as image => @default-return Inhibit(false), move |_this, key, _, _| {
-                if key == GdkKey::Escape {
+                if key == Key::Escape {
                     obj.hide();
                 } else if let Some(tool) = key.to_unicode().map(Tool::from_unicode).flatten() {
                     match image.try_borrow_mut() {
@@ -466,9 +466,9 @@ impl ObjectImpl for EditorWindow {
         obj.add_controller(&key_event_handler);
     }
 
-    fn properties() -> &'static [glib::ParamSpec] {
+    fn properties() -> &'static [ParamSpec] {
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![ParamSpec::new_object(
+            vec![ParamSpecObject::new(
                 "history-model",
                 "History Model",
                 "History Model",

@@ -24,7 +24,7 @@ impl RowData {
     }
 
     pub fn path(&self) -> Option<String> {
-        let this = underlying::RowData::from_instance(self);
+        let this = self.imp();
 
         this.path.borrow().clone()
     }
@@ -54,21 +54,21 @@ mod underlying {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "path",
                         "Path",
                         "Path",
                         None,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "time",
                         "Time",
                         "Time",
                         Some(""),
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "url",
                         "URL",
                         "URL",

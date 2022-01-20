@@ -9,10 +9,10 @@ license = "EUPL v1.2"
 
 [dependencies]
 # UI-related dependencies
-cairo-rs = { version = "0.14.9", features = ["png", "xcb"] }
-pangocairo = "0.14.0"
+cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
+pangocairo = "0.15.1"
 image = { version = "0.23.14", default-features = false }
-gtk4 = "0.3.1"
+gtk4 = "0.4.1"
 xcb = { version = "1.0.0-beta.3", features = ["debug_atom_names", "shape"] }
 
 # User settings, history
@@ -32,4 +32,4 @@ tracing-subscriber = "0.3.5"
 thiserror = "1.0.30"
 
 [build-dependencies]
-gio = "0.14.0"
+gio = "0.15.1"

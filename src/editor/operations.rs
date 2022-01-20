@@ -506,8 +506,8 @@ fn draw_text_centred_at(
     layout.set_font_description(Some(font_description));
 
     let pixel_extents = layout.pixel_extents().1;
-    let w = pixel_extents.width as f64;
-    let h = pixel_extents.height as f64;
+    let w = pixel_extents.width() as f64;
+    let h = pixel_extents.height() as f64;
 
     cairo.move_to(x - w / 2.0, y - h / 2.0);
     cairo.set_source_colour(colour);

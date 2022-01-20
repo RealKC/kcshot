@@ -23,7 +23,7 @@ impl KCShot {
     }
 
     pub fn conn(&self) -> &SqliteConnection {
-        let impl_ = underlying::KCShot::from_instance(self);
+        let impl_ = self.imp();
         impl_.database_connection.get().unwrap()
     }
 
@@ -34,7 +34,7 @@ impl KCShot {
 }
 
 pub fn build_ui(app: &KCShot) {
-    let instance = underlying::KCShot::from_instance(app);
+    let instance = app.imp();
 
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();

@@ -1,6 +1,7 @@
 use diesel::SqliteConnection;
 use gtk4::{
-    gio::ListModel as GListModel, glib, prelude::ListModelExt, subclass::prelude::ObjectSubclassExt,
+    gio::ListModel as GListModel, glib, prelude::ListModelExt,
+    subclass::prelude::ObjectSubclassIsExt,
 };
 
 use crate::{db, kcshot::KCShot};
@@ -31,7 +32,7 @@ impl HistoryModel {
             tracing::error!("Failed to add screenshot to history: {:?}", why);
             return;
         }
-        let impl_ = underlying::ListModel::from_instance(self);
+        let impl_ = self.imp();
         impl_.screenshots.borrow_mut().clear();
         self.items_changed(0, 0, 1)
     }
@@ -42,7 +43,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, Object, ParamSpec, StaticType, ToValue, Value},
+        glib::{self, Object, ParamSpec, ParamSpecObject, StaticType, ToValue, Value},
         prelude::*,
         subclass::prelude::*,
     };
@@ -135,7 +136,7 @@ mod underlying {
     impl ObjectImpl for ListModel {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                vec![ParamSpec::new_object(
+                vec![ParamSpecObject::new(
                     "application",
                     "Application",
                     "Application",
