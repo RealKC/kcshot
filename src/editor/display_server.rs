@@ -22,15 +22,6 @@ use xcb::{
 
 use super::data::Rectangle;
 
-extern "C" {
-    /// cairo-rs doesn't expose it in its ffi module, so I have to write its declaration myself
-    /// Here's the cairo docs for it: https://cairographics.org/manual/cairo-PNG-Support.html#cairo-surface-write-to-png
-    fn cairo_surface_write_to_png(
-        surface: *mut cairo_surface_t,
-        filename: *const c_char,
-    ) -> cairo_status_t;
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Encountered an error from cairo: {0}")]
@@ -83,6 +74,15 @@ pub struct Window {
 // archive.org link: https://web.archive.org/web/20220109220701/https://giters.com/psychon/x11rb/issues/328 [1]
 
 pub fn take_screenshot() -> Result<ImageSurface, Error> {
+    extern "C" {
+        /// cairo-rs doesn't expose it in its ffi module, so I have to write its declaration myself
+        /// Here's the cairo docs for it: https://cairographics.org/manual/cairo-PNG-Support.html#cairo-surface-write-to-png
+        fn cairo_surface_write_to_png(
+            surface: *mut cairo_surface_t,
+            filename: *const c_char,
+        ) -> cairo_status_t;
+    }
+
     let (connection, _) = xcb::Connection::connect(None)?;
     let setup = connection.get_setup();
 
