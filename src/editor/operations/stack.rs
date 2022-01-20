@@ -137,7 +137,6 @@ impl OperationStack {
                 }
             }
             Operation::DrawRectangle { rect, .. } => {
-                dbg!(&rect);
                 rect.w = new_width;
                 rect.h = new_height;
                 rect.normalise();

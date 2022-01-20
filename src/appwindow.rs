@@ -56,7 +56,7 @@ mod underlying {
             let list_model = self.history_model.get().unwrap();
 
             let (settings_window, button_list) =
-                build_button_pane(&dbg!(obj.application()).unwrap(), list_model);
+                build_button_pane(&obj.application().unwrap(), list_model);
             self.window
                 .set(settings_window)
                 .expect("self.constructed called twice");
