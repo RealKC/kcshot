@@ -237,7 +237,10 @@ impl ObjectImpl for EditorWindow {
         self.parent_constructed(obj);
         let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
         warn!("Image status {:?}", image.status());
-        let windows = display_server::get_windows().unwrap();
+        let windows = display_server::get_windows().unwrap_or_else(|why| {
+            tracing::info!("Got while trying to retrieve windows: {}", why);
+            vec![]
+        });
 
         let overlay = gtk4::Overlay::new();
         obj.set_child(Some(&overlay));
@@ -436,7 +439,10 @@ impl ObjectImpl for EditorWindow {
             }
         }));
 
-        toolbar.append(&drop_down);
+        // Don't add this button when the WM doesn't support retrieving windows
+        if display_server::can_retrieve_windows() {
+            toolbar.append(&drop_down);
+        }
 
         buttons.insert(0, (group_source, Tool::CropAndSave));
 

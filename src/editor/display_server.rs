@@ -13,10 +13,11 @@ use cairo::{
     Error as CairoError, ImageSurface,
 };
 use gtk4::prelude::{FileExt, IOStreamExt, InputStreamExtManual};
+use once_cell::sync::OnceCell;
 use tracing::error;
 use xcb::{
     shape,
-    x::{self, MapState, Window as XWindow, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
+    x::{self, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
     Xid, XidNew,
 };
 
@@ -40,8 +41,14 @@ pub enum Error {
     FailedToGetScreenResolution,
     #[error("WM does not support EWMH")]
     WmDoesNotSupportEwmh,
+    #[error("WM does not support _NET_CLIENT_LIST_STACKING")]
+    WmDoesNotSupportWindowList,
+    #[error("WM does not support _NET_FRAME_EXTENTS")]
+    WmDoesNotSupportFrameExtents,
     #[error("Failed to get windows")]
     FailedToGetWindows,
+    #[error("Failed to get root window")]
+    FailedToGetRootWindow,
 }
 
 impl From<cairo::IoError> for Error {
@@ -70,6 +77,82 @@ pub struct Window {
     pub content_rect: Rectangle,
 }
 
+#[derive(Default, Clone, Copy)]
+struct WmFeatures {
+    /// Whether the WM supports _NET_CLIENT_LIST_STACKING or not, this isn't required
+    supports_client_list: bool,
+    /// Whether the WM supports _NET_FRAME_EXTENTS or not
+    supports_frame_extents: bool,
+}
+
+impl WmFeatures {
+    /// Talks with the WM to get the featurs we're interested in
+    fn get_features() -> Result<Self, Error> {
+        let (connection, _) = xcb::Connection::connect(None)?;
+
+        //https://specifications.freedesktop.org/wm-spec/latest/ar01s03.html#idm46476783603760
+        let supported_ewmh_atoms = connection.send_request(&x::InternAtom {
+            only_if_exists: true,
+            name: b"_NET_SUPPORTED",
+        });
+
+        // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391305328
+        let wm_client_list = connection.send_request(&x::InternAtom {
+            only_if_exists: true,
+            name: b"_NET_CLIENT_LIST_STACKING",
+        });
+
+        // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391244864
+        let frame_extents = connection.send_request(&x::InternAtom {
+            only_if_exists: true,
+            name: b"_NET_FRAME_EXTENTS",
+        });
+
+        let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
+        let wm_client_list = connection.wait_for_reply(wm_client_list)?;
+        let frame_extents = connection.wait_for_reply(frame_extents)?;
+
+        if supported_ewmh_atoms.atom() == ATOM_NONE {
+            return Err(Error::WmDoesNotSupportEwmh);
+        }
+
+        let root = connection
+            .get_setup()
+            .roots()
+            .next()
+            .ok_or(Error::FailedToGetRootWindow)?;
+
+        let supported_ewmh_atoms = connection.send_request(&x::GetProperty {
+            delete: false,
+            window: root.root(),
+            property: supported_ewmh_atoms.atom(),
+            r#type: ATOM_ATOM,
+            long_offset: 0,
+            long_length: 50, // I think the spec defines less than this, but it's (hopefully) fine
+        });
+        let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
+
+        let mut wm_features = Self::default();
+
+        for atom in supported_ewmh_atoms.value::<x::Atom>() {
+            if atom == &wm_client_list.atom() {
+                wm_features.supports_client_list = true;
+            } else if atom == &frame_extents.atom() {
+                wm_features.supports_frame_extents = true;
+            }
+        }
+
+        Ok(wm_features)
+    }
+
+    /// Like [`Self::get_features`] but caches the result
+    fn get() -> Result<&'static Self, Error> {
+        static FEATURES: OnceCell<WmFeatures> = OnceCell::new();
+
+        FEATURES.get_or_try_init(Self::get_features)
+    }
+}
+
 // Some things in this file are inspired by the code written here https://giters.com/psychon/x11rb/issues/328
 // archive.org link: https://web.archive.org/web/20220109220701/https://giters.com/psychon/x11rb/issues/328 [1]
 
@@ -81,6 +164,20 @@ pub fn take_screenshot() -> Result<ImageSurface, Error> {
             surface: *mut cairo_surface_t,
             filename: *const c_char,
         ) -> cairo_status_t;
+    }
+
+    fn find_xcb_visualtype(conn: &xcb::Connection, visual_id: u32) -> Option<x::Visualtype> {
+        for root in conn.get_setup().roots() {
+            for depth in root.allowed_depths() {
+                for visual in depth.visuals() {
+                    if visual.visual_id() == visual_id {
+                        return Some(*visual);
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     let (connection, _) = xcb::Connection::connect(None)?;
@@ -150,12 +247,31 @@ pub fn take_screenshot() -> Result<ImageSurface, Error> {
     Err(Error::FailedToTakeScreenshot)
 }
 
+pub fn can_retrieve_windows() -> bool {
+    match WmFeatures::get() {
+        Ok(wm_features) => wm_features.supports_client_list,
+        Err(why) => {
+            tracing::info!(
+                "Encountered {} in can_retrieve_windows\n\treturning false",
+                why
+            );
+            false
+        }
+    }
+}
+
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub fn get_windows() -> Result<Vec<Window>, Error> {
     let (connection, _) = xcb::Connection::connect(None)?;
     let setup = connection.get_setup();
 
     // Requires an WM that supports EWMH. Will gracefully fallback if not available
+
+    let wm_features = WmFeatures::get()?;
+
+    if !wm_features.supports_client_list {
+        return Err(Error::WmDoesNotSupportWindowList);
+    }
 
     // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391305328
     let wm_client_list = connection.send_request(&x::InternAtom {
@@ -168,18 +284,14 @@ pub fn get_windows() -> Result<Vec<Window>, Error> {
         only_if_exists: true,
         name: b"_NET_FRAME_EXTENTS",
     });
-    let wm_client_list = connection.wait_for_reply(wm_client_list)?;
+    // Guaranteed to not be ATOM_NONE due to the above check
+    let wm_client_list = connection.wait_for_reply(wm_client_list)?.atom();
     let frame_extents = connection.wait_for_reply(frame_extents)?;
 
-    let wm_client_list = if wm_client_list.atom() != ATOM_NONE {
-        wm_client_list.atom()
-    } else {
-        return Err(Error::WmDoesNotSupportEwmh);
-    };
     let frame_extents = if frame_extents.atom() != ATOM_NONE {
         frame_extents.atom()
     } else {
-        return Err(Error::WmDoesNotSupportEwmh);
+        return Err(Error::WmDoesNotSupportFrameExtents);
     };
 
     for root_screen in setup.roots() {
@@ -239,10 +351,18 @@ pub fn get_windows() -> Result<Vec<Window>, Error> {
                 let translated_window_coords =
                     connection.wait_for_reply(translated_window_coords)?;
 
-                let left = frame_extents.value::<u32>()[0];
-                let right = frame_extents.value::<u32>()[1];
-                let top = frame_extents.value::<u32>()[2];
-                let bottom = frame_extents.value::<u32>()[3];
+                // Some WMs return an actual atom and not ATOM_NONE for _NET_FRAME_EXTENTS even though
+                // they don't actually support it, so we have to do this check.
+                let (left, right, top, bottom) = if !wm_features.supports_frame_extents {
+                    (0, 0, 0, 0)
+                } else {
+                    (
+                        frame_extents.value::<u32>()[0],
+                        frame_extents.value::<u32>()[1],
+                        frame_extents.value::<u32>()[2],
+                        frame_extents.value::<u32>()[3],
+                    )
+                };
 
                 windows.push(Window {
                     outer_rect: Rectangle {
@@ -270,20 +390,6 @@ pub fn get_windows() -> Result<Vec<Window>, Error> {
     }
 
     Err(Error::FailedToGetWindows)
-}
-
-fn find_xcb_visualtype(conn: &xcb::Connection, visual_id: u32) -> Option<x::Visualtype> {
-    for root in conn.get_setup().roots() {
-        for depth in root.allowed_depths() {
-            for visual in depth.visuals() {
-                if visual.visual_id() == visual_id {
-                    return Some(*visual);
-                }
-            }
-        }
-    }
-
-    None
 }
 
 /// Gets the screen resolution
