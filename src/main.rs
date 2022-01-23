@@ -11,6 +11,7 @@ mod editor;
 mod historymodel;
 mod kcshot;
 mod postcapture;
+mod systray;
 
 use kcshot::KCShot;
 

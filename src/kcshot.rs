@@ -1,7 +1,11 @@
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::{appwindow, editor, historymodel::ModelNotifier};
+use crate::{
+    appwindow, editor,
+    historymodel::{HistoryModel, ModelNotifier},
+    systray,
+};
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
@@ -38,6 +42,10 @@ impl KCShot {
     pub fn model_notifier(&self) -> ModelNotifier {
         self.imp().model_notifier()
     }
+
+    pub fn history_model(&self) -> HistoryModel {
+        self.imp().history_model()
+    }
 }
 
 pub fn build_ui(app: &KCShot) {
@@ -49,6 +57,13 @@ pub fn build_ui(app: &KCShot) {
     let history_model = instance.history_model();
 
     let window = appwindow::AppWindow::new(app, &history_model);
+
+    // We initialise the systray here because I believe that with other backends it might not be valid
+    // to do it in startup (through we only support one systray backend for now...)
+    if !*instance.systray_initialised.borrow() {
+        systray::init(app);
+        instance.systray_initialised.replace(true);
+    }
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
@@ -86,6 +101,7 @@ mod underlying {
         pub(super) database_connection: OnceCell<SqliteConnection>,
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
+        pub(super) systray_initialised: RefCell<bool>,
     }
 
     impl KCShot {
@@ -106,6 +122,7 @@ mod underlying {
                 database_connection: Default::default(),
                 history_model: Default::default(),
                 model_notifier: Default::default(),
+                systray_initialised: RefCell::new(false),
             }
         }
     }
