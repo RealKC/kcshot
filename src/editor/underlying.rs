@@ -4,8 +4,8 @@ use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     ffi::GTK_INVALID_LIST_POSITION,
-    gdk::{Key, BUTTON_PRIMARY},
-    glib::{self, clone, signal::Inhibit},
+    gdk::{self, Key, BUTTON_PRIMARY},
+    glib::{self, clone, signal::Inhibit, ParamSpec, ParamSpecObject},
     prelude::*,
     subclass::prelude::*,
     Allocation, ResponseType,
@@ -15,7 +15,7 @@ use tracing::{error, info};
 use crate::{
     editor::{
         data::{Colour, Point, Rectangle},
-        display_server::{self, get_screen_resolution},
+        display_server,
         operations::{OperationStack, SelectionMode, Tool},
         textdialog::DialogResponse,
         utils::{self, CairoExt},
@@ -66,21 +66,10 @@ impl EditorWindow {
         };
         EditorWindow::do_draw(image, &cairo, false);
 
-        let rectangle = image.operation_stack.crop_region(point).unwrap_or_else(|| {
-            let (w, h) = get_screen_resolution().map_or_else(
-                |why| {
-                    error!("Unable to retrieve screen resolution{why}\n\t\tassuming 1920x1080");
-                    (1920, 1080)
-                },
-                |screen_resolution| screen_resolution,
-            );
-            Rectangle {
-                x: 0.0,
-                y: 0.0,
-                w: w as f64,
-                h: h as f64,
-            }
-        });
+        let rectangle = image
+            .operation_stack
+            .crop_region(point)
+            .unwrap_or_else(|| display_server::get_screen_resolution(window));
 
         window.close();
 
@@ -243,22 +232,15 @@ impl ObjectImpl for EditorWindow {
         overlay.set_child(Some(&drawing_area));
         overlay.add_overlay(&toolbar);
 
-        overlay.connect_get_child_position(|_this, widget| {
-            let (screen_width, screen_height) = match super::display_server::get_screen_resolution()
-            {
-                Ok(res) => res,
-                Err(why) => {
-                    error!("Error getting screen resolution: {why}.\n\t\tAssuming 1920x1080");
-                    (1920, 1080)
-                }
-            };
+        overlay.connect_get_child_position(clone!( @weak app => @default-return Some(gdk::Rectangle::new(0, 0, 1920, 1080)), move|_this, widget| {
+            let Rectangle { w: screen_width, h: screen_height, .. } = display_server::get_screen_resolution(app.main_window().upcast_ref());
             Some(Allocation::new(
-                screen_width / 2 - widget.width() / 2,
-                screen_height / 5,
+                (screen_width / 2.0 - widget.width() as f64 / 2.0) as i32,
+                (screen_height / 5.0) as i32,
                 11 * 32,
                 32,
             ))
-        });
+        }));
 
         drawing_area.set_draw_func(
             clone!(@strong self.image as image => move |_widget, cairo, _w, _h| {

@@ -1,6 +1,10 @@
 use std::io;
 
 use cairo::{self, Error as CairoError, ImageSurface};
+use gtk4::{
+    prelude::{DisplayExt, MonitorExt, SurfaceExt},
+    traits::NativeExt,
+};
 use once_cell::sync::OnceCell;
 use tracing::error;
 
@@ -24,8 +28,6 @@ pub enum Error {
     TempFile(#[from] gtk4::glib::Error),
     #[error("Failed to take screenshot. (No root screens? No cursor?)")]
     FailedToTakeScreenshot,
-    #[error("Failed to get screen resolution. (No root screens? No root windows on the screens that exist?")]
-    FailedToGetScreenResolution,
     #[error("Failed to get windows")]
     FailedToGetWindows,
     #[error("Encountered an error interacting with the X server: {0}")]
@@ -96,9 +98,18 @@ pub fn get_windows() -> Result<Vec<Window>> {
 }
 
 /// Gets the screen resolution
-///
-/// # Returns
-/// The first item of the tuple is the width, the second is the height
-pub fn get_screen_resolution() -> Result<(i32, i32)> {
-    xorg::get_screen_resolution()
+pub fn get_screen_resolution(window: &gtk4::Window) -> Rectangle {
+    // Code based on https://discourse.gnome.org/t/get-screen-resolution-scale-factor-and-width-and-height-in-mm-for-wayland/7448
+
+    let surface = window.surface();
+    let display = surface.display();
+    let monitor = display.monitor_at_surface(&surface);
+    let geometry = monitor.geometry();
+
+    Rectangle {
+        x: geometry.x() as f64,
+        y: geometry.y() as f64,
+        w: geometry.width() as f64,
+        h: geometry.height() as f64,
+    }
 }

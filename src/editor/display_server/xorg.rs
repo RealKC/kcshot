@@ -260,31 +260,6 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
     Err(super::Error::FailedToGetWindows)
 }
 
-/// Gets the screen resolution
-///
-/// # Returns
-/// The first item of the tuple is the width, the second is the height
-pub(super) fn get_screen_resolution() -> Result<(i32, i32)> {
-    let (connection, _) = xcb::Connection::connect(None)?;
-    let setup = connection.get_setup();
-
-    for root_screen in setup.roots() {
-        let window = root_screen.root();
-        let pointer_cookie = connection.send_request(&x::QueryPointer { window });
-        let geometry_cookie = connection.send_request(&x::GetGeometry {
-            drawable: x::Drawable::Window(window),
-        });
-
-        let pointer_reply = connection.wait_for_reply(pointer_cookie)?;
-        if pointer_reply.same_screen() {
-            let geometry = connection.wait_for_reply(geometry_cookie)?;
-            return Ok((geometry.width() as i32, geometry.height() as i32));
-        }
-    }
-
-    Err(super::Error::FailedToGetScreenResolution)
-}
-
 pub(super) fn get_wm_features() -> Result<WmFeatures> {
     let (connection, _) = xcb::Connection::connect(None)?;
 
