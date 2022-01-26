@@ -10,6 +10,7 @@ use gtk4::{
     subclass::prelude::*,
     Allocation, ResponseType,
 };
+use once_cell::sync::Lazy;
 use tracing::{error, info};
 
 use crate::{
@@ -436,6 +437,42 @@ impl ObjectImpl for EditorWindow {
             }),
         );
         obj.add_controller(&key_event_handler);
+    }
+
+    fn properties() -> &'static [ParamSpec] {
+        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            vec![ParamSpecObject::new(
+                "application",
+                "Application",
+                "Application",
+                KCShot::static_type(),
+                glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+            )]
+        });
+
+        PROPERTIES.as_ref()
+    }
+
+    #[tracing::instrument]
+    fn property(&self, obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> glib::Value {
+        match pspec.name() {
+            "application" => obj.application().to_value(),
+            name => {
+                tracing::error!("Unknown property: {name}");
+                panic!()
+            }
+        }
+    }
+
+    #[tracing::instrument]
+    fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        match pspec.name() {
+            "application" => {
+                let application = value.get::<KCShot>().ok();
+                obj.set_application(application.as_ref());
+            }
+            name => tracing::warn!("Unknown property: {name}"),
+        }
     }
 }
 
