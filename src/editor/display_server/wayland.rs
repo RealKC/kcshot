@@ -22,7 +22,6 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
 
 pub(crate) fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
     let window_identifier = app.window_identifier();
-    tracing::error!("walyand");
     let ctx = glib::MainContext::default();
     let uri = ctx
         .block_on(async { ashpd::desktop::screenshot::take(window_identifier, false, false).await })

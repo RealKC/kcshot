@@ -118,6 +118,8 @@ mod underlying {
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: RefCell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
+        /// We store the identifier on the application instance as calling WindowIdentifier::from_native
+        /// more than once is invalid on Wayland, see https://github.com/bilelmoussaoui/ashpd/issues/20
         pub(super) window_identifier: OnceCell<ashpd::WindowIdentifier>,
     }
 

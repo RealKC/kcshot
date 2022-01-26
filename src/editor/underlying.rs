@@ -235,7 +235,7 @@ impl ObjectImpl for EditorWindow {
         overlay.set_child(Some(&drawing_area));
         overlay.add_overlay(&toolbar);
 
-        overlay.connect_get_child_position(clone!( @weak app => @default-return Some(gdk::Rectangle::new(0, 0, 1920, 1080)), move|_this, widget| {
+        overlay.connect_get_child_position(clone!(@weak app => @default-return Some(gdk::Rectangle::new(0, 0, 1920, 1080)), move|_this, widget| {
             let Rectangle { w: screen_width, h: screen_height, .. } = display_server::get_screen_resolution(app.main_window().upcast_ref());
             Some(Allocation::new(
                 (screen_width / 2.0 - widget.width() as f64 / 2.0) as i32,
