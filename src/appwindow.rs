@@ -53,6 +53,8 @@ mod underlying {
         fn constructed(&self, obj: &Self::Type) {
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
+            obj.set_icon_name(Some("kcshot"));
+
             let list_model = self.history_model.get().unwrap();
 
             let (settings_window, button_list) =
@@ -261,6 +263,7 @@ mod underlying {
         let settings_button = gtk4::Button::new();
         settings_button.set_child(Some(&make_label("Settings")));
         let settings_window = build_settings_window();
+        settings_window.set_icon_name(Some("kcshot"));
         let settings_window_ = settings_window.clone();
         settings_button.connect_clicked(move |_| settings_window_.show());
         buttons.append(&settings_button);
