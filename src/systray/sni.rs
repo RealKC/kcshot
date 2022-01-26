@@ -1,4 +1,4 @@
-use crate::{appwindow, editor, kcshot::KCShot};
+use crate::{editor, kcshot::KCShot};
 
 use gtk4::{
     glib::{self, Continue, MainContext, Sender},
@@ -49,10 +49,7 @@ pub(super) fn try_init(app: &KCShot) -> Initialised {
         None,
         glib::clone!(@strong app => @default-return Continue(false), move |msg| {
             match msg {
-                Message::OpenMainWindow => {
-                    let window = appwindow::AppWindow::new(&app, &app.history_model());
-                    window.show();
-                }
+                Message::OpenMainWindow => app.main_window().present(),
                 Message::OpenScreenshotFolder => {
                     let res = Command::new("xdg-open")
                         .arg(&KCShot::screenshot_folder())

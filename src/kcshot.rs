@@ -46,6 +46,14 @@ impl KCShot {
     pub fn history_model(&self) -> HistoryModel {
         self.imp().history_model()
     }
+
+    /// Returns the "main" window of kcshot, i.e. the one that contains grid of screenshots and a button pain
+    pub fn main_window(&self) -> appwindow::AppWindow {
+        self.imp()
+            .window
+            .get_or_init(|| appwindow::AppWindow::new(self, &self.history_model()))
+            .clone()
+    }
 }
 
 pub fn build_ui(app: &KCShot) {
@@ -53,10 +61,6 @@ pub fn build_ui(app: &KCShot) {
 
     let take_screenshot = *instance.take_screenshot.borrow();
     let show_main_window = *instance.show_main_window.borrow();
-
-    let history_model = instance.history_model();
-
-    let window = appwindow::AppWindow::new(app, &history_model);
 
     // We initialise the systray here because I believe that with other backends it might not be valid
     // to do it in startup (through we only support one systray backend for now...)
@@ -75,7 +79,7 @@ pub fn build_ui(app: &KCShot) {
     } else if show_main_window {
         instance.show_main_window.replace(false);
 
-        window.show()
+        app.main_window().present()
     }
 }
 
@@ -85,13 +89,13 @@ mod underlying {
     use diesel::SqliteConnection;
     use gtk4::{
         gio::{self, prelude::*},
-        glib::{self},
+        glib,
         subclass::prelude::*,
     };
     use once_cell::sync::{Lazy, OnceCell};
 
     use crate::{
-        db,
+        appwindow, db,
         historymodel::{HistoryModel, ModelNotifier, RowData},
     };
 
@@ -102,6 +106,7 @@ mod underlying {
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: RefCell<bool>,
+        pub(super) window: OnceCell<appwindow::AppWindow>,
     }
 
     impl KCShot {
@@ -123,6 +128,7 @@ mod underlying {
                 history_model: Default::default(),
                 model_notifier: Default::default(),
                 systray_initialised: RefCell::new(false),
+                window: Default::default(),
             }
         }
     }
@@ -133,6 +139,10 @@ mod underlying {
                 .field("show_main_window", &self.show_main_window)
                 .field("take_screenshot", &self.take_screenshot)
                 .field("database_connection", &"<sqlite connection>")
+                .field("history_model", &self.history_model)
+                .field("model_notifier", &self.model_notifier)
+                .field("systray_initialised", &self.systray_initialised)
+                .field("window", &self.window)
                 .finish()
         }
     }
