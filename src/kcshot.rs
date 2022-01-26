@@ -54,6 +54,17 @@ impl KCShot {
             .get_or_init(|| appwindow::AppWindow::new(self, &self.history_model()))
             .clone()
     }
+
+    pub fn window_identifier(&self) -> &ashpd::WindowIdentifier {
+        let window = self.main_window();
+        self.imp().window_identifier.get_or_init(move || {
+            let ctx = glib::MainContext::default();
+
+            ctx.block_on(async {
+                ashpd::WindowIdentifier::from_native(&window.native().unwrap()).await
+            })
+        })
+    }
 }
 
 pub fn build_ui(app: &KCShot) {
@@ -107,6 +118,7 @@ mod underlying {
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: RefCell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
+        pub(super) window_identifier: OnceCell<ashpd::WindowIdentifier>,
     }
 
     impl KCShot {
@@ -129,6 +141,7 @@ mod underlying {
                 model_notifier: Default::default(),
                 systray_initialised: RefCell::new(false),
                 window: Default::default(),
+                window_identifier: Default::default(),
             }
         }
     }

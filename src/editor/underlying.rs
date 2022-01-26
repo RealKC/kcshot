@@ -218,7 +218,9 @@ impl ObjectSubclass for EditorWindow {
 impl ObjectImpl for EditorWindow {
     fn constructed(&self, obj: &Self::Type) {
         self.parent_constructed(obj);
-        let image = super::display_server::take_screenshot().expect("Couldn't take a screenshot");
+        let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
+        let image =
+            super::display_server::take_screenshot(&app).expect("Couldn't take a screenshot");
         let windows = display_server::get_windows().unwrap_or_else(|why| {
             tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]
@@ -286,7 +288,7 @@ impl ObjectImpl for EditorWindow {
         drawing_area.add_controller(&motion_event_handler);
 
         click_event_handler.connect_released(
-            clone!(@strong self.image as image, @strong obj, @strong drawing_area, => move |_this, _n_clicks, x, y| {
+            clone!(@strong self.image as image, @strong obj, @strong drawing_area, @weak app => move |_this, _n_clicks, x, y| {
                 let mut imagerc = image.borrow_mut();
                 let image = imagerc.as_mut().unwrap();
                 if image.operation_stack.current_tool() == Tool::Text {
@@ -307,7 +309,6 @@ impl ObjectImpl for EditorWindow {
                     return;
                 }
 
-                let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
                 EditorWindow::do_save_surface(&app.model_notifier(), app.conn(), obj.upcast_ref(), image, Point { x, y });
             }),
         );

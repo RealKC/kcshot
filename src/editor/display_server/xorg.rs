@@ -305,6 +305,7 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     });
     let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
 
+    // NOTE: This sets WmFeatures::is_wayland to false
     let mut wm_features = WmFeatures::default();
 
     for atom in supported_ewmh_atoms.value::<x::Atom>() {

@@ -9,6 +9,7 @@ license = "EUPL v1.2"
 
 [dependencies]
 # UI-related dependencies
+ashpd = { version = "0.2.1", features = ["log", "feature_gtk4"] }
 cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
 pangocairo = "0.15.1"
 image = { version = "0.23.14", default-features = false, features = ["png"] }

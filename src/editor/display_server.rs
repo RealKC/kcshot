@@ -1,4 +1,4 @@
-use std::io;
+use std::{env, io};
 
 use cairo::{self, Error as CairoError, ImageSurface};
 use gtk4::{
@@ -8,8 +8,11 @@ use gtk4::{
 use once_cell::sync::OnceCell;
 use tracing::error;
 
+use crate::kcshot::KCShot;
+
 use super::data::Rectangle;
 
+mod wayland;
 mod xorg;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -32,6 +35,8 @@ pub enum Error {
     FailedToGetWindows,
     #[error("Encountered an error interacting with the X server: {0}")]
     Xorg(#[from] xorg::Error),
+    #[error("Encountered an error interacting with the Wayland stack: {0}")]
+    Wayland(#[from] wayland::Error),
 }
 
 impl From<cairo::IoError> for Error {
@@ -60,12 +65,14 @@ pub struct Window {
     pub content_rect: Rectangle,
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 struct WmFeatures {
     /// Whether the WM supports retrieving the client list
     supports_client_list: bool,
     /// Whether the WM supports retrieving the extents of frames around windows
     supports_frame_extents: bool,
+    // Whether we're running under Wayland as a wayland client or not
+    is_wayland: bool,
 }
 
 impl WmFeatures {
@@ -74,7 +81,26 @@ impl WmFeatures {
     fn get() -> Result<&'static Self> {
         static FEATURES: OnceCell<WmFeatures> = OnceCell::new();
 
-        FEATURES.get_or_try_init(xorg::get_wm_features)
+        FEATURES.get_or_try_init(Self::get_impl)
+    }
+
+    fn get_impl() -> Result<WmFeatures> {
+        let wayland_display = env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "".into());
+        let xdg_session_type = env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "".into());
+        // For checking that Wayland features work even when kcshot is used under X (but on desktops providing
+        // the necessary portals)
+        let force_wayland_emulation =
+            env::var("KCSHOT_FORCE_USE_PORTALS").unwrap_or_else(|_| "".into());
+
+        let is_wayland = wayland_display.to_lowercase().contains("wayland")
+            || xdg_session_type == "wayland"
+            || force_wayland_emulation == "1";
+
+        if is_wayland {
+            wayland::get_wm_features()
+        } else {
+            xorg::get_wm_features()
+        }
     }
 }
 
@@ -88,13 +114,21 @@ pub fn can_retrieve_windows() -> bool {
     }
 }
 
-pub fn take_screenshot() -> Result<ImageSurface> {
-    xorg::take_screenshot()
+pub fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
+    if WmFeatures::get()?.is_wayland {
+        wayland::take_screenshot(app)
+    } else {
+        xorg::take_screenshot()
+    }
 }
 
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub fn get_windows() -> Result<Vec<Window>> {
-    xorg::get_windows()
+    if WmFeatures::get()?.is_wayland {
+        wayland::get_windows()
+    } else {
+        xorg::get_windows()
+    }
 }
 
 /// Gets the screen resolution
