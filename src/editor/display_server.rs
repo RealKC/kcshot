@@ -27,8 +27,6 @@ pub enum Error {
     XcbConnection(#[from] xcb::ConnError),
     #[error("Encountered an X protocol error: {0:?}")]
     XcbProtocol(xcb::ProtocolError),
-    #[error("Got an error trying to make a temporary file: {0}")]
-    TempFile(#[from] gtk4::glib::Error),
     #[error("Failed to take screenshot. (No root screens? No cursor?)")]
     FailedToTakeScreenshot,
     #[error("Failed to get windows")]

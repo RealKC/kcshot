@@ -24,6 +24,8 @@ use super::{Result, Window, WmFeatures};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("Got an error trying to make a temporary file: {0}")]
+    TempFile(#[from] gtk4::glib::Error),
     #[error("WM does not support EWMH")]
     WmDoesNotSupportEwmh,
     #[error("WM does not support _NET_CLIENT_LIST_STACKING")]
@@ -101,7 +103,8 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                 return Err(CairoError::from(surface_status).into());
             }
 
-            let (file, stream) = gtk4::gio::File::new_tmp(Some("screenshot.XXXXXX.png"))?;
+            let (file, stream) =
+                gtk4::gio::File::new_tmp(Some("screenshot.XXXXXX.png")).map_err(Error::TempFile)?;
             let path = file.path().unwrap();
             let path = CString::new(path.as_os_str().as_bytes()).unwrap();
 
