@@ -8,9 +8,8 @@ use gtk4::{
 use once_cell::sync::OnceCell;
 use tracing::error;
 
-use crate::kcshot::KCShot;
-
 use super::data::Rectangle;
+use crate::kcshot::KCShot;
 
 mod wayland;
 mod xorg;

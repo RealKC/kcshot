@@ -4,9 +4,8 @@ use gtk4::{
     prelude::{FileExt, InputStreamExtManual},
 };
 
-use crate::kcshot::KCShot;
-
 use super::{Result, Window, WmFeatures};
+use crate::kcshot::KCShot;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

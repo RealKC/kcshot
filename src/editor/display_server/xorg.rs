@@ -18,9 +18,8 @@ use xcb::{
     Xid, XidNew,
 };
 
-use crate::editor::data::Rectangle;
-
 use super::{Result, Window, WmFeatures};
+use crate::editor::data::Rectangle;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

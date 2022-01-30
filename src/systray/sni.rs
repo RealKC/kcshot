@@ -1,13 +1,13 @@
-use crate::{editor, kcshot::KCShot};
+use std::{process::Command, thread::Builder as ThreadBuilder};
 
 use gtk4::{
     glib::{self, Continue, MainContext, Sender},
     prelude::*,
 };
 use image::ImageResult;
-use std::{process::Command, thread::Builder as ThreadBuilder};
 
 use super::Initialised;
+use crate::{editor, kcshot::KCShot};
 
 /// Attempts to create a systray icon using the [KDE/freedesktop StatusNotifierItem spec][`kde_sni`].
 /// This is done by using the [ksni][`ksni`] crate.

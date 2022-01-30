@@ -1,14 +1,13 @@
 use std::convert::TryFrom;
 
+use cairo::{Context, ImageSurface};
+use tracing::{error, warn};
+
+use super::{Colour, Operation, Point, Rectangle, Tool};
 use crate::{
     editor::{data::Text, display_server::Window, utils::CairoExt},
     log_if_err,
 };
-
-use super::{Colour, Operation, Point, Rectangle, Tool};
-
-use cairo::{Context, ImageSurface};
-use tracing::{error, warn};
 
 #[derive(Debug)]
 pub struct OperationStack {

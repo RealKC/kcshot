@@ -1,8 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
-use super::data::{Colour, Text};
-
 use gtk4::{glib, glib::clone, prelude::*, DialogFlags, Orientation, ResponseType};
+
+use super::data::{Colour, Text};
 
 #[derive(Debug)]
 pub enum DialogResponse {
