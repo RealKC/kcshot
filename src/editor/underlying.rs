@@ -23,9 +23,9 @@ use crate::{
     },
     historymodel::ModelNotifier,
     kcshot::KCShot,
-    log_if_err
+    log_if_err,
+    postcapture::run_postcapture_actions,
 };
-use crate::postcapture::run_postcapture_actions;
 
 #[derive(Debug)]
 struct Image {
@@ -77,9 +77,7 @@ impl EditorWindow {
 
         match utils::pixbuf_for(&image.surface, rectangle) {
             // Process all post capture actions
-            Some(mut pixbuf) => {
-                run_postcapture_actions(model_notifier, conn, &mut pixbuf)
-            },
+            Some(mut pixbuf) => run_postcapture_actions(model_notifier, conn, &mut pixbuf),
             None => {
                 error!(
                     "Failed to create a pixbuf from the surface: {:?} with crop region {rectangle:#?}",
@@ -421,7 +419,7 @@ impl ObjectImpl for EditorWindow {
             clone!(@strong obj, @weak self.image as image => @default-return Inhibit(false), move |_this, key, _, _| {
                 if key == Key::Escape {
                     obj.hide();
-                } else if let Some(tool) = key.to_unicode().map(Tool::from_unicode).flatten() {
+                } else if let Some(tool) = key.to_unicode().and_then(Tool::from_unicode) {
                     match image.try_borrow_mut() {
                         Ok(mut image) => {
                             let image = image.as_mut().unwrap();

@@ -89,7 +89,12 @@ impl PostCaptureAction for CopyToClipboard {
         "Copies the picture to the clipboard".to_owned()
     }
 
-    fn handle(&self, _model_notifier: &ModelNotifier, _conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
+    fn handle(
+        &self,
+        _model_notifier: &ModelNotifier,
+        _conn: &SqliteConnection,
+        pixbuf: &mut Pixbuf,
+    ) {
         let display = match gdk::Display::default() {
             Some(display) => display,
             None => {
@@ -99,12 +104,16 @@ impl PostCaptureAction for CopyToClipboard {
         };
         let clipboard = display.clipboard();
 
-        clipboard.set_texture(&gdk::Texture::for_pixbuf(&pixbuf));
+        clipboard.set_texture(&gdk::Texture::for_pixbuf(pixbuf));
     }
 }
 
 /// Executes the post capture actions in the order they are defined in the settings.
-pub fn run_postcapture_actions(model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
+pub fn run_postcapture_actions(
+    model_notifier: &ModelNotifier,
+    conn: &SqliteConnection,
+    pixbuf: &mut Pixbuf,
+) {
     for action in get_actions_from_settings() {
         action.handle(model_notifier, conn, pixbuf)
     }
