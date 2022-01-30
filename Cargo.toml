@@ -35,3 +35,6 @@ thiserror = "1.0.30"
 
 [build-dependencies]
 gio = "0.15.1"
+
+[features]
+xdg-paths = []

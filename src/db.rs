@@ -22,9 +22,9 @@ pub enum OpenHistoryError {
 }
 
 pub fn open() -> Result<SqliteConnection, OpenHistoryError> {
-    #[cfg(feature = "xdg")]
+    #[cfg(feature = "xdg-paths")]
     let path = xdg::BaseDirectories::with_prefix("kcshot")?.place_state_file("history.db")?;
-    #[cfg(not(feature = "xdg"))]
+    #[cfg(not(feature = "xdg-paths"))]
     let path = std::env::current_dir()?.join("history.db");
     let path = path.to_str().ok_or(OpenHistoryError::PathsAreNotUtf8)?;
 

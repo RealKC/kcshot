@@ -289,9 +289,9 @@ Application Options:
             let settings = gio::Settings::new("kc.kcshot");
 
             if settings.string("saved-screenshots-path").is_empty() {
-                #[cfg(not(feature = "xdg"))]
+                #[cfg(not(feature = "xdg-paths"))]
                 let default_folder = std::env::current_dir().unwrap();
-                #[cfg(feature = "xdg")]
+                #[cfg(feature = "xdg-paths")]
                 let default_folder = xdg::BaseDirectories::with_prefix("kcshot")
                     .unwrap()
                     .get_data_home();
