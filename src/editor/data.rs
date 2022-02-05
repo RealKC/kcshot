@@ -38,17 +38,25 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn normalise(&mut self) {
-        let Self { x, y, w, h } = self;
-        if *w < 0.0 {
-            *x += *w;
-            *w = w.abs();
+    pub fn normalised(&self) -> Self {
+        let Self {
+            mut x,
+            mut y,
+            mut w,
+            mut h,
+        } = *self;
+
+        if w < 0.0 {
+            x += w;
+            w = w.abs();
         }
 
-        if *h < 0.0 {
-            *y += *h;
-            *h = h.abs();
+        if h < 0.0 {
+            y += h;
+            h = h.abs();
         }
+
+        Self { x, y, w, h }
     }
 
     pub fn contains(&self, Point { x: x1, y: y1 }: Point) -> bool {

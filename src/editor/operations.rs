@@ -242,11 +242,12 @@ impl Operation {
         is_in_draw_event: bool,
     ) -> Result<(), Error> {
         match self {
-            Operation::Crop(Rectangle { x, y, w, h }) => {
+            Operation::Crop(rect) => {
                 if is_in_draw_event {
                     cairo.save()?;
 
-                    cairo.rectangle(*x, *y, *w, *h);
+                    let Rectangle { x, y, w, h } = rect.normalised();
+                    cairo.rectangle(x, y, w, h);
                     // When we are in draw events (aka this is being shown to the user), we want to make it clear
                     // they are selecting the region which will be cropped
                     cairo.set_source_colour(Colour {
@@ -265,7 +266,8 @@ impl Operation {
             }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
-                let pixbuf = utils::pixbuf_for(surface, *rect).ok_or(Error::Pixbuf(*rect))?;
+                let rect = rect.normalised();
+                let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
 
                 blur(
                     cairo,
@@ -282,9 +284,10 @@ impl Operation {
             Operation::Pixelate { rect, seed } => {
                 info!("Pixelate");
 
-                let pixbuf = utils::pixbuf_for(surface, *rect).ok_or(Error::Pixbuf(*rect))?;
+                let rect = rect.normalised();
+                let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
 
-                pixelate(cairo, pixbuf, rect, *seed)?;
+                pixelate(cairo, pixbuf, &rect, *seed)?;
             }
             Operation::DrawLine { start, end, colour } => {
                 info!("Line");
@@ -391,7 +394,7 @@ fn draw_rectangle(
     fill: Colour,
 ) -> Result<(), Error> {
     cairo.save()?;
-    let Rectangle { x, y, w, h } = *rect;
+    let Rectangle { x, y, w, h } = rect.normalised();
     cairo.rectangle(x, y, w, h);
 
     cairo.set_source_colour(fill);

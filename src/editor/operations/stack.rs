@@ -117,17 +117,14 @@ impl OperationStack {
             Operation::Crop(rect) => {
                 rect.w = new_width;
                 rect.h = new_height;
-                rect.normalise();
             }
             Operation::Blur { rect, .. } => {
                 rect.w = new_width;
                 rect.h = new_height;
-                rect.normalise();
             }
             Operation::Pixelate { rect, .. } => {
                 rect.w = new_width;
                 rect.h = new_height;
-                rect.normalise();
             }
             Operation::DrawLine { start, end, .. } => {
                 *end = Point {
@@ -138,7 +135,6 @@ impl OperationStack {
             Operation::DrawRectangle { rect, .. } => {
                 rect.w = new_width;
                 rect.h = new_height;
-                rect.normalise();
             }
             Operation::DrawArrow { start, end, .. } => {
                 *end = Point {
@@ -149,7 +145,6 @@ impl OperationStack {
             Operation::Highlight { rect } => {
                 rect.w = new_width;
                 rect.h = new_height;
-                rect.normalise();
             }
             Operation::DrawEllipse { ellipse, .. } => {
                 ellipse.w = new_width;
