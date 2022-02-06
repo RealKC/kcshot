@@ -219,9 +219,11 @@ impl OperationStack {
             }
         }
 
-        // We don't want to "crop indicators" for the windows when we're saving the screenshot (similarly
-        // to what we do for normal crop) or when the user is creating a selection
-        if is_in_draw_event && !self.is_in_crop_drag {
+        // We don't want to draw window "crop indicators" in the following cases:
+        //  * we're saving the screenshot
+        //  * the user's tool is not the CropAndSave tool
+        //  * we are in a crop drag
+        if is_in_draw_event && self.current_tool() == Tool::CropAndSave && !self.is_in_crop_drag {
             if let Some(idx) = self.current_window {
                 let Rectangle { x, y, w, h } = match self.selection_mode {
                     SelectionMode::WindowsWithDecorations => self.windows[idx].outer_rect,
