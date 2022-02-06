@@ -1719,9 +1719,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "xcb"
-version = "1.0.0-beta.3"
+version = "1.0.0-beta.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0a3d9d641c4d222430cc77fcab0434cbedd7340a9b90cc5310e078336e25da5"
+checksum = "d319018b38bf76819a40f32ce1a858cc4aeaad0c601c4f634e59f7dac61de17a"
 dependencies = [
  "bitflags",
  "libc",

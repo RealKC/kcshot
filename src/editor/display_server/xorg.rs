@@ -15,7 +15,7 @@ use gtk4::prelude::{FileExt, IOStreamExt, InputStreamExtManual};
 use xcb::{
     shape,
     x::{self, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
-    Xid, XidNew,
+    Xid,
 };
 
 use super::{Result, Window, WmFeatures};
@@ -184,11 +184,7 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
 
             let mut windows = Vec::with_capacity(128);
 
-            for xid in list.value::<u32>() {
-                // SAFETY: We got this from the X server so it should be a valid resource ID, but if
-                //         the server is lying to us, we can't do anything really.
-                let window = unsafe { XWindow::new(*xid) };
-
+            for window in list.value::<XWindow>().iter().copied() {
                 let attributes = connection.send_request(&x::GetWindowAttributes { window });
                 let attributes = connection.wait_for_reply(attributes)?;
                 if attributes.map_state() != MapState::Viewable {
