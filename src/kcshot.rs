@@ -171,6 +171,8 @@ mod underlying {
 
     impl ObjectImpl for KCShot {
         fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
             let res = self.database_connection.set(db::open().unwrap());
 
             if res.is_err() {
