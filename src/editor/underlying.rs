@@ -322,7 +322,9 @@ impl ObjectImpl for EditorWindow {
                 let image = image.as_mut().unwrap();
                 info!("Dragging to {{ {x}, {y} }}");
                 image.operation_stack.update_current_operation_end_coordinate(x, y);
-                image.operation_stack.set_is_in_crop_drag(true);
+                if image.operation_stack.current_tool() == Tool::CropAndSave {
+                    image.operation_stack.set_is_in_crop_drag(true);
+                }
                 drawing_area.queue_draw();
             }),
         );
