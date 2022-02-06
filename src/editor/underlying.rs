@@ -80,8 +80,9 @@ impl EditorWindow {
             Some(mut pixbuf) => run_postcapture_actions(model_notifier, conn, &mut pixbuf),
             None => {
                 error!(
-                    "Failed to create a pixbuf from the surface: {:?} with crop region {rectangle:#?}",
-                    image.surface
+                    "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
+                    image.surface,
+                    rectangle.normalised()
                 );
             }
         };
