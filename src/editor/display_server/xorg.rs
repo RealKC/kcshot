@@ -12,9 +12,12 @@ use cairo::{
     Error as CairoError, ImageSurface,
 };
 use gtk4::prelude::{FileExt, IOStreamExt, InputStreamExtManual};
+use once_cell::sync::OnceCell;
 use xcb::{
     shape,
-    x::{self, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
+    x::{
+        self, Atom, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW,
+    },
     Xid,
 };
 
@@ -130,6 +133,55 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
     Err(super::Error::FailedToTakeScreenshot)
 }
 
+/// This structs contains the atoms we'll use multiple times over the course of the program and as
+/// such are cached. None of the atoms here will ever be [`xcb::x::ATOM_NONE`]
+struct AtomsOfInterest {
+    /// This corresponds to _NET_CLIENT_LIST_STACKING, querrying this property on the root window
+    /// gives us the list of windows in stacking order.
+    ///
+    /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391305328
+    wm_client_list: Atom,
+    /// This corresponds to _NET_FRAME_EXTENTS, querrrying this property on a window gives us the
+    /// widths of the left, right, top and bottom borders added by a window manager,
+    ///
+    /// Some window managers have this attom despite not actually supporting it.
+    ///
+    /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391244864
+    frame_extents: Atom,
+}
+
+impl AtomsOfInterest {
+    fn get(connection: &xcb::Connection) -> Result<&Self> {
+        static ATOMS_OF_INTEREST: OnceCell<AtomsOfInterest> = OnceCell::new();
+
+        ATOMS_OF_INTEREST.get_or_try_init(|| {
+            let wm_client_list = connection.send_request(&x::InternAtom {
+                only_if_exists: true,
+                name: b"_NET_CLIENT_LIST_STACKING",
+            });
+            let frame_extents = connection.send_request(&x::InternAtom {
+                only_if_exists: true,
+                name: b"_NET_FRAME_EXTENTS",
+            });
+
+            let wm_client_list = connection.wait_for_reply(wm_client_list)?.atom();
+            let frame_extents = connection.wait_for_reply(frame_extents)?.atom();
+
+            if wm_client_list == ATOM_NONE {
+                return Err(Error::WmDoesNotSupportWindowList.into());
+            }
+            if frame_extents == ATOM_NONE {
+                return Err(Error::WmDoesNotSupportFrameExtents.into());
+            }
+
+            Ok(Self {
+                wm_client_list,
+                frame_extents,
+            })
+        })
+    }
+}
+
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub(super) fn get_windows() -> Result<Vec<Window>> {
     let (connection, _) = xcb::Connection::connect(None)?;
@@ -143,26 +195,10 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
         return Err(Error::WmDoesNotSupportWindowList.into());
     }
 
-    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391305328
-    let wm_client_list = connection.send_request(&x::InternAtom {
-        only_if_exists: true,
-        name: b"_NET_CLIENT_LIST_STACKING",
-    });
-
-    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391244864
-    let frame_extents = connection.send_request(&x::InternAtom {
-        only_if_exists: true,
-        name: b"_NET_FRAME_EXTENTS",
-    });
-    // Guaranteed to not be ATOM_NONE due to the above check
-    let wm_client_list = connection.wait_for_reply(wm_client_list)?.atom();
-    let frame_extents = connection.wait_for_reply(frame_extents)?;
-
-    let frame_extents = if frame_extents.atom() != ATOM_NONE {
-        frame_extents.atom()
-    } else {
-        return Err(Error::WmDoesNotSupportFrameExtents.into());
-    };
+    let &AtomsOfInterest {
+        wm_client_list,
+        frame_extents,
+    } = AtomsOfInterest::get(&connection)?;
 
     for root_screen in setup.roots() {
         let root_window = root_screen.root();
@@ -267,21 +303,11 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
         name: b"_NET_SUPPORTED",
     });
 
-    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391305328
-    let wm_client_list = connection.send_request(&x::InternAtom {
-        only_if_exists: true,
-        name: b"_NET_CLIENT_LIST_STACKING",
-    });
-
-    // https://specifications.freedesktop.org/wm-spec/wm-spec-1.5.html#idm45381391244864
-    let frame_extents = connection.send_request(&x::InternAtom {
-        only_if_exists: true,
-        name: b"_NET_FRAME_EXTENTS",
-    });
-
     let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
-    let wm_client_list = connection.wait_for_reply(wm_client_list)?;
-    let frame_extents = connection.wait_for_reply(frame_extents)?;
+    let AtomsOfInterest {
+        wm_client_list,
+        frame_extents,
+    } = AtomsOfInterest::get(&connection)?;
 
     if supported_ewmh_atoms.atom() == ATOM_NONE {
         return Err(Error::WmDoesNotSupportEwmh.into());
@@ -307,9 +333,9 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     let mut wm_features = WmFeatures::default();
 
     for atom in supported_ewmh_atoms.value::<x::Atom>() {
-        if atom == &wm_client_list.atom() {
+        if atom == wm_client_list {
             wm_features.supports_client_list = true;
-        } else if atom == &frame_extents.atom() {
+        } else if atom == frame_extents {
             wm_features.supports_frame_extents = true;
         }
     }
