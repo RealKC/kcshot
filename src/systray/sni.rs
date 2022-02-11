@@ -86,14 +86,15 @@ enum Message {
 
 fn load_icon() -> ImageResult<ksni::Icon> {
     const ICON_BYTES: &[u8] = include_bytes!("../../resources/logo/tray.png");
-    let image = image::load_from_memory(ICON_BYTES)?.to_bgra8();
+    let image = image::load_from_memory(ICON_BYTES)?.to_rgba8();
 
     let (width, height) = image.dimensions();
     let mut raw_image_data = image.into_raw();
 
     // We convert the image to ARGB as that's the required format of the image as defined in the SNI spec
     for chunk in raw_image_data.chunks_mut(4) {
-        chunk.reverse();
+        // RGBA rotated right once gives us ARGB
+        chunk.rotate_right(1);
     }
 
     Ok(ksni::Icon {
