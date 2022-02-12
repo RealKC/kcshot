@@ -148,6 +148,16 @@ struct AtomsOfInterest {
     ///
     /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391244864
     frame_extents: Atom,
+    /// This corresponds to _NET_WM_STATE, querrying this property on a window returns the window
+    /// state, i.e. whether the window is fullscreen or not.
+    ///
+    /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
+    window_state: Atom,
+    /// This corresponds to _NET_WM_STATE_FULLSCREEN, it indicates that the window is fullscreen.
+    ///
+    /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
+    /// (Same as above spec link)
+    window_is_fullscreen: Atom,
 }
 
 impl AtomsOfInterest {
@@ -163,9 +173,19 @@ impl AtomsOfInterest {
                 only_if_exists: true,
                 name: b"_NET_FRAME_EXTENTS",
             });
+            let window_state = connection.send_request(&x::InternAtom {
+                only_if_exists: true,
+                name: b"_NET_WM_STATE",
+            });
+            let window_is_fullscreen = connection.send_request(&x::InternAtom {
+                only_if_exists: true,
+                name: b"_NET_WM_STATE_FULLSCREEN",
+            });
 
             let wm_client_list = connection.wait_for_reply(wm_client_list)?.atom();
             let frame_extents = connection.wait_for_reply(frame_extents)?.atom();
+            let window_state = connection.wait_for_reply(window_state)?.atom();
+            let window_is_fullscreen = connection.wait_for_reply(window_is_fullscreen)?.atom();
 
             if wm_client_list == ATOM_NONE {
                 return Err(Error::WmDoesNotSupportWindowList.into());
@@ -173,10 +193,18 @@ impl AtomsOfInterest {
             if frame_extents == ATOM_NONE {
                 return Err(Error::WmDoesNotSupportFrameExtents.into());
             }
+            if window_state == ATOM_NONE {
+                return Err(Error::WmDoesNotSupportFrameExtents.into());
+            }
+            if window_is_fullscreen == ATOM_NONE {
+                return Err(Error::WmDoesNotSupportFrameExtents.into());
+            }
 
             Ok(Self {
                 wm_client_list,
                 frame_extents,
+                window_state,
+                window_is_fullscreen,
             })
         })
     }
@@ -195,10 +223,7 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
         return Err(Error::WmDoesNotSupportWindowList.into());
     }
 
-    let &AtomsOfInterest {
-        wm_client_list,
-        frame_extents,
-    } = AtomsOfInterest::get(&connection)?;
+    let &AtomsOfInterest { wm_client_list, .. } = AtomsOfInterest::get(&connection)?;
 
     for root_screen in setup.roots() {
         let root_window = root_screen.root();
@@ -239,51 +264,19 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
                     src_y: window_extents.bounding_shape_extents_y(),
                 });
 
-                let frame_extents = connection.send_request(&x::GetProperty {
-                    delete: false,
-                    window,
-                    property: frame_extents,
-                    r#type: ATOM_CARDINAL,
-                    long_offset: 0,
-                    long_length: 4,
-                });
-
-                // Batch requests when we can
-                let frame_extents = connection.wait_for_reply(frame_extents)?;
                 let translated_window_coords =
                     connection.wait_for_reply(translated_window_coords)?;
 
-                // Some WMs return an actual atom and not ATOM_NONE for _NET_FRAME_EXTENTS even though
-                // they don't actually support it, so we have to do this check.
-                let (left, right, top, bottom) = if !wm_features.supports_frame_extents {
-                    (0, 0, 0, 0)
-                } else {
-                    (
-                        frame_extents.value::<u32>()[0],
-                        frame_extents.value::<u32>()[1],
-                        frame_extents.value::<u32>()[2],
-                        frame_extents.value::<u32>()[3],
-                    )
+                let content_rect = Rectangle {
+                    x: translated_window_coords.dst_x() as f64,
+                    y: translated_window_coords.dst_y() as f64,
+                    w: window_extents.bounding_shape_extents_width() as f64,
+                    h: window_extents.bounding_shape_extents_height() as f64,
                 };
 
                 windows.push(Window {
-                    outer_rect: Rectangle {
-                        x: translated_window_coords.dst_x() as f64 - left as f64,
-                        y: translated_window_coords.dst_y() as f64 - top as f64,
-                        // Above these lines we offsetted the content rect to the start of the window decorations
-                        // as such, here we must grow the rect by how much we subtracted in order to cover the whole
-                        // area of the window
-                        w: window_extents.bounding_shape_extents_width() as f64
-                            + (left + right) as f64,
-                        h: window_extents.bounding_shape_extents_height() as f64
-                            + (top + bottom) as f64,
-                    },
-                    content_rect: Rectangle {
-                        x: translated_window_coords.dst_x() as f64,
-                        y: translated_window_coords.dst_y() as f64,
-                        w: window_extents.bounding_shape_extents_width() as f64,
-                        h: window_extents.bounding_shape_extents_height() as f64,
-                    },
+                    outer_rect: get_window_outer_rect(&connection, content_rect, window)?,
+                    content_rect,
                 });
             }
 
@@ -292,6 +285,78 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
     }
 
     Err(super::Error::FailedToGetWindows)
+}
+
+/// Returns the outer rect of a window
+///
+/// The outer rect is the content rect expanded to include window borders (usually decorations)
+/// added by the window manager, however it will be same as the content rect in the following cases:
+/// * the window manager doesn't support retrieving frame_extents
+/// * the window is fullscreen
+fn get_window_outer_rect(
+    connection: &xcb::Connection,
+    content_rect: Rectangle,
+    window: XWindow,
+) -> Result<Rectangle> {
+    // If the WM doesn't support getting frame extents, don't bother doing any work
+    if !WmFeatures::get()?.supports_frame_extents {
+        return Ok(content_rect);
+    }
+
+    let &AtomsOfInterest {
+        frame_extents,
+        window_state,
+        window_is_fullscreen,
+        ..
+    } = AtomsOfInterest::get(connection)?;
+
+    let frame_extents = connection.send_request(&x::GetProperty {
+        delete: false,
+        window,
+        property: frame_extents,
+        r#type: ATOM_CARDINAL,
+        long_offset: 0,
+        long_length: 4,
+    });
+    let window_state = connection.send_request(&x::GetProperty {
+        delete: false,
+        window,
+        property: window_state,
+        r#type: ATOM_ATOM,
+        long_offset: 0,
+        // This is how many states I counted, hopefully this is enough.
+        long_length: 1024,
+    });
+
+    let frame_extents = connection.wait_for_reply(frame_extents)?;
+    let window_states = connection.wait_for_reply(window_state)?;
+
+    let mut fullscreen = false;
+    if window_states.length() != 0 {
+        for state in window_states.value::<x::Atom>() {
+            if state == &window_is_fullscreen {
+                fullscreen = true;
+            }
+        }
+    }
+    // If the window is fullscreen, ignore the frame extents and just return the content_rect
+    if fullscreen {
+        return Ok(content_rect);
+    }
+
+    let Rectangle { x, y, w, h } = content_rect;
+
+    let left = frame_extents.value::<u32>()[0] as f64;
+    let right = frame_extents.value::<u32>()[1] as f64;
+    let top = frame_extents.value::<u32>()[2] as f64;
+    let bottom = frame_extents.value::<u32>()[3] as f64;
+
+    Ok(Rectangle {
+        x: x - left,
+        y: y - top,
+        w: w + (right + top),
+        h: h + (top + bottom),
+    })
 }
 
 pub(super) fn get_wm_features() -> Result<WmFeatures> {
@@ -307,6 +372,7 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     let AtomsOfInterest {
         wm_client_list,
         frame_extents,
+        ..
     } = AtomsOfInterest::get(&connection)?;
 
     if supported_ewmh_atoms.atom() == ATOM_NONE {
