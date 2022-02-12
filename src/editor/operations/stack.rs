@@ -1,5 +1,3 @@
-use std::convert::TryFrom;
-
 use cairo::{Context, ImageSurface};
 use tracing::{error, warn};
 
@@ -31,16 +29,33 @@ pub enum SelectionMode {
     IgnoreWindows,
 }
 
-impl TryFrom<u32> for SelectionMode {
-    type Error = ();
+impl SelectionMode {
+    /// Contains strings representing the variants of [`Self`] with mentions of window decorations.
+    pub const DECORATIONS: &'static [&'static str] = &[
+        "Windows w/ decorations",
+        "Windows w/o decorations",
+        "Ignore windows",
+    ];
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    /// Contains string representing the variants of [`Self`] that make sense when we can't retrieve
+    /// window decorations.
+    pub const NO_DECORATIONS: &'static [&'static str] = &["Windows", "Ignore windows"];
+
+    pub fn from_integer(value: u32, can_retrieve_window_decorations: bool) -> Option<Self> {
         use SelectionMode::*;
-        match value {
-            0 => Ok(WindowsWithDecorations),
-            1 => Ok(WindowsWithoutDecorations),
-            2 => Ok(IgnoreWindows),
-            _ => Err(()),
+        if can_retrieve_window_decorations {
+            match value {
+                0 => Some(WindowsWithDecorations),
+                1 => Some(WindowsWithoutDecorations),
+                2 => Some(IgnoreWindows),
+                _ => None,
+            }
+        } else {
+            match value {
+                0 => Some(WindowsWithoutDecorations),
+                1 => Some(IgnoreWindows),
+                _ => None,
+            }
         }
     }
 }
