@@ -334,7 +334,7 @@ fn get_window_outer_rect(
     Ok(Rectangle {
         x: x - left,
         y: y - top,
-        w: w + (right + top),
+        w: w + (right + left),
         h: h + (top + bottom),
     })
 }
