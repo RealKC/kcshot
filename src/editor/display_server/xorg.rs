@@ -15,9 +15,7 @@ use gtk4::prelude::{FileExt, IOStreamExt, InputStreamExtManual};
 use once_cell::sync::OnceCell;
 use xcb::{
     shape,
-    x::{
-        self, Atom, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW,
-    },
+    x::{self, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW},
     Xid,
 };
 
@@ -133,31 +131,33 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
     Err(super::Error::FailedToTakeScreenshot)
 }
 
-/// This structs contains the atoms we'll use multiple times over the course of the program and as
-/// such are cached. None of the atoms here will ever be [`xcb::x::ATOM_NONE`]
-struct AtomsOfInterest {
-    /// This corresponds to _NET_CLIENT_LIST_STACKING, querrying this property on the root window
-    /// gives us the list of windows in stacking order.
-    ///
-    /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391305328
-    wm_client_list: Atom,
-    /// This corresponds to _NET_FRAME_EXTENTS, querrrying this property on a window gives us the
-    /// widths of the left, right, top and bottom borders added by a window manager,
-    ///
-    /// Some window managers have this attom despite not actually supporting it.
-    ///
-    /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391244864
-    frame_extents: Atom,
-    /// This corresponds to _NET_WM_STATE, querrying this property on a window returns the window
-    /// state, i.e. whether the window is fullscreen or not.
-    ///
-    /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
-    window_state: Atom,
-    /// This corresponds to _NET_WM_STATE_FULLSCREEN, it indicates that the window is fullscreen.
-    ///
-    /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
-    /// (Same as above spec link)
-    window_is_fullscreen: Atom,
+xcb::atoms_struct! {
+    /// This structs contains the atoms we'll use multiple times over the course of the program and as
+    /// such are cached. None of the atoms here will ever be [`xcb::x::ATOM_NONE`]
+    struct AtomsOfInterest {
+        /// This corresponds to _NET_CLIENT_LIST_STACKING, querrying this property on the root window
+        /// gives us the list of windows in stacking order.
+        ///
+        /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391305328
+        wm_client_list => b"_NET_CLIENT_LIST_STACKING",
+        /// This corresponds to _NET_FRAME_EXTENTS, querrrying this property on a window gives us the
+        /// widths of the left, right, top and bottom borders added by a window manager,
+        ///
+        /// Some window managers have this attom despite not actually supporting it.
+        ///
+        /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391244864
+        frame_extents => b"_NET_FRAME_EXTENTS",
+        /// This corresponds to _NET_WM_STATE, querrying this property on a window returns the window
+        /// state, i.e. whether the window is fullscreen or not.
+        ///
+        /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
+        window_state => b"_NET_WM_STATE",
+        /// This corresponds to _NET_WM_STATE_FULLSCREEN, it indicates that the window is fullscreen.
+        ///
+        /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
+        /// (Same as above spec link)
+        window_is_fullscreen => b"_NET_WM_STATE_FULLSCREEN",
+    }
 }
 
 impl AtomsOfInterest {
@@ -165,38 +165,18 @@ impl AtomsOfInterest {
         static ATOMS_OF_INTEREST: OnceCell<AtomsOfInterest> = OnceCell::new();
 
         ATOMS_OF_INTEREST.get_or_try_init(|| {
-            let wm_client_list = connection.send_request(&x::InternAtom {
-                only_if_exists: true,
-                name: b"_NET_CLIENT_LIST_STACKING",
-            });
-            let frame_extents = connection.send_request(&x::InternAtom {
-                only_if_exists: true,
-                name: b"_NET_FRAME_EXTENTS",
-            });
-            let window_state = connection.send_request(&x::InternAtom {
-                only_if_exists: true,
-                name: b"_NET_WM_STATE",
-            });
-            let window_is_fullscreen = connection.send_request(&x::InternAtom {
-                only_if_exists: true,
-                name: b"_NET_WM_STATE_FULLSCREEN",
-            });
-
-            let wm_client_list = connection.wait_for_reply(wm_client_list)?.atom();
-            let frame_extents = connection.wait_for_reply(frame_extents)?.atom();
-            let window_state = connection.wait_for_reply(window_state)?.atom();
-            let window_is_fullscreen = connection.wait_for_reply(window_is_fullscreen)?.atom();
+            let Self {
+                wm_client_list,
+                frame_extents,
+                window_state,
+                window_is_fullscreen,
+            } = Self::intern_all(connection)?;
 
             if wm_client_list == ATOM_NONE {
                 return Err(Error::WmDoesNotSupportWindowList.into());
             }
-            if frame_extents == ATOM_NONE {
-                return Err(Error::WmDoesNotSupportFrameExtents.into());
-            }
-            if window_state == ATOM_NONE {
-                return Err(Error::WmDoesNotSupportFrameExtents.into());
-            }
-            if window_is_fullscreen == ATOM_NONE {
+
+            if [frame_extents, window_state, window_is_fullscreen].contains(&ATOM_NONE) {
                 return Err(Error::WmDoesNotSupportFrameExtents.into());
             }
 

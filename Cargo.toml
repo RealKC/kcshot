@@ -14,7 +14,10 @@ cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
 pangocairo = "0.15.1"
 image = { version = "0.24.0", default-features = false, features = ["png"] }
 gtk4 = "0.4.1"
-xcb = { version = "1.0.0-beta.4", features = ["debug_atom_names", "shape"] }
+xcb = { git = "https://github.com/RealKC/rust-xcb", branch = "meta-attrs-atoms-of-struct", features = [
+    "debug_atom_names",
+    "shape",
+] }
 x11 = { version = "2.19", features = ["xlib"] }
 ksni = "0.2.0"
 
