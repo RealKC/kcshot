@@ -47,7 +47,7 @@ impl EditorWindow {
 
     /// Returns the primary colour of the editor
     ///
-    /// The primary colour is the one used for colouring text and filling in shapes
+    /// The primary colour is the one used for filling in shapes
     fn primary_colour(&self) -> Colour {
         self.imp()
             .image
@@ -72,7 +72,8 @@ impl EditorWindow {
 
     /// Returns the secondary colour of the editor
     ///
-    /// The secondary colour is used for borders, and the bubble colour in case of bubbles
+    /// The secondary colour is used for borders, the bubble colour in case of bubbles and as the
+    /// default colour for text
     fn secondary_colour(&self) -> Colour {
         self.imp()
             .image

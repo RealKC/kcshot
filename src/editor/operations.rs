@@ -228,7 +228,11 @@ impl Operation {
             Tool::Text => Self::Text {
                 top_left: start,
                 text: "".into(),
-                colour: primary_colour,
+                // We use secondary colour here as the primary one is more likely to be transparent,
+                // given that's the default, and people are likely to use boxes and ellipses to try
+                // and bring things into attention, and in those situations the primary colour is
+                // used to fill those shapes.
+                colour: secondary_colour,
                 font_description,
             },
         }
