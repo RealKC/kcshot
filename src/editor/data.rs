@@ -27,6 +27,33 @@ impl Colour {
         blue: 0,
         alpha: 255,
     };
+
+    /// Serialises `self` as an u32 where each byte represents a component of `Colour`.
+    pub const fn serialise_to_u32(&self) -> u32 {
+        let &Colour {
+            red,
+            green,
+            blue,
+            alpha,
+        } = self;
+
+        (red as u32) << 24 | (green as u32) << 16 | (blue as u32) << 8 | (alpha as u32)
+    }
+
+    /// Creates a [`Self`] from a `u32` whose byte layout is assumed to be `RGBA`.
+    /// 
+    /// [`Self::serialise_to_u32`] will create a `u32` in this layout, and you should use this
+    /// function paired with that one.
+    #[rustfmt::skip]
+    pub const fn deserialise_from_u32(raw: u32) -> Self {
+        // NOTE: formatting is disabled on this function because IMO this looks nicer
+        let red   = (raw >> 24       ) as u8;
+        let green = (raw >> 16 & 0xFF) as u8;
+        let blue  = (raw >>  8 & 0xFF) as u8;
+        let alpha = (raw       & 0xFF) as u8;
+    
+        Self { red, green, blue, alpha }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

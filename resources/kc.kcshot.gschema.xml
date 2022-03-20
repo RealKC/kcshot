@@ -15,5 +15,15 @@
             <default>["copy-to-clipboard", "save-to-disk"]</default>
             <summary>The actions to be performed, in the order they are to be performed</summary>
         </key>
+
+        <!-- For storing colours across editing sessions, note that these numbers are 0xRRGGBBAA -->
+        <key name="last-used-primary-colour" type="u">
+            <default>0x00000000</default>
+            <summary>The primary colour last used when editing a screenshot</summary>
+        </key>
+        <key name="last-used-secondary-colour" type="u">
+            <default>0xA80AF100</default>
+            <summary>The secondary colour last used when editing a screenshot</summary>
+        </key>
     </schema>
 </schemalist>

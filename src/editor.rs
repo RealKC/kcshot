@@ -1,4 +1,8 @@
-use gtk4::{glib, subclass::prelude::ObjectSubclassIsExt};
+use gtk4::{
+    gio::{self, prelude::SettingsExt},
+    glib,
+    subclass::prelude::ObjectSubclassIsExt,
+};
 
 use self::{
     data::Colour,
@@ -20,7 +24,18 @@ glib::wrapper! {
 
 impl EditorWindow {
     pub fn new(app: &gtk4::Application) -> Self {
-        glib::Object::new(&[("application", app)]).expect("Failed to make an EditorWindow")
+        let editor = glib::Object::new::<Self>(&[("application", app)])
+            .expect("Failed to make an EditorWindow");
+
+        let settings = gio::Settings::new("kc.kcshot");
+
+        let restored_primary_colour = settings.uint("last-used-primary-colour");
+        let restored_secondary_colour = settings.uint("last-used-secondary-colour");
+
+        editor.set_primary_colour(Colour::deserialise_from_u32(restored_primary_colour));
+        editor.set_secondary_colour(Colour::deserialise_from_u32(restored_secondary_colour));
+
+        editor
     }
 
     fn set_current_tool(&self, tool: Tool) {
@@ -51,6 +66,11 @@ impl EditorWindow {
         let image = image.as_mut().unwrap();
 
         image.operation_stack.primary_colour = colour;
+
+        let settings = gio::Settings::new("kc.kcshot");
+        if let Err(why) = settings.set_uint("last-used-primary-colour", colour.serialise_to_u32()) {
+            tracing::warn!("Failed to update `last-used-primary-colour` setting value: {why}")
+        }
     }
 
     /// Returns the secondary colour of the editor
@@ -71,6 +91,12 @@ impl EditorWindow {
         let image = image.as_mut().unwrap();
 
         image.operation_stack.secondary_colour = colour;
+
+        let settings = gio::Settings::new("kc.kcshot");
+        if let Err(why) = settings.set_uint("last-used-secondary-colour", colour.serialise_to_u32())
+        {
+            tracing::warn!("Failed to update `last-used-secondary-colour` setting value: {why}");
+        }
     }
 
     fn set_selection_mode(&self, selection_mode: SelectionMode) {
