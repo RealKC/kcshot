@@ -29,7 +29,11 @@ mod underlying {
     };
     use once_cell::sync::{Lazy, OnceCell};
 
-    use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
+    use crate::{
+        editor::EditorWindow,
+        historymodel::RowData,
+        kcshot::{self, KCShot},
+    };
 
     #[derive(Default, Debug)]
     pub struct AppWindow {
@@ -104,7 +108,7 @@ mod underlying {
             stack.add_named(&message, Some("message"));
 
             self.settings
-                .set(gio::Settings::new("kc.kcshot"))
+                .set(kcshot::open_settings())
                 .expect("self.settings should only be set once");
 
             let settings = self.settings.get().unwrap();
@@ -287,7 +291,7 @@ mod underlying {
     fn build_settings_window() -> gtk4::Window {
         let window = gtk4::Window::new();
         window.set_title(Some("kcshot - Settings"));
-        let settings = gio::Settings::new("kc.kcshot");
+        let settings = kcshot::open_settings();
 
         let folder_chooser = gtk4::FileChooserDialog::new(
             Some("Choose a folder for your screenshot history"),

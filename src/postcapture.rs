@@ -4,12 +4,12 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
     gdk_pixbuf::Pixbuf,
-    gio,
 };
 
 use crate::{
     db,
     historymodel::{ModelNotifier, RowData},
+    kcshot,
 };
 
 /// Trait for the post capture actions.
@@ -47,7 +47,7 @@ impl PostCaptureAction for SaveToDisk {
         let now = chrono::Local::now();
         let now = now.to_rfc3339();
 
-        let settings = gio::Settings::new("kc.kcshot");
+        let settings = kcshot::open_settings();
         let path = settings.string("saved-screenshots-path");
         let path = if path.ends_with('/') {
             format!("{}screenshot_{}.png", path, now)
@@ -120,7 +120,7 @@ pub fn run_postcapture_actions(
 }
 
 fn get_actions_from_settings() -> Vec<&'static dyn PostCaptureAction> {
-    let settings = gio::Settings::new("kc.kcshot");
+    let settings = kcshot::open_settings();
     let action_names = settings.strv("post-capture-actions");
 
     let action_ids_to_objects: HashMap<String, &dyn PostCaptureAction> = get_postcapture_actions()

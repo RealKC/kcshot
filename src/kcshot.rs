@@ -32,8 +32,7 @@ impl KCShot {
     }
 
     pub fn screenshot_folder() -> String {
-        let settings = gio::Settings::new("kc.kcshot");
-        settings.string("saved-screenshots-path").into()
+        open_settings().string("saved-screenshots-path").into()
     }
 
     /// This is to be used for the purpose of notifying the [`crate::historymodel::HistoryMode`]
@@ -65,6 +64,11 @@ impl KCShot {
             })
         })
     }
+}
+
+/// Creates a Settings whose data is associated with our application
+pub fn open_settings() -> gio::Settings {
+    gio::Settings::new("kc.kcshot")
 }
 
 pub fn build_ui(app: &KCShot) {
@@ -295,7 +299,7 @@ Application Options:
                 tracing::error!("Failed loading resources: {why}");
             }
 
-            let settings = gio::Settings::new("kc.kcshot");
+            let settings = super::open_settings();
 
             if settings.string("saved-screenshots-path").is_empty() {
                 #[cfg(not(feature = "xdg-paths"))]
