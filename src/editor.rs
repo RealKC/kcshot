@@ -1,4 +1,4 @@
-use gtk4::{gio::prelude::SettingsExt, glib, subclass::prelude::ObjectSubclassIsExt};
+use gtk4::{gio, gio::prelude::SettingsExt, glib, subclass::prelude::ObjectSubclassIsExt};
 
 use self::{
     data::Colour,
@@ -16,7 +16,8 @@ mod utils;
 
 glib::wrapper! {
     pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)
-        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
+        @implements gio::ActionMap;
 }
 
 impl EditorWindow {

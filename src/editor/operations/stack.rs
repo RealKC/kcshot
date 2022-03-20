@@ -10,6 +10,7 @@ use crate::{
 #[derive(Debug)]
 pub struct OperationStack {
     operations: Vec<Operation>,
+    undone_operations: Vec<Operation>,
     current_tool: Tool,
     current_operation: Option<Operation>,
     autoincrement_bubble_number: i32,
@@ -64,6 +65,7 @@ impl OperationStack {
     pub fn new(windows: Vec<Window>) -> Self {
         Self {
             operations: vec![],
+            undone_operations: vec![],
             current_tool: Tool::CropAndSave,
             current_operation: None,
             autoincrement_bubble_number: 1,
@@ -109,6 +111,8 @@ impl OperationStack {
     }
 
     pub fn start_operation_at(&mut self, point: Point) {
+        self.undone_operations.clear();
+
         if let Some(old_operation) = self.current_operation.take() {
             self.operations.push(old_operation);
         }
@@ -120,6 +124,18 @@ impl OperationStack {
             self.primary_colour,
             self.secondary_colour,
         ));
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(op) = self.operations.pop() {
+            self.undone_operations.push(op);
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(op) = self.undone_operations.pop() {
+            self.operations.push(op);
+        }
     }
 
     pub fn update_current_operation_end_coordinate(&mut self, new_width: f64, new_height: f64) {

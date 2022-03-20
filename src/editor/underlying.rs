@@ -4,6 +4,7 @@ use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY},
+    gio,
     glib::{self, clone, ParamSpec, ParamSpecObject},
     prelude::*,
     subclass::prelude::*,
@@ -208,6 +209,43 @@ impl ObjectImpl for EditorWindow {
             }),
         );
         drawing_area.add_controller(&drag_controller);
+
+        let undo_action = gio::SimpleAction::new("undo", None);
+        undo_action.connect_activate(
+            clone!(@strong self.image as image, @strong drawing_area => move |_, _| {
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        image.operation_stack.undo();
+                        drawing_area.queue_draw();
+                    }
+                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
+                }
+
+            }),
+        );
+        obj.add_action(&undo_action);
+
+        let redo_action = gio::SimpleAction::new("redo", None);
+        redo_action.connect_activate(
+            clone!(@strong self.image as image, @strong drawing_area => move |_, _| {
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        image.operation_stack.redo();
+                        drawing_area.queue_draw();
+                    }
+                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle redo: {why}")
+                }
+
+            }),
+        );
+        obj.add_action(&redo_action);
+
+        // FIXME: Figure out how/if we make this work across keyboard layouts that don't have Z and Y
+        // in the same place QWERTY does.
+        app.set_accels_for_action("win.undo", &["<Ctrl>Z"]);
+        app.set_accels_for_action("win.redo", &["<Ctrl>Y"]);
 
         self.image.replace(Some(Image {
             surface: image,
