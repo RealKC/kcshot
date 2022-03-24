@@ -39,6 +39,38 @@ pub enum Error {
 // Some things in this file are inspired by the code written here https://giters.com/psychon/x11rb/issues/328
 // archive.org link: https://web.archive.org/web/20220109220701/https://giters.com/psychon/x11rb/issues/328 [1]
 
+// These fields are only ever read from C, which is why we allow dead_code here
+#[allow(non_camel_case_types, dead_code)]
+#[repr(C)]
+struct xcb_visualtype_t {
+    visual_id: xcb_visualid_t,
+    class: u8,
+    bits_per_rgb_value: u8,
+    colormap_entries: u16,
+    red_mask: u32,
+    green_mask: u32,
+    blue_mask: u32,
+    pad0: [u8; 4],
+}
+
+#[allow(non_camel_case_types)]
+type xcb_visualid_t = u32;
+
+impl From<x::Visualtype> for xcb_visualtype_t {
+    fn from(visualtype: x::Visualtype) -> Self {
+        Self {
+            visual_id: visualtype.visual_id(),
+            class: visualtype.class() as u8,
+            bits_per_rgb_value: visualtype.bits_per_rgb_value(),
+            colormap_entries: visualtype.colormap_entries(),
+            red_mask: visualtype.red_mask(),
+            green_mask: visualtype.green_mask(),
+            blue_mask: visualtype.blue_mask(),
+            pad0: [0; 4],
+        }
+    }
+}
+
 pub(super) fn take_screenshot() -> Result<ImageSurface> {
     extern "C" {
         /// cairo-rs doesn't expose it in its ffi module, so I have to write its declaration myself
@@ -76,17 +108,19 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
         let pointer_reply = connection.wait_for_reply(pointer_cookie)?;
         if pointer_reply.same_screen() {
             let geometry_reply = connection.wait_for_reply(geometry_cookie)?;
-            let mut visualtype = match find_xcb_visualtype(&connection, root_screen.root_visual()) {
-                Some(visualtype) => visualtype,
-                None => continue,
-            };
+            let mut visualtype: xcb_visualtype_t =
+                match find_xcb_visualtype(&connection, root_screen.root_visual()) {
+                    Some(visualtype) => visualtype.into(),
+                    None => continue,
+                };
             let raw_connection = connection.get_raw_conn();
             let width = geometry_reply.width() as i32;
             let height = geometry_reply.height() as i32;
 
-            // SAFETY: cairo doesn't touch the pointers we give it, so
-            //      * the connection should be fine to pass through,
-            //      * the visualtype is (hopefully) ABI compatible with C
+            // SAFETY:
+            //      * the connection should be fine to pass through as it's explicitly made for ffi, even though
+            //        it's a different type than what cairo-rs-sys uses,
+            //      * the visualtype is specifically constructed to be FFI-safe
             // Also see [1]
             let screenshot = unsafe {
                 cairo_xcb_surface_create(
@@ -97,7 +131,9 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                     height,
                 )
             };
+            debug_assert!(!screenshot.is_null(), "cairo_xcb_surface_create returned a null pointer despite the docs saying it will never do so.");
 
+            // SAFETY: `screenshot` is valid and nonnull.
             let surface_status = unsafe { cairo_surface_status(screenshot) };
             if surface_status != CAIRO_STATUS_SUCCESS {
                 return Err(CairoError::from(surface_status).into());
@@ -108,7 +144,9 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             let path = file.path().unwrap();
             let path = CString::new(path.as_os_str().as_bytes()).unwrap();
 
-            // SAFETY: * screenshot is a valid surface (see above the `cairo_surface_status` call)
+            // FIXME: Migrate to `Surface::write_to_png` once the next major version of cairo-rs releases
+            //        We'll be able to remove some disk IO then.
+            // SAFETY: * screenshot is a valid surface (see above an assert and the `cairo_surface_status` call)
             //         *  path is a valid nul terminated c-string (we should've bailed out above otherwise)
             match unsafe { cairo_surface_write_to_png(screenshot, path.as_ptr()) } {
                 0 => {}
@@ -118,9 +156,9 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             // Why do we this instead of just returning an XcbSurface?
             // When I first started experimenting with writing a screenshot-utility, I did it in C++
             // using xlib and Cairo::XlibSurface. That had some behaviour I disliked: when switching
-            // tags, the surface displayed the contents of the new tag, instead of the old one. This
-            // happened when I tested cairo-rs's XcbSurface, I assume it'll be the same, so we end
-            // up writing the screenshot to a .png and then reading it again
+            // tags, the surface displayed the contents of the new tag, instead of the old one.
+            // I don't remember testing this with cairo-rs' XcbSurface, but I assume the behaviour will
+            // be the same.
 
             return Ok(ImageSurface::create_from_png(
                 &mut stream.input_stream().into_read(),
