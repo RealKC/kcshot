@@ -40,9 +40,9 @@ checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
 
 [[package]]
 name = "ashpd"
-version = "0.2.5"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "084a8df12135f75ec7501c7c593b14621d1da962d222127fe72fb6de116aa9eb"
+checksum = "7db023823e72175ec1a514231d5ff28ad7f7e15702a3ad7507dbc7ac1feea7b6"
 dependencies = [
  "enumflags2",
  "futures",
@@ -1700,8 +1700,9 @@ dependencies = [
 
 [[package]]
 name = "xcb"
-version = "1.0.0"
-source = "git+https://github.com/RealKC/rust-xcb?branch=meta-attrs-atoms-of-struct#e81ac53fabe0567f214bc6fd11ebd049b0bc58d3"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b127bf5bfe9dbb39118d6567e3773d4bbc795411a8e1ef7b7e056bccac0011a9"
 dependencies = [
  "bitflags",
  "libc",
