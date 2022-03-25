@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
-    gdk::{self, BUTTON_PRIMARY},
+    gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
     glib::{self, clone, ParamSpec, ParamSpecObject},
     prelude::*,
@@ -136,17 +136,21 @@ impl ObjectImpl for EditorWindow {
 
         let click_event_handler = gtk4::GestureClick::new();
 
-        click_event_handler.set_button(BUTTON_PRIMARY);
+        click_event_handler.set_button(0);
         click_event_handler.connect_pressed(
-            clone!(@strong self.image as image, @strong obj =>  move |_this, _n_clicks, x, y| {
+            clone!(@strong self.image as image, @strong obj =>  move |this, _n_clicks, x, y| {
                 tracing::warn!("Got button-press on drawing_area");
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        image.operation_stack.start_operation_at(Point { x, y });
-                        obj.queue_draw();
+                if this.current_button() == BUTTON_PRIMARY {
+                    match image.try_borrow_mut() {
+                        Ok(mut image) => {
+                            let image = image.as_mut().unwrap();
+                            image.operation_stack.start_operation_at(Point { x, y });
+                            obj.queue_draw();
+                        }
+                        Err(why) => info!("Image already borrowed: {why}"),
                     }
-                    Err(why) => info!("Image already borrowed: {why}"),
+                } else if this.current_button() == BUTTON_SECONDARY {
+                    obj.close();
                 }
 
             }),
