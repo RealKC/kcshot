@@ -47,41 +47,6 @@ mod underlying {
 
     impl ObjectImpl for ToolbarWidget {
         fn constructed(&self, obj: &Self::Type) {
-            fn make_tool_button(
-                tool: Tool,
-                toolbar: &gtk4::Box,
-                editor: &editor::EditorWindow,
-                group_source: Option<&gtk4::ToggleButton>,
-                // Should only be passed for buttons that use the line-width-spinner
-                spinner: Option<&gtk4::SpinButton>,
-            ) -> (gtk4::ToggleButton, Tool) {
-                let button = match group_source {
-                    Some(group_source) => {
-                        let button = gtk4::ToggleButton::new();
-                        button.set_group(Some(group_source));
-                        button
-                    }
-                    None => gtk4::ToggleButton::new(),
-                };
-                button.set_child(Some(&gtk4::Image::from_resource(tool.path())));
-                button.set_tooltip_markup(Some(tool.tooltip()));
-
-                if let Some(spinner) = spinner {
-                    let spinner = spinner.clone();
-                    button.connect_toggled(move |this| {
-                        spinner.set_visible(this.is_active());
-                    });
-                }
-
-                button.connect_clicked(clone!(@strong editor => move |_| {
-                    tracing::info!("Entered on-click handler of {tool:?}");
-                    editor.set_current_tool(tool);
-                }));
-                button.set_active(false);
-                toolbar.append(&button);
-                (button, tool)
-            }
-
             let editor = self
                 .parent_editor
                 .get()
@@ -312,5 +277,40 @@ mod underlying {
 
             button
         }
+    }
+
+    fn make_tool_button(
+        tool: Tool,
+        toolbar: &gtk4::Box,
+        editor: &editor::EditorWindow,
+        group_source: Option<&gtk4::ToggleButton>,
+        // Should only be passed for buttons that use the line-width-spinner
+        spinner: Option<&gtk4::SpinButton>,
+    ) -> (gtk4::ToggleButton, Tool) {
+        let button = match group_source {
+            Some(group_source) => {
+                let button = gtk4::ToggleButton::new();
+                button.set_group(Some(group_source));
+                button
+            }
+            None => gtk4::ToggleButton::new(),
+        };
+        button.set_child(Some(&gtk4::Image::from_resource(tool.path())));
+        button.set_tooltip_markup(Some(tool.tooltip()));
+
+        if let Some(spinner) = spinner {
+            let spinner = spinner.clone();
+            button.connect_toggled(move |this| {
+                spinner.set_visible(this.is_active());
+            });
+        }
+
+        button.connect_clicked(clone!(@strong editor => move |_| {
+            tracing::info!("Entered on-click handler of {tool:?}");
+            editor.set_current_tool(tool);
+        }));
+        button.set_active(false);
+        toolbar.append(&button);
+        (button, tool)
     }
 }
