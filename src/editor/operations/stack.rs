@@ -225,9 +225,10 @@ impl OperationStack {
         // We do not look at the top of `self.operations` as cropping should be the last operation
         // in the UX I want.
         if let Some(Operation::Crop(rect)) = &self.current_operation {
-            // We reserve (w, h) == (0,0) as special values in order to signal the entire screen or
-            // the window under the mouse as being the crop region
-            if rect.w == 0.0 && rect.h == 0.0 {
+            // If the width or height of the rectangle are 0, or the area of the rectangle covers
+            // less than a pixel, we consider the entire screen or window under the cursor to be
+            // the crop region
+            if rect.area() < 1.0 {
                 if self.selection_mode != SelectionMode::IgnoreWindows {
                     self.windows
                         .iter()

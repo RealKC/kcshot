@@ -90,6 +90,10 @@ impl Rectangle {
         let &Rectangle { x, y, w, h } = self;
         (x..x + w).contains(&x1) && (y..y + h).contains(&y1)
     }
+
+    pub fn area(&self) -> f64 {
+        self.w * self.h
+    }
 }
 
 /// A struct representing an ellipse
