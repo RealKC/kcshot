@@ -60,33 +60,33 @@ mod underlying {
             }));
 
             let box_ = obj.upcast_ref();
-            let (group_source, _) = make_tool_button(Tool::CropAndSave, box_, editor, None, None);
+            let (group_source, _) =
+                make_tool_button(Tool::CropAndSave, box_, editor, None, None, None, None);
             group_source.set_active(true);
-
-            #[rustfmt::skip]
-            let mut buttons = vec![
-                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source), Some(&line_width_spinner)),
-                make_tool_button(Tool::Line, box_, editor, Some(&group_source), Some(&line_width_spinner)),
-                make_tool_button(Tool::Arrow, box_, editor, Some(&group_source), Some(&line_width_spinner)),
-                make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source), Some(&line_width_spinner)),
-                make_tool_button(Tool::Highlight, box_, editor, Some(&group_source), None),
-                make_tool_button(Tool::Ellipse, box_, editor, Some(&group_source), Some(&line_width_spinner)),
-                make_tool_button(Tool::Pixelate, box_, editor, Some(&group_source), None),
-                make_tool_button(Tool::Blur, box_, editor, Some(&group_source), None),
-                make_tool_button(Tool::AutoincrementBubble, box_, editor, Some(&group_source), None),
-                make_tool_button(Tool::Text, box_, editor, Some(&group_source), None),
-            ];
 
             let primary_colour_button =
                 Self::make_primary_colour_chooser_button(editor, editor.upcast_ref());
             primary_colour_button.set_tooltip_text(Some("Set primary colour"));
-            obj.append(&primary_colour_button);
-
             let secondary_colour_button =
                 Self::make_secondary_colour_button(editor, editor.upcast_ref());
             secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
-            obj.append(&secondary_colour_button);
 
+            #[rustfmt::skip]
+            let mut buttons = vec![
+                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Line, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Arrow, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Highlight, box_, editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Ellipse, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pixelate, box_, editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Blur, box_, editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::AutoincrementBubble, box_, editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Text, box_, editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
+            ];
+
+            obj.append(&primary_colour_button);
+            obj.append(&secondary_colour_button);
             obj.append(&line_width_spinner);
 
             // Don't bother with the dropdown if the displa
@@ -286,6 +286,10 @@ mod underlying {
         group_source: Option<&gtk4::ToggleButton>,
         // Should only be passed for buttons that use the line-width-spinner
         spinner: Option<&gtk4::SpinButton>,
+        // Should only be passed for buttons that care about primary-colour (i.e. they want to fill a shape)
+        primary: Option<&gtk4::Button>,
+        // Should only be passed for buttons that care about secondary-colour (i.e. they want to do lines of some form)
+        secondary: Option<&gtk4::Button>,
     ) -> (gtk4::ToggleButton, Tool) {
         let button = match group_source {
             Some(group_source) => {
@@ -298,12 +302,22 @@ mod underlying {
         button.set_child(Some(&gtk4::Image::from_resource(tool.path())));
         button.set_tooltip_markup(Some(tool.tooltip()));
 
-        if let Some(spinner) = spinner {
-            let spinner = spinner.clone();
-            button.connect_toggled(move |this| {
+        let spinner = spinner.cloned();
+        let primary = primary.cloned();
+        let secondary = secondary.cloned();
+        button.connect_toggled(move |this| {
+            if let Some(spinner) = &spinner {
                 spinner.set_visible(this.is_active());
-            });
-        }
+            }
+
+            if let Some(primary) = &primary {
+                primary.set_visible(this.is_active());
+            }
+
+            if let Some(secondary) = &secondary {
+                secondary.set_visible(this.is_active());
+            }
+        });
 
         button.connect_clicked(clone!(@strong editor => move |_| {
             tracing::info!("Entered on-click handler of {tool:?}");
