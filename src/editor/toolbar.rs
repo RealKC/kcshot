@@ -58,6 +58,7 @@ mod underlying {
             line_width_spinner.connect_value_changed(clone!(@strong editor => move |this| {
                 editor.set_line_width(this.value());
             }));
+            line_width_spinner.set_visible(false);
 
             let box_ = obj.upcast_ref();
             let (group_source, _) =
@@ -105,6 +106,9 @@ mod underlying {
                         editor.set_selection_mode(selection_mode);
                     }
                 }));
+
+                let drop_down_ = drop_down.clone();
+                group_source.connect_toggled(move |this| drop_down_.set_visible(this.is_active()));
 
                 obj.append(&drop_down);
             }
@@ -255,6 +259,7 @@ mod underlying {
         ) -> gtk4::Button {
             let button = gtk4::Button::new();
             button.set_child(Some(drawing_area));
+            button.set_visible(false);
 
             button.connect_clicked(clone!(@strong parent_window, @strong editor, @strong drawing_area => move |_this| {
                 let colour_chooser = gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
