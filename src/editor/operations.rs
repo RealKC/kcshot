@@ -92,6 +92,11 @@ pub enum Operation {
         number: i32,
         font_description: FontDescription,
     },
+    Pencil {
+        start: Point,
+        points: Vec<Point>,
+        colour: Colour,
+    },
 }
 
 /// This enum is like [Operations] but without any associated data
@@ -107,6 +112,7 @@ pub enum Tool {
     Blur = 7,
     AutoincrementBubble = 8,
     Text = 9,
+    Pencil = 10,
 }
 
 impl Tool {
@@ -122,6 +128,7 @@ impl Tool {
             Tool::Blur => "/kc/kcshot/editor/tool-blur.png",
             Tool::AutoincrementBubble => "/kc/kcshot/editor/tool-autoincrementbubble.png",
             Tool::Text => "/kc/kcshot/editor/tool-text.png",
+            Tool::Pencil => "/kc/kcshot/editor/tool-pencil.png",
         }
     }
 
@@ -154,6 +161,7 @@ impl Tool {
             Tool::Blur => "<u>B</u>lur tool",
             Tool::AutoincrementBubble => "Auto<u>i</u>crement bubble tool",
             Tool::Text => "<u>T</u>ext tool",
+            Tool::Pencil => "Pe<u>n</u>cil tool",
         }
     }
 }
@@ -234,6 +242,11 @@ impl Operation {
                 // used to fill those shapes.
                 colour: secondary_colour,
                 font_description,
+            },
+            Tool::Pencil => Self::Pencil {
+                start,
+                points: vec![],
+                colour: secondary_colour,
             },
         }
     }
@@ -356,6 +369,20 @@ impl Operation {
                     *text_colour,
                     font_description,
                 )?;
+            }
+            Operation::Pencil {
+                start,
+                points,
+                colour,
+            } => {
+                cairo.save()?;
+                cairo.set_source_colour(*colour);
+                cairo.move_to(start.x, start.y);
+                for point in points {
+                    cairo.line_to(point.x, point.y);
+                }
+                cairo.stroke()?;
+                cairo.restore()?;
             }
         };
 

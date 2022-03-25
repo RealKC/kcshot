@@ -181,6 +181,14 @@ impl OperationStack {
                 ellipse.w = new_width;
                 ellipse.h = new_height;
             }
+            Operation::Pencil {
+                start: Point { x, y },
+                points,
+                ..
+            } => points.push(Point {
+                x: new_width + *x,
+                y: new_height + *y,
+            }),
             Operation::Bubble { .. } | Operation::Text { .. } => {}
         }
     }

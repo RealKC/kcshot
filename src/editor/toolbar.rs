@@ -83,6 +83,7 @@ mod underlying {
             group_source.set_active(true);
 
             let mut buttons = vec![
+                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source)),
                 make_tool_button(Tool::Line, box_, editor, Some(&group_source)),
                 make_tool_button(Tool::Arrow, box_, editor, Some(&group_source)),
                 make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source)),
