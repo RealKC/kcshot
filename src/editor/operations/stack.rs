@@ -21,6 +21,8 @@ pub struct OperationStack {
     current_window: Option<usize>,
     is_in_crop_drag: bool,
     pub selection_mode: SelectionMode,
+    /// Used for arrows, lines, pencil and the contours of rectangles
+    pub line_width: f64,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -85,6 +87,7 @@ impl OperationStack {
             current_window: None,
             is_in_crop_drag: false,
             selection_mode: SelectionMode::WindowsWithDecorations,
+            line_width: 4.0,
         }
     }
 
@@ -123,6 +126,7 @@ impl OperationStack {
             &mut self.autoincrement_bubble_number,
             self.primary_colour,
             self.secondary_colour,
+            self.line_width,
         ));
     }
 

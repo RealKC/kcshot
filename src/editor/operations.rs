@@ -60,11 +60,13 @@ pub enum Operation {
         start: Point,
         end: Point,
         colour: Colour,
+        line_width: f64,
     },
     DrawRectangle {
         rect: Rectangle,
         border: Colour,
         fill: Colour,
+        line_width: f64,
     },
     Text {
         top_left: Point,
@@ -76,6 +78,7 @@ pub enum Operation {
         start: Point,
         end: Point,
         colour: Colour,
+        line_width: f64,
     },
     Highlight {
         rect: Rectangle,
@@ -84,6 +87,7 @@ pub enum Operation {
         ellipse: Ellipse,
         border: Colour,
         fill: Colour,
+        line_width: f64,
     },
     Bubble {
         centre: Point,
@@ -96,6 +100,7 @@ pub enum Operation {
         start: Point,
         points: Vec<Point>,
         colour: Colour,
+        line_width: f64,
     },
 }
 
@@ -173,6 +178,7 @@ impl Operation {
         bubble_index: &mut i32,
         primary_colour: Colour,
         secondary_colour: Colour,
+        line_width: f64,
     ) -> Self {
         let rect = Rectangle {
             x: start.x,
@@ -195,16 +201,19 @@ impl Operation {
                 start,
                 end: start,
                 colour: primary_colour,
+                line_width,
             },
             Tool::Arrow => Self::DrawArrow {
                 start,
                 end: start,
                 colour: primary_colour,
+                line_width,
             },
             Tool::Rectangle => Self::DrawRectangle {
                 rect,
                 border: secondary_colour,
                 fill: primary_colour,
+                line_width,
             },
             Tool::Ellipse => Self::DrawEllipse {
                 ellipse: Ellipse {
@@ -215,6 +224,7 @@ impl Operation {
                 },
                 border: secondary_colour,
                 fill: primary_colour,
+                line_width,
             },
             Tool::Highlight => Self::Highlight { rect },
             Tool::Pixelate => Self::Pixelate {
@@ -247,6 +257,7 @@ impl Operation {
                 start,
                 points: vec![],
                 colour: secondary_colour,
+                line_width,
             },
         }
     }
@@ -274,6 +285,7 @@ impl Operation {
                         alpha: 255,
                     });
                     cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                    cairo.set_line_width(2.0);
                     cairo.stroke()?;
                     cairo.restore()?;
                 } else {
@@ -306,13 +318,23 @@ impl Operation {
 
                 pixelate(cairo, pixbuf, &rect, *seed)?;
             }
-            Operation::DrawLine { start, end, colour } => {
+            Operation::DrawLine {
+                start,
+                end,
+                colour,
+                line_width,
+            } => {
                 info!("Line");
-                draw_line(cairo, *start, *end, colour)?;
+                draw_line(cairo, *start, *end, colour, *line_width)?;
             }
-            Operation::DrawRectangle { rect, border, fill } => {
+            Operation::DrawRectangle {
+                rect,
+                border,
+                fill,
+                line_width,
+            } => {
                 info!("Rectangle");
-                draw_rectangle(cairo, rect, *border, *fill)?;
+                draw_rectangle(cairo, rect, *border, *fill, *line_width)?;
             }
             Operation::Text {
                 top_left,
@@ -325,22 +347,28 @@ impl Operation {
                 draw_text_at(cairo, *top_left, text, *colour, font_description)?;
                 cairo.restore()?;
             }
-            Operation::DrawArrow { start, end, colour } => {
+            Operation::DrawArrow {
+                start,
+                end,
+                colour,
+                line_width,
+            } => {
                 info!("Arrow");
-                draw_arrow(cairo, *start, *end, *colour)?;
+                draw_arrow(cairo, *start, *end, *colour, *line_width)?;
             }
             Operation::Highlight { rect } => {
                 info!("Highlight");
-                draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR)?;
+                draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR, 1.0)?;
             }
             Operation::DrawEllipse {
                 ellipse,
                 border,
                 fill,
+                line_width,
             } => {
                 info!("Ellipse");
                 cairo.save()?;
-                draw_ellipse(cairo, ellipse, *border, *fill)?;
+                draw_ellipse(cairo, ellipse, *border, *fill, *line_width)?;
                 cairo.restore()?;
             }
             Operation::Bubble {
@@ -361,7 +389,7 @@ impl Operation {
                     h: 2.0 * BUBBLE_RADIUS,
                 };
 
-                draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour)?;
+                draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour, 1.0)?;
                 draw_text_centred_at(
                     cairo,
                     *centre,
@@ -374,8 +402,10 @@ impl Operation {
                 start,
                 points,
                 colour,
+                line_width,
             } => {
                 cairo.save()?;
+                cairo.set_line_width(*line_width);
                 cairo.set_source_colour(*colour);
                 cairo.move_to(start.x, start.y);
                 for point in points {
@@ -423,6 +453,7 @@ fn draw_rectangle(
     rect: &Rectangle,
     border: Colour,
     fill: Colour,
+    line_width: f64,
 ) -> Result<(), Error> {
     cairo.save()?;
     let Rectangle { x, y, w, h } = rect.normalised();
@@ -432,6 +463,7 @@ fn draw_rectangle(
     cairo.fill_preserve()?;
 
     cairo.set_source_colour(border);
+    cairo.set_line_width(line_width);
     cairo.stroke()?;
     cairo.restore()?;
 
@@ -443,6 +475,7 @@ fn draw_ellipse(
     ellipse: &Ellipse,
     border: Colour,
     fill: Colour,
+    line_width: f64,
 ) -> Result<(), Error> {
     cairo.save()?;
     // Avoid initial line from previous point if one exists
@@ -458,6 +491,7 @@ fn draw_ellipse(
     cairo.restore()?;
 
     cairo.set_source_colour(border);
+    cairo.set_line_width(line_width);
     // 4. Draw a border arround it
     cairo.stroke()?;
 
@@ -469,16 +503,24 @@ fn draw_line(
     Point { x: x1, y: y1 }: Point,
     Point { x: x2, y: y2 }: Point,
     colour: &Colour,
+    line_width: f64,
 ) -> Result<(), Error> {
     cairo.move_to(x1, y1);
     cairo.line_to(x2, y2);
     cairo.set_source_colour(*colour);
+    cairo.set_line_width(line_width);
     cairo.stroke()?;
 
     Ok(())
 }
 
-fn draw_arrow(cairo: &Context, start: Point, end: Point, colour: Colour) -> Result<(), Error> {
+fn draw_arrow(
+    cairo: &Context,
+    start: Point,
+    end: Point,
+    colour: Colour,
+    line_width: f64,
+) -> Result<(), Error> {
     let angle = get_line_angle(start, end);
     let length = (end.to_owned() - start.to_owned()).dist();
     let arrow_length = length * ARROWHEAD_LENGTH_RATIO;
@@ -499,6 +541,7 @@ fn draw_arrow(cairo: &Context, start: Point, end: Point, colour: Colour) -> Resu
     cairo.rel_line_to(x2, y2);
 
     cairo.set_source_colour(colour);
+    cairo.set_line_width(line_width);
     cairo.stroke()?;
 
     Ok(())

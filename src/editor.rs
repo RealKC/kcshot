@@ -109,4 +109,16 @@ impl EditorWindow {
             Err(why) => tracing::info!("Image already borrowed: {why}"),
         }
     }
+
+    fn set_line_width(&self, line_width: f64) {
+        let image = &self.imp().image;
+
+        match image.try_borrow_mut() {
+            Ok(mut image) => {
+                let image = image.as_mut().unwrap();
+                image.operation_stack.line_width = line_width;
+            }
+            Err(why) => tracing::info!("Image already borrowed: {why}"),
+        }
+    }
 }

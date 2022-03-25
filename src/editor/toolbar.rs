@@ -52,6 +52,8 @@ mod underlying {
                 toolbar: &gtk4::Box,
                 editor: &editor::EditorWindow,
                 group_source: Option<&gtk4::ToggleButton>,
+                // Should only be passed for buttons that use the line-width-spinner
+                spinner: Option<&gtk4::SpinButton>,
             ) -> (gtk4::ToggleButton, Tool) {
                 let button = match group_source {
                     Some(group_source) => {
@@ -63,6 +65,13 @@ mod underlying {
                 };
                 button.set_child(Some(&gtk4::Image::from_resource(tool.path())));
                 button.set_tooltip_markup(Some(tool.tooltip()));
+
+                if let Some(spinner) = spinner {
+                    let spinner = spinner.clone();
+                    button.connect_toggled(move |this| {
+                        spinner.set_visible(this.is_active());
+                    });
+                }
 
                 button.connect_clicked(clone!(@strong editor => move |_| {
                     tracing::info!("Entered on-click handler of {tool:?}");
@@ -78,21 +87,29 @@ mod underlying {
                 .get()
                 .expect("self.parent_editor should be set");
 
+            let adjustment = gtk4::Adjustment::new(4.0, 1.0, 1000.0, 0.4, 1.0, 1.0);
+            let line_width_spinner = gtk4::SpinButton::new(Some(&adjustment), 0.5, 1);
+            line_width_spinner.set_numeric(true);
+            line_width_spinner.connect_value_changed(clone!(@strong editor => move |this| {
+                editor.set_line_width(this.value());
+            }));
+
             let box_ = obj.upcast_ref();
-            let (group_source, _) = make_tool_button(Tool::CropAndSave, box_, editor, None);
+            let (group_source, _) = make_tool_button(Tool::CropAndSave, box_, editor, None, None);
             group_source.set_active(true);
 
+            #[rustfmt::skip]
             let mut buttons = vec![
-                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Line, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Arrow, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Highlight, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Ellipse, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Pixelate, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Blur, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::AutoincrementBubble, box_, editor, Some(&group_source)),
-                make_tool_button(Tool::Text, box_, editor, Some(&group_source)),
+                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source), Some(&line_width_spinner)),
+                make_tool_button(Tool::Line, box_, editor, Some(&group_source), Some(&line_width_spinner)),
+                make_tool_button(Tool::Arrow, box_, editor, Some(&group_source), Some(&line_width_spinner)),
+                make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source), Some(&line_width_spinner)),
+                make_tool_button(Tool::Highlight, box_, editor, Some(&group_source), None),
+                make_tool_button(Tool::Ellipse, box_, editor, Some(&group_source), Some(&line_width_spinner)),
+                make_tool_button(Tool::Pixelate, box_, editor, Some(&group_source), None),
+                make_tool_button(Tool::Blur, box_, editor, Some(&group_source), None),
+                make_tool_button(Tool::AutoincrementBubble, box_, editor, Some(&group_source), None),
+                make_tool_button(Tool::Text, box_, editor, Some(&group_source), None),
             ];
 
             let primary_colour_button =
@@ -104,6 +121,8 @@ mod underlying {
                 Self::make_secondary_colour_button(editor, editor.upcast_ref());
             secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
             obj.append(&secondary_colour_button);
+
+            obj.append(&line_width_spinner);
 
             // Don't bother with the dropdown if the displa
             if display_server::can_retrieve_windows() {
