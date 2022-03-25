@@ -73,8 +73,8 @@ impl EditorWindow {
 
     /// Returns the secondary colour of the editor
     ///
-    /// The secondary colour is used for borders, the bubble colour in case of bubbles and as the
-    /// default colour for text
+    /// The secondary colour is used for lines, the text colour in case of bubbles and as the
+    /// default colour for text and the pencil
     fn secondary_colour(&self) -> Colour {
         self.imp()
             .image

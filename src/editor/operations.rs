@@ -200,13 +200,13 @@ impl Operation {
             Tool::Line => Self::DrawLine {
                 start,
                 end: start,
-                colour: primary_colour,
+                colour: secondary_colour,
                 line_width,
             },
             Tool::Arrow => Self::DrawArrow {
                 start,
                 end: start,
-                colour: primary_colour,
+                colour: secondary_colour,
                 line_width,
             },
             Tool::Rectangle => Self::DrawRectangle {
@@ -235,8 +235,8 @@ impl Operation {
             Tool::AutoincrementBubble => {
                 let bubble = Self::Bubble {
                     centre: start,
-                    bubble_colour: secondary_colour,
-                    text_colour: primary_colour,
+                    bubble_colour: primary_colour,
+                    text_colour: secondary_colour,
                     number: *bubble_index,
                     font_description,
                 };
