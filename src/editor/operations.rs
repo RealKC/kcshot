@@ -150,6 +150,7 @@ impl Tool {
             'b' | 'B' => Blur,
             'i' | 'I' => AutoincrementBubble,
             't' | 'T' => Text,
+            'p' | 'P' => Pencil,
             _ => None?,
         })
     }
