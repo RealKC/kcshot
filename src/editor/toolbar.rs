@@ -263,6 +263,7 @@ mod underlying {
 
             button.connect_clicked(clone!(@strong parent_window, @strong editor, @strong drawing_area => move |_this| {
                 let colour_chooser = gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
+                colour_chooser.set_modal(true);
 
                 colour_chooser.connect_response(clone!(@strong editor, @strong drawing_area => move |this, response| {
                     if response == ResponseType::Ok {
