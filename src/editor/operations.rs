@@ -288,18 +288,15 @@ impl Operation {
             }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
+
                 let rect = rect.normalised();
                 let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
+                let point = Point {
+                    x: rect.x,
+                    y: rect.y,
+                };
 
-                pixelops::blur(
-                    cairo,
-                    pixbuf,
-                    *radius,
-                    Point {
-                        x: rect.x,
-                        y: rect.y,
-                    },
-                )?;
+                pixelops::blur(cairo, pixbuf, *radius, point)?;
 
                 cairo.restore()?;
             }
