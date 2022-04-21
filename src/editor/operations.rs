@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::pango::FontDescription;
 use image::flat;
@@ -7,6 +5,7 @@ use rand::Rng;
 use tracing::{error, info};
 
 mod pixelops;
+mod shapes;
 mod stack;
 
 pub use stack::*;
@@ -30,10 +29,6 @@ const INVISIBLE: Colour = Colour {
     alpha: 0,
 };
 
-/// The length of the arrowhead will be 1/10th of the length of the body
-const ARROWHEAD_LENGTH_RATIO: f64 = 0.1;
-/// How open/closed the arrowhead will be
-const ARROWHEAD_APERTURE: f64 = PI / 6.0;
 /// How big the bubbles will be
 const BUBBLE_RADIUS: f64 = 10.0;
 
@@ -314,7 +309,7 @@ impl Operation {
                 line_width,
             } => {
                 info!("Line");
-                draw_line(cairo, *start, *end, colour, *line_width)?;
+                shapes::draw_line(cairo, *start, *end, colour, *line_width)?;
             }
             Operation::DrawRectangle {
                 rect,
@@ -323,7 +318,7 @@ impl Operation {
                 line_width,
             } => {
                 info!("Rectangle");
-                draw_rectangle(cairo, rect, *border, *fill, *line_width)?;
+                shapes::draw_rectangle(cairo, rect, *border, *fill, *line_width)?;
             }
             Operation::Text {
                 top_left,
@@ -343,11 +338,11 @@ impl Operation {
                 line_width,
             } => {
                 info!("Arrow");
-                draw_arrow(cairo, *start, *end, *colour, *line_width)?;
+                shapes::draw_arrow(cairo, *start, *end, *colour, *line_width)?;
             }
             Operation::Highlight { rect } => {
                 info!("Highlight");
-                draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR, 1.0)?;
+                shapes::draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR, 1.0)?;
             }
             Operation::DrawEllipse {
                 ellipse,
@@ -357,7 +352,7 @@ impl Operation {
             } => {
                 info!("Ellipse");
                 cairo.save()?;
-                draw_ellipse(cairo, ellipse, *border, *fill, *line_width)?;
+                shapes::draw_ellipse(cairo, ellipse, *border, *fill, *line_width)?;
                 cairo.restore()?;
             }
             Operation::Bubble {
@@ -378,7 +373,7 @@ impl Operation {
                     h: 2.0 * BUBBLE_RADIUS,
                 };
 
-                draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour, 1.0)?;
+                shapes::draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour, 1.0)?;
                 draw_text_centred_at(
                     cairo,
                     *centre,
@@ -435,110 +430,6 @@ pub enum Error {
     Pixbuf(Rectangle),
     #[error("`pixel_bytes` on a Pixbuf returned None")]
     PixelBytes,
-}
-
-fn draw_rectangle(
-    cairo: &Context,
-    rect: &Rectangle,
-    border: Colour,
-    fill: Colour,
-    line_width: f64,
-) -> Result<(), Error> {
-    cairo.save()?;
-    let Rectangle { x, y, w, h } = rect.normalised();
-    cairo.rectangle(x, y, w, h);
-
-    cairo.set_source_colour(fill);
-    cairo.fill_preserve()?;
-
-    cairo.set_source_colour(border);
-    cairo.set_line_width(line_width);
-    cairo.stroke()?;
-    cairo.restore()?;
-
-    Ok(())
-}
-
-fn draw_ellipse(
-    cairo: &Context,
-    ellipse: &Ellipse,
-    border: Colour,
-    fill: Colour,
-    line_width: f64,
-) -> Result<(), Error> {
-    cairo.save()?;
-    // Avoid initial line from previous point if one exists
-    cairo.new_sub_path();
-    // 1. Position our ellipse at (x, y)
-    cairo.translate(ellipse.x, ellipse.y);
-    // 2. Scale its x coordinates by w, and its y coordinates by h
-    cairo.scale(ellipse.w, ellipse.h);
-    // 3. Create it by faking a circle on [0,1]x[0,1] centered on (0.5, 0.5)
-    cairo.arc(0.5, 0.5, 1.0, 0.0, 2.0 * PI);
-    cairo.set_source_colour(fill);
-    cairo.fill_preserve()?;
-    cairo.restore()?;
-
-    cairo.set_source_colour(border);
-    cairo.set_line_width(line_width);
-    // 4. Draw a border arround it
-    cairo.stroke()?;
-
-    Ok(())
-}
-
-fn draw_line(
-    cairo: &Context,
-    Point { x: x1, y: y1 }: Point,
-    Point { x: x2, y: y2 }: Point,
-    colour: &Colour,
-    line_width: f64,
-) -> Result<(), Error> {
-    cairo.move_to(x1, y1);
-    cairo.line_to(x2, y2);
-    cairo.set_source_colour(*colour);
-    cairo.set_line_width(line_width);
-    cairo.stroke()?;
-
-    Ok(())
-}
-
-fn draw_arrow(
-    cairo: &Context,
-    start: Point,
-    end: Point,
-    colour: Colour,
-    line_width: f64,
-) -> Result<(), Error> {
-    let angle = get_line_angle(start, end);
-    let length = (end.to_owned() - start.to_owned()).dist();
-    let arrow_length = length * ARROWHEAD_LENGTH_RATIO;
-
-    cairo.move_to(start.x, start.y);
-    cairo.line_to(end.x, end.y);
-
-    // Since cos(theta) = adjacent / hypothenuse, x1 = arrow_length * cos(theta)
-    let x1 = -arrow_length * (angle - ARROWHEAD_APERTURE).cos();
-    let x2 = -arrow_length * (angle + ARROWHEAD_APERTURE).cos();
-
-    // Since sin(theta) = opposite / hypothenuse, y1 = arrow_length * sin(theta)
-    let y1 = -arrow_length * (angle - ARROWHEAD_APERTURE).sin();
-    let y2 = -arrow_length * (angle + ARROWHEAD_APERTURE).sin();
-
-    cairo.rel_move_to(x1, y1);
-    cairo.line_to(end.x, end.y);
-    cairo.rel_line_to(x2, y2);
-
-    cairo.set_source_colour(colour);
-    cairo.set_line_width(line_width);
-    cairo.stroke()?;
-
-    Ok(())
-}
-
-fn get_line_angle(start: Point, end: Point) -> f64 {
-    let Point { x, y } = end.to_owned() - start.to_owned();
-    y.atan2(x)
 }
 
 fn draw_text_at(
