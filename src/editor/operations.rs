@@ -315,9 +315,8 @@ impl Operation {
                 info!("Pixelate");
 
                 let rect = rect.normalised();
-                let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
 
-                pixelate(cairo, pixbuf, &rect, *seed)?;
+                pixelate(cairo, surface, &rect, *seed)?;
             }
             Operation::DrawLine {
                 start,
@@ -634,15 +633,20 @@ fn blur(cairo: &Context, pixbuf: Pixbuf, sigma: f32, Point { x, y }: Point) -> R
 
 fn pixelate(
     cairo: &Context,
-    pixbuf: Pixbuf,
-    &Rectangle { x, y, w, h }: &Rectangle,
+    surface: &cairo::Surface,
+    rect: &Rectangle,
     seed: u64,
 ) -> Result<(), Error> {
     let mut rng = StdRng::seed_from_u64(seed);
 
+    let pixbuf = utils::pixbuf_for(surface, *rect).ok_or(Error::Pixbuf(*rect))?;
+
+    // SAFETY: The pixbuf is newly created so there should be only one reference to the pixel data
+    let pixels = unsafe { pixbuf.pixels() };
+
     let rowstride = pixbuf.rowstride() as u64;
     let bytes_per_pixel = 3 * (pixbuf.bits_per_sample() / 8) as u64;
-    let pixels = unsafe { pixbuf.pixels() };
+    let &Rectangle { x, y, w, h } = rect;
 
     for i in (0..(w as u64)).step_by(PIXELATE_SIZE as usize) {
         for j in (0..(h as u64)).step_by(PIXELATE_SIZE as usize) {
