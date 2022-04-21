@@ -1,9 +1,10 @@
+use cairo::glib::Cast;
 use gtk4::{
     gio,
     gio::prelude::SettingsExt,
     glib,
     subclass::prelude::ObjectSubclassIsExt,
-    traits::{GtkWindowExt, WidgetExt},
+    traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
 
 use self::{
@@ -47,6 +48,17 @@ impl EditorWindow {
         window.set_decorated(false);
         window.show();
         window.fullscreen();
+
+        let surface = window
+            .native()
+            .map(|native| native.surface())
+            .expect("An EditorWindow should have a gdk::Surface")
+            .downcast::<gdk4_x11::X11Surface>();
+
+        if let Ok(surface) = surface {
+            surface.set_skip_taskbar_hint(true);
+            surface.set_skip_pager_hint(true);
+        }
     }
 
     fn set_current_tool(&self, tool: Tool) {

@@ -915,6 +915,7 @@ dependencies = [
  "chrono",
  "diesel",
  "diesel_migrations",
+ "gdk4-x11",
  "gio",
  "gtk4",
  "image",
