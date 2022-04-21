@@ -251,11 +251,7 @@ mod underlying {
         capture_button.set_child(Some(&make_label("Capture")));
         capture_button.connect_clicked(
             glib::clone!(@weak application, @weak history_model => move |_| {
-                let editor_window = EditorWindow::new(&application);
-                editor_window.set_decorated(false);
-                editor_window.fullscreen();
-
-                editor_window.show();
+                EditorWindow::show(&application);
             }),
         );
         buttons.append(&capture_button);

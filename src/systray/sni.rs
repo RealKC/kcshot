@@ -7,7 +7,7 @@ use gtk4::{
 use image::ImageResult;
 
 use super::Initialised;
-use crate::{editor, kcshot::KCShot};
+use crate::{editor::EditorWindow, kcshot::KCShot};
 
 /// Attempts to create a systray icon using the [KDE/freedesktop StatusNotifierItem spec][`kde_sni`].
 /// This is done by using the [ksni][`ksni`] crate.
@@ -58,16 +58,8 @@ pub(super) fn try_init(app: &KCShot) -> Initialised {
                         tracing::error!("Failed to spawn xdg-open: {why}");
                     }
                 }
-                Message::TakeScreenshot => {
-                    let window = editor::EditorWindow::new(app.upcast_ref());
-                    window.set_decorated(false);
-                    window.fullscreen();
-
-                    window.show();
-                },
-                Message::Quit => {
-                    app.quit();
-                },
+                Message::TakeScreenshot => EditorWindow::show(app.upcast_ref()),
+                Message::Quit => app.quit(),
             }
             Continue(true)
         }),

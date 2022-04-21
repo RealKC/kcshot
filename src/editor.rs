@@ -1,4 +1,10 @@
-use gtk4::{gio, gio::prelude::SettingsExt, glib, subclass::prelude::ObjectSubclassIsExt};
+use gtk4::{
+    gio,
+    gio::prelude::SettingsExt,
+    glib,
+    subclass::prelude::ObjectSubclassIsExt,
+    traits::{GtkWindowExt, WidgetExt},
+};
 
 use self::{
     data::Colour,
@@ -34,6 +40,13 @@ impl EditorWindow {
         editor.set_secondary_colour(Colour::deserialise_from_u32(restored_secondary_colour));
 
         editor
+    }
+
+    pub fn show(app: &gtk4::Application) {
+        let window = Self::new(app);
+        window.set_decorated(false);
+        window.show();
+        window.fullscreen();
     }
 
     fn set_current_tool(&self, tool: Tool) {

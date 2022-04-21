@@ -2,7 +2,8 @@ use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
 use crate::{
-    appwindow, editor,
+    appwindow,
+    editor::EditorWindow,
     historymodel::{HistoryModel, ModelNotifier},
     systray,
 };
@@ -86,11 +87,7 @@ pub fn build_ui(app: &KCShot) {
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
-        let window = editor::EditorWindow::new(app.upcast_ref());
-        window.set_decorated(false);
-        window.fullscreen();
-
-        window.show()
+        EditorWindow::show(app.upcast_ref())
     } else if show_main_window {
         instance.show_main_window.replace(false);
 
