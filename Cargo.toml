@@ -39,3 +39,8 @@ gio = "0.15.1"
 
 [features]
 xdg-paths = []
+
+[package.metadata.cargo-machete]
+ignored = [
+    "cairo-rs", # The crate exported by this package is called cairo
+]
