@@ -920,7 +920,6 @@ dependencies = [
  "gtk4",
  "image",
  "ksni",
- "libc",
  "once_cell",
  "pangocairo",
  "rand",
