@@ -363,6 +363,30 @@ mod underlying {
         content_area.set_margin_start(10);
         content_area.set_margin_end(10);
 
+        let capture_mouse_cursor_label = gtk4::Label::new(Some("Capture mouse cursor"));
+        capture_mouse_cursor_label.set_halign(gtk4::Align::Start);
+        let capture_mouse_cursor_button = gtk4::Switch::new();
+        capture_mouse_cursor_button.set_halign(gtk4::Align::End);
+        settings
+            .bind(
+                "capture-mouse-cursor",
+                &capture_mouse_cursor_button,
+                "active",
+            )
+            .flags(gio::SettingsBindFlags::DEFAULT)
+            .build();
+
+        let capture_mouse_cursor_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        capture_mouse_cursor_container.set_homogeneous(true);
+        capture_mouse_cursor_container.append(&capture_mouse_cursor_label);
+        capture_mouse_cursor_container.append(&capture_mouse_cursor_button);
+
+        content_area.append(&capture_mouse_cursor_container);
+        content_area.set_margin_top(5);
+        content_area.set_margin_bottom(10);
+        content_area.set_margin_start(10);
+        content_area.set_margin_end(10);
+
         let notebook = gtk4::Notebook::new();
         notebook.append_page(&content_area, Some(&gtk4::Label::new(Some("General"))));
 

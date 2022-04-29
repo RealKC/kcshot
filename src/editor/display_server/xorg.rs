@@ -1,4 +1,5 @@
 use cairo::{self, Format as CairoImageFormat, ImageSurface};
+use gtk4::prelude::SettingsExt;
 use once_cell::sync::OnceCell;
 use xcb::{
     shape,
@@ -6,10 +7,11 @@ use xcb::{
         self, ImageFormat as XImageFormat, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL,
         ATOM_NONE, ATOM_WINDOW,
     },
+    xfixes,
 };
 
 use super::{Result, Window, WmFeatures};
-use crate::editor::data::Rectangle;
+use crate::{editor::data::Rectangle, kcshot};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -24,8 +26,18 @@ pub enum Error {
 }
 
 pub(super) fn take_screenshot() -> Result<ImageSurface> {
-    let (connection, _) = xcb::Connection::connect(None)?;
+    let (connection, _) = xcb::Connection::connect_with_extensions(
+        None,
+        &[],
+        &[xcb::Extension::Shape, xcb::Extension::XFixes],
+    )?;
     let setup = connection.get_setup();
+
+    // We need to make the X server aware that we wish to use the XFIXES extension
+    let _query_version = connection.send_request(&xfixes::QueryVersion {
+        client_major_version: xfixes::MAJOR_VERSION,
+        client_minor_version: xfixes::MINOR_VERSION,
+    });
 
     for root_screen in setup.roots() {
         let window = root_screen.root();
@@ -48,7 +60,23 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
 
             let stride = CairoImageFormat::Rgb24.stride_for_width(width as u32)?;
 
-            let screenshot = connection.wait_for_reply(screenshot_cookie)?;
+            let mut screenshot = connection
+                .wait_for_reply(screenshot_cookie)?
+                .data()
+                .to_vec();
+
+            let capture_mouse_cursor = kcshot::open_settings().boolean("capture-mouse-cursor");
+
+            if capture_mouse_cursor {
+                let cursor_cookie = connection.send_request(&xfixes::GetCursorImage {});
+                let cursor = connection.wait_for_reply(cursor_cookie);
+                match cursor {
+                    Ok(cursor) => {
+                        overlay_cursor(cursor, &mut screenshot, width as usize, height as usize);
+                    }
+                    Err(why) => tracing::info!("Unable to fetch cursor data: {why:?}"),
+                }
+            }
 
             // We don't just use an XcbSurface for multiple reasons:
             //  * it requires ugly FFI-ish code (casting between rust-xcb and cairo-rs pointer types)
@@ -57,18 +85,70 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             //    XcbSurface behaves similarly
             //  * Surface does not (on this release) support being written to a png, so we need
             //    an ImageSurface anyway
+            //  * we sometimes draw the cursor over the screenshot
 
-            return Ok(ImageSurface::create_for_data(
-                screenshot.data().to_vec(),
+            let screenshot = ImageSurface::create_for_data(
+                screenshot,
                 CairoImageFormat::Rgb24,
                 width as i32,
                 height as i32,
                 stride,
-            )?);
+            )?;
+
+            return Ok(screenshot);
         }
     }
 
     Err(super::Error::FailedToTakeScreenshot)
+}
+
+fn overlay_cursor(
+    cursor: xfixes::GetCursorImageReply,
+    screenshot: &mut [u8],
+    width: usize,
+    height: usize,
+) {
+    // We do this so that we start drawing from the top left corner of the cursor icon, not its center
+    let cx = cursor.x() as usize - cursor.xhot() as usize;
+    let cy = cursor.y() as usize - cursor.yhot() as usize;
+
+    let w = cursor.width() as usize;
+    let h = cursor.height() as usize;
+
+    let cursor = cursor.cursor_image();
+
+    // We use these variables to ensure that we don't attempt do out of bounds or wrapping
+    // writes, which would either crash the application or draw the cursor on the other side
+    // of the screen
+    let w_draw = usize::min(w, width - cx);
+    let h_draw = usize::min(h, height - cy);
+
+    for x in 0..w_draw {
+        for y in 0..h_draw {
+            let r = cursor[y * w + x] & 0xff;
+            let g = cursor[y * w + x] >> 8 & 0xff;
+            let b = cursor[y * w + x] >> 16 & 0xff;
+            let a = cursor[y * w + x] >> 24 & 0xff;
+
+            // We multiply by 4 because the screenshot is stored in RGB-Unused byte format
+            let pixel_idx = 4 * width * (cy + y) + 4 * (cx + x);
+
+            // Cursor data is RGBA, but screenshot data is RGB-Unused byte, so we do manual
+            // blending to paste the cursor _over_ the image
+            #[allow(clippy::identity_op)]
+            if a == 255 {
+                screenshot[pixel_idx + 0] = r as u8;
+                screenshot[pixel_idx + 1] = g as u8;
+                screenshot[pixel_idx + 2] = b as u8;
+            } else {
+                let blend =
+                    |target, source, alpha| target + (source * (255 - alpha) + 255 / 2) / 255;
+                screenshot[pixel_idx + 0] = blend(r, screenshot[pixel_idx + 0] as u32, a) as u8;
+                screenshot[pixel_idx + 1] = blend(g, screenshot[pixel_idx + 1] as u32, a) as u8;
+                screenshot[pixel_idx + 2] = blend(b, screenshot[pixel_idx + 1] as u32, a) as u8;
+            };
+        }
+    }
 }
 
 xcb::atoms_struct! {

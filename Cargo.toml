@@ -15,7 +15,13 @@ pangocairo = "0.15.1"
 image = { version = "0.24.0", default-features = false, features = ["png"] }
 gtk4 = "0.4.1"
 gdk4-x11 = "0.4.0"
-xcb = { version = "1.1.1", features = ["debug_atom_names", "shape"] }
+# Use my fork until a good solution is found for https://github.com/rust-x-bindings/rust-xcb/issues/186
+# or the hacky patch is merged, I guess
+xcb = { git = "https://github.com/RealKC/rust-xcb", branch = "hackfixfor186", features = [
+    "debug_atom_names",
+    "shape",
+    "xfixes",
+] }
 x11 = { version = "2.19", features = ["xlib"] }
 ksni = "0.2.0"
 

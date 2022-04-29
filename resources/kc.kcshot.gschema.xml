@@ -16,6 +16,11 @@
             <summary>The actions to be performed, in the order they are to be performed</summary>
         </key>
 
+        <key name="capture-mouse-cursor" type="b">
+            <default>true</default>
+            <summary>Wether kcshot should include cursors as part of the screenshot</summary>
+        </key>
+
         <!-- For storing colours across editing sessions, note that these numbers are 0xRRGGBBAA -->
         <key name="last-used-primary-colour" type="u">
             <default>0x00000000</default>
