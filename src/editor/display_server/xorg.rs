@@ -108,9 +108,11 @@ fn overlay_cursor(
     width: usize,
     height: usize,
 ) {
-    // We do this so that we start drawing from the top left corner of the cursor icon, not its center
-    let cx = cursor.x() as usize - cursor.xhot() as usize;
-    let cy = cursor.y() as usize - cursor.yhot() as usize;
+    // These computations give us the coords of the top left corner of the mouse cursor
+    // We use saturating arithmetic because cursor.{x,y}() may be smaller than cursor.{x,y}hot() when
+    // the cursor is close to the left and top edges of the screen
+    let cx = (cursor.x() as usize).saturating_sub(cursor.xhot() as usize);
+    let cy = (cursor.y() as usize).saturating_sub(cursor.yhot() as usize);
 
     let w = cursor.width() as usize;
     let h = cursor.height() as usize;
