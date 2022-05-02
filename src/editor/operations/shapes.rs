@@ -110,6 +110,6 @@ pub fn draw_arrow(
 }
 
 fn get_line_angle(start: Point, end: Point) -> f64 {
-    let Point { x, y } = end.to_owned() - start.to_owned();
+    let Point { x, y } = end - start;
     y.atan2(x)
 }
