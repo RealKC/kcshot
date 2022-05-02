@@ -97,7 +97,7 @@ mod underlying {
         }
 
         #[tracing::instrument(skip(self))]
-        fn item(&self, _: &Self::Type, position: u32) -> Option<glib::Object> {
+        fn item(&self, _: &Self::Type, position: u32) -> Option<Object> {
             let last_fetched_screenshot_index = {
                 let len = self.screenshots.borrow().len();
                 if len > 0 {
@@ -155,7 +155,7 @@ mod underlying {
         }
 
         #[tracing::instrument(skip(self))]
-        fn property(&self, _: &Self::Type, _id: usize, pspec: &ParamSpec) -> glib::Value {
+        fn property(&self, _: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
             match pspec.name() {
                 "application" => self.app.borrow().to_value(),
                 name => {
