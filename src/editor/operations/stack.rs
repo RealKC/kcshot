@@ -149,37 +149,19 @@ impl OperationStack {
         };
 
         match current_operation {
-            Operation::Crop(rect) => {
+            Operation::Crop(rect)
+            | Operation::Blur { rect, .. }
+            | Operation::Pixelate { rect, .. }
+            | Operation::DrawRectangle { rect, .. }
+            | Operation::Highlight { rect } => {
                 rect.w = new_width;
                 rect.h = new_height;
             }
-            Operation::Blur { rect, .. } => {
-                rect.w = new_width;
-                rect.h = new_height;
-            }
-            Operation::Pixelate { rect, .. } => {
-                rect.w = new_width;
-                rect.h = new_height;
-            }
-            Operation::DrawLine { start, end, .. } => {
+            Operation::DrawLine { start, end, .. } | Operation::DrawArrow { start, end, .. } => {
                 *end = Point {
                     x: start.x + new_width,
                     y: start.y + new_height,
                 }
-            }
-            Operation::DrawRectangle { rect, .. } => {
-                rect.w = new_width;
-                rect.h = new_height;
-            }
-            Operation::DrawArrow { start, end, .. } => {
-                *end = Point {
-                    x: start.x + new_width,
-                    y: start.y + new_height,
-                }
-            }
-            Operation::Highlight { rect } => {
-                rect.w = new_width;
-                rect.h = new_height;
             }
             Operation::DrawEllipse { ellipse, .. } => {
                 ellipse.w = new_width;

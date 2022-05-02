@@ -1,4 +1,5 @@
 #![warn(unused_qualifications)]
+#![warn(clippy::match_same_arms)]
 
 #[macro_use]
 extern crate diesel;
