@@ -55,7 +55,7 @@ mod underlying {
             let adjustment = gtk4::Adjustment::new(4.0, 1.0, 1000.0, 0.4, 1.0, 1.0);
             let line_width_spinner = gtk4::SpinButton::new(Some(&adjustment), 0.5, 1);
             line_width_spinner.set_numeric(true);
-            line_width_spinner.connect_value_changed(clone!(@strong editor => move |this| {
+            line_width_spinner.connect_value_changed(clone!(@weak editor => move |this| {
                 editor.set_line_width(this.value());
             }));
             line_width_spinner.set_visible(false);
@@ -65,11 +65,9 @@ mod underlying {
                 make_tool_button(Tool::CropAndSave, box_, &editor, None, None, None, None);
             group_source.set_active(true);
 
-            let primary_colour_button =
-                Self::make_primary_colour_chooser_button(&editor, editor.upcast_ref());
+            let primary_colour_button = Self::make_primary_colour_chooser_button(editor.clone());
             primary_colour_button.set_tooltip_text(Some("Set primary colour"));
-            let secondary_colour_button =
-                Self::make_secondary_colour_button(&editor, editor.upcast_ref());
+            let secondary_colour_button = Self::make_secondary_colour_button(editor.clone());
             secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
 
             #[rustfmt::skip]
@@ -171,14 +169,11 @@ mod underlying {
     impl BoxImpl for ToolbarWidget {}
 
     impl ToolbarWidget {
-        fn make_primary_colour_chooser_button(
-            editor: &editor::EditorWindow,
-            parent_window: &gtk4::Window,
-        ) -> gtk4::Button {
+        fn make_primary_colour_chooser_button(editor: editor::EditorWindow) -> gtk4::Button {
             let drawing_area = gtk4::DrawingArea::new();
             drawing_area.set_accessible_role(gtk4::AccessibleRole::Img);
             drawing_area.set_size_request(20, 20);
-            drawing_area.set_draw_func(clone!(@strong editor =>  move |_this, cairo, _w, _h| {
+            drawing_area.set_draw_func(clone!(@weak editor =>  move |_this, cairo, _w, _h| {
                 cairo.set_operator(cairo::Operator::Over);
 
                 let primary_colour = editor.primary_colour();
@@ -214,17 +209,14 @@ mod underlying {
 
             }));
 
-            Self::make_button::<true>(&drawing_area, parent_window, editor)
+            Self::make_button::<true>(drawing_area, editor)
         }
 
-        fn make_secondary_colour_button(
-            editor: &editor::EditorWindow,
-            parent_window: &gtk4::Window,
-        ) -> gtk4::Button {
+        fn make_secondary_colour_button(editor: editor::EditorWindow) -> gtk4::Button {
             let drawing_area = gtk4::DrawingArea::new();
             drawing_area.set_accessible_role(gtk4::AccessibleRole::Img);
             drawing_area.set_size_request(20, 20);
-            drawing_area.set_draw_func(clone!(@strong editor =>  move |_this, cairo, _w, _h| {
+            drawing_area.set_draw_func(clone!(@weak editor =>  move |_this, cairo, _w, _h| {
                 cairo.set_operator(cairo::Operator::Over);
 
                 // The interior contour of the square
@@ -247,37 +239,39 @@ mod underlying {
 
             }));
 
-            Self::make_button::<false>(&drawing_area, parent_window, editor)
+            Self::make_button::<false>(drawing_area, editor)
         }
 
         fn make_button<const IS_PRIMARY: bool>(
-            drawing_area: &gtk4::DrawingArea,
-            parent_window: &gtk4::Window,
-            editor: &editor::EditorWindow,
+            button_drawing_area: gtk4::DrawingArea,
+            editor: editor::EditorWindow,
         ) -> gtk4::Button {
             let button = gtk4::Button::new();
-            button.set_child(Some(drawing_area));
+            button.set_child(Some(&button_drawing_area));
             button.set_visible(false);
 
-            button.connect_clicked(clone!(@strong parent_window, @strong editor, @strong drawing_area => move |_this| {
-                let colour_chooser = gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&parent_window));
+            button.connect_clicked(move |_this| {
+                let colour_chooser =
+                    gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&editor));
                 colour_chooser.set_modal(true);
 
-                colour_chooser.connect_response(clone!(@strong editor, @strong drawing_area => move |this, response| {
-                    if response == ResponseType::Ok {
-                        if IS_PRIMARY {
-                            editor.set_primary_colour(Colour::from_gdk_rgba(this.rgba()));
-                        } else {
-                            editor.set_secondary_colour(Colour::from_gdk_rgba(this.rgba()));
+                colour_chooser.connect_response(
+                    clone!(@weak editor, @weak button_drawing_area => move |this, response| {
+                        if response == ResponseType::Ok {
+                            if IS_PRIMARY {
+                                editor.set_primary_colour(Colour::from_gdk_rgba(this.rgba()));
+                            } else {
+                                editor.set_secondary_colour(Colour::from_gdk_rgba(this.rgba()));
+                            }
+                            button_drawing_area.queue_draw();
                         }
-                        drawing_area.queue_draw();
-                    }
 
-                    this.close();
-                }));
+                        this.close();
+                    }),
+                );
 
                 colour_chooser.show();
-            }));
+            });
 
             button
         }
@@ -323,7 +317,7 @@ mod underlying {
             }
         });
 
-        button.connect_clicked(clone!(@strong editor => move |_| {
+        button.connect_clicked(clone!(@weak editor => move |_| {
             tracing::info!("Entered on-click handler of {tool:?}");
             editor.set_current_tool(tool);
         }));
