@@ -87,11 +87,11 @@ pub fn build_ui(app: &KCShot) {
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
-        EditorWindow::show(app.upcast_ref())
+        EditorWindow::show(app.upcast_ref());
     } else if show_main_window {
         instance.show_main_window.replace(false);
 
-        app.main_window().present()
+        app.main_window().present();
     }
 }
 

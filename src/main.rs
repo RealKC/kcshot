@@ -1,5 +1,6 @@
 #![warn(unused_qualifications)]
 #![warn(clippy::match_same_arms)]
+#![warn(clippy::semicolon_if_nothing_returned)]
 
 #[macro_use]
 extern crate diesel;
@@ -35,7 +36,7 @@ fn main() {
         Err(why) => {
             tracing::subscriber::set_global_default(collector).expect("Failed to setup logging");
 
-            tracing::info!("Failed to initialise file_writer: {why}")
+            tracing::info!("Failed to initialise file_writer: {why}");
         }
     }
 

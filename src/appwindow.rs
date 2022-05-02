@@ -115,9 +115,9 @@ mod underlying {
             let is_history_enabled = settings.boolean("is-history-enabled");
 
             if is_history_enabled {
-                stack.set_visible_child_name("image-grid")
+                stack.set_visible_child_name("image-grid");
             } else {
-                stack.set_visible_child_name("message")
+                stack.set_visible_child_name("message");
             }
 
             settings.connect_changed(
@@ -127,9 +127,9 @@ mod underlying {
                     if key == "is-history-enabled" {
                         let is_history_enabled = settings.boolean(key);
                         if is_history_enabled {
-                            stack.set_visible_child_name("image-grid")
+                            stack.set_visible_child_name("image-grid");
                         } else {
-                            stack.set_visible_child_name("message")
+                            stack.set_visible_child_name("message");
                         }
                     }
                 }),

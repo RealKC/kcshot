@@ -159,7 +159,7 @@ mod underlying {
             match pspec.name() {
                 "parent-editor" => {
                     let parent_editor = value.get::<editor::EditorWindow>().unwrap();
-                    self.parent_editor.set(Some(&parent_editor))
+                    self.parent_editor.set(Some(&parent_editor));
                 }
                 name => tracing::warn!("Unknown property: {name}"),
             }

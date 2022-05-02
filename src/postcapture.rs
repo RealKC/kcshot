@@ -115,7 +115,7 @@ pub fn run_postcapture_actions(
     pixbuf: &mut Pixbuf,
 ) {
     for action in get_actions_from_settings() {
-        action.handle(model_notifier, conn, pixbuf)
+        action.handle(model_notifier, conn, pixbuf);
     }
 }
 
@@ -131,11 +131,11 @@ fn get_actions_from_settings() -> Vec<&'static dyn PostCaptureAction> {
     let mut actions_to_run = Vec::new();
     for postcapture_action in action_names {
         if let Some(action) = action_ids_to_objects.get(postcapture_action.as_str()) {
-            actions_to_run.push(*action)
+            actions_to_run.push(*action);
         } else {
             tracing::warn!(
                 "Found post capture action `{postcapture_action}` in the settings, but not in list of available post capture actions!"
-            )
+            );
         }
     }
 

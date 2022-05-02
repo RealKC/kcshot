@@ -68,7 +68,7 @@ impl EditorWindow {
             .as_mut()
             .unwrap()
             .operation_stack
-            .set_current_tool(tool)
+            .set_current_tool(tool);
     }
 
     /// Returns the primary colour of the editor
@@ -92,7 +92,7 @@ impl EditorWindow {
 
         let settings = kcshot::open_settings();
         if let Err(why) = settings.set_uint("last-used-primary-colour", colour.serialise_to_u32()) {
-            tracing::warn!("Failed to update `last-used-primary-colour` setting value: {why}")
+            tracing::warn!("Failed to update `last-used-primary-colour` setting value: {why}");
         }
     }
 
