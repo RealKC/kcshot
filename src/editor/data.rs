@@ -29,8 +29,8 @@ impl Colour {
     };
 
     /// Serialises `self` as an u32 where each byte represents a component of `Colour`.
-    pub const fn serialise_to_u32(&self) -> u32 {
-        let &Colour {
+    pub const fn serialise_to_u32(self) -> u32 {
+        let Colour {
             red,
             green,
             blue,

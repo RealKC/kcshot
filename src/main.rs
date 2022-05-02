@@ -1,5 +1,6 @@
 #![warn(unused_qualifications)]
 #![warn(clippy::match_same_arms)]
+#![warn(clippy::trivially_copy_pass_by_ref)]
 #![warn(clippy::semicolon_if_nothing_returned)]
 
 #[macro_use]

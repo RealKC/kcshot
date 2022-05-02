@@ -309,7 +309,7 @@ impl Operation {
                 line_width,
             } => {
                 info!("Line");
-                shapes::draw_line(cairo, *start, *end, colour, *line_width)?;
+                shapes::draw_line(cairo, *start, *end, *colour, *line_width)?;
             }
             Operation::DrawRectangle {
                 rect,

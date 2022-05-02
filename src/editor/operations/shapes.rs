@@ -64,12 +64,12 @@ pub fn draw_line(
     cairo: &Context,
     Point { x: x1, y: y1 }: Point,
     Point { x: x2, y: y2 }: Point,
-    colour: &Colour,
+    colour: Colour,
     line_width: f64,
 ) -> Result<(), Error> {
     cairo.move_to(x1, y1);
     cairo.line_to(x2, y2);
-    cairo.set_source_colour(*colour);
+    cairo.set_source_colour(colour);
     cairo.set_line_width(line_width);
     cairo.stroke()?;
 
