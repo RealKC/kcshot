@@ -430,6 +430,8 @@ pub enum Error {
     Pixbuf(Rectangle),
     #[error("`pixel_bytes` on a Pixbuf returned None")]
     PixelBytes,
+    #[error("Couldn't create a pangocairo Layout")]
+    PangoCairoLayout,
 }
 
 fn draw_text_at(
@@ -439,7 +441,7 @@ fn draw_text_at(
     colour: Colour,
     font_description: &FontDescription,
 ) -> Result<(), Error> {
-    let layout = pangocairo::create_layout(cairo).unwrap();
+    let layout = pangocairo::create_layout(cairo).ok_or(Error::PangoCairoLayout)?;
 
     layout.set_markup(text);
     layout.set_font_description(Some(font_description));
@@ -457,7 +459,7 @@ fn draw_text_centred_at(
     colour: Colour,
     font_description: &FontDescription,
 ) -> Result<(), Error> {
-    let layout = pangocairo::create_layout(cairo).unwrap();
+    let layout = pangocairo::create_layout(cairo).ok_or(Error::PangoCairoLayout)?;
 
     layout.set_markup(text);
     layout.set_font_description(Some(font_description));
