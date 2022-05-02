@@ -15,12 +15,12 @@ impl ToolbarWidget {
 mod underlying {
     use gtk4::{
         gdk::Key,
-        glib::{self, clone, ParamSpec, ParamSpecObject},
+        glib::{self, clone, ParamSpec, ParamSpecObject, WeakRef},
         prelude::*,
         subclass::prelude::*,
         Inhibit, ResponseType,
     };
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::sync::Lazy;
 
     use crate::{
         editor::{
@@ -35,7 +35,7 @@ mod underlying {
 
     #[derive(Debug, Default)]
     pub struct ToolbarWidget {
-        parent_editor: OnceCell<editor::EditorWindow>,
+        parent_editor: WeakRef<editor::EditorWindow>,
     }
 
     #[glib::object_subclass]
@@ -49,7 +49,7 @@ mod underlying {
         fn constructed(&self, obj: &Self::Type) {
             let editor = self
                 .parent_editor
-                .get()
+                .upgrade()
                 .expect("self.parent_editor should be set");
 
             let adjustment = gtk4::Adjustment::new(4.0, 1.0, 1000.0, 0.4, 1.0, 1.0);
@@ -62,28 +62,28 @@ mod underlying {
 
             let box_ = obj.upcast_ref();
             let (group_source, _) =
-                make_tool_button(Tool::CropAndSave, box_, editor, None, None, None, None);
+                make_tool_button(Tool::CropAndSave, box_, &editor, None, None, None, None);
             group_source.set_active(true);
 
             let primary_colour_button =
-                Self::make_primary_colour_chooser_button(editor, editor.upcast_ref());
+                Self::make_primary_colour_chooser_button(&editor, editor.upcast_ref());
             primary_colour_button.set_tooltip_text(Some("Set primary colour"));
             let secondary_colour_button =
-                Self::make_secondary_colour_button(editor, editor.upcast_ref());
+                Self::make_secondary_colour_button(&editor, editor.upcast_ref());
             secondary_colour_button.set_tooltip_text(Some("Set secondary colour"));
 
             #[rustfmt::skip]
             let mut buttons = vec![
-                make_tool_button(Tool::Pencil, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Line, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Arrow, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Rectangle, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Highlight, box_, editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::Ellipse, box_, editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Pixelate, box_, editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::Blur, box_, editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::AutoincrementBubble, box_, editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Text, box_, editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pencil, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Line, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Arrow, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Rectangle, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Highlight, box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Ellipse, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pixelate, box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Blur, box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::AutoincrementBubble, box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Text, box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
             ];
 
             obj.append(&primary_colour_button);
@@ -161,9 +161,7 @@ mod underlying {
             match pspec.name() {
                 "parent-editor" => {
                     let parent_editor = value.get::<editor::EditorWindow>().unwrap();
-                    self.parent_editor
-                        .set(parent_editor)
-                        .expect("parent-editor should only be set once")
+                    self.parent_editor.set(Some(&parent_editor))
                 }
                 name => tracing::warn!("Unknown property: {name}"),
             }
