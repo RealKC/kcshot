@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use cairo::Context;
 use diesel::SqliteConnection;
@@ -34,11 +34,9 @@ pub(super) struct Image {
     pub(super) operation_stack: OperationStack,
 }
 
-type ImageRef = Rc<RefCell<Option<Image>>>;
-
 #[derive(Default, Debug)]
 pub struct EditorWindow {
-    pub(super) image: ImageRef,
+    pub(super) image: RefCell<Option<Image>>,
 }
 
 impl EditorWindow {
@@ -125,40 +123,34 @@ impl ObjectImpl for EditorWindow {
             ))
         }));
 
-        drawing_area.set_draw_func(
-            clone!(@strong self.image as image => move |_widget, cairo, _w, _h| {
-                match image.try_borrow() {
-                    Ok(image) => EditorWindow::do_draw(image.as_ref().unwrap(), cairo, true),
-                    Err(why) => info!("Image already borrowed: {why}")
-                }
-            }),
-        );
+        drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
+            let imp = obj.imp();
+            let image = imp.image.borrow();
+            let image = image.as_ref().unwrap();
+            EditorWindow::do_draw(image, cairo, true);
+        }));
 
         let click_event_handler = gtk4::GestureClick::new();
 
         click_event_handler.set_button(0);
-        click_event_handler.connect_pressed(
-            clone!(@strong self.image as image, @strong obj =>  move |this, _n_clicks, x, y| {
-                tracing::warn!("Got button-press on drawing_area");
-                if this.current_button() == BUTTON_PRIMARY {
-                    match image.try_borrow_mut() {
-                        Ok(mut image) => {
-                            let image = image.as_mut().unwrap();
-                            image.operation_stack.start_operation_at(Point { x, y });
-                            obj.queue_draw();
-                        }
-                        Err(why) => info!("Image already borrowed: {why}"),
-                    }
-                } else if this.current_button() == BUTTON_SECONDARY {
-                    obj.close();
-                }
+        click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
+            tracing::warn!("Got button-press on drawing_area");
+            if this.current_button() == BUTTON_PRIMARY {
+                let imp = obj.imp();
+                let mut image = imp.image.borrow_mut();
+                let image = image.as_mut().unwrap();
+                image.operation_stack.start_operation_at(Point { x, y });
+            } else if this.current_button() == BUTTON_SECONDARY {
+                obj.close();
+            }
 
-            }),
-        );
+        }));
 
         let motion_event_handler = gtk4::EventControllerMotion::new();
         motion_event_handler.connect_motion(
-            clone!(@strong self.image as image, @strong drawing_area => move |_this, x, y| {
+            clone!(@weak obj, @weak drawing_area => move |_this, x, y| {
+                let imp = obj.imp();
+                let image = &imp.image;
                 match image.try_borrow_mut() {
                     Ok(mut image) => {
                         let image = image.as_mut().unwrap();
@@ -166,13 +158,15 @@ impl ObjectImpl for EditorWindow {
                         drawing_area.queue_draw();
                     }
                     Err(why) => info!("Image already borrowed: {why}"),
-                }
+                };
             }),
         );
         drawing_area.add_controller(&motion_event_handler);
 
         click_event_handler.connect_released(
-            clone!(@strong self.image as image, @strong obj, @strong drawing_area, @weak app => move |_this, _n_clicks, x, y| {
+            clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
+                let imp = obj.imp();
+                let image = &imp.image;
                 let mut imagerc = image.borrow_mut();
                 let image = imagerc.as_mut().unwrap();
                 if image.operation_stack.current_tool() == Tool::Text {
@@ -201,7 +195,9 @@ impl ObjectImpl for EditorWindow {
 
         let drag_controller = gtk4::GestureDrag::new();
         drag_controller.connect_drag_update(
-            clone!(@strong self.image as image, @strong drawing_area =>  move |_this, x, y| {
+            clone!(@weak obj, @weak drawing_area =>  move |_this, x, y| {
+                let imp = obj.imp();
+                let image = &imp.image;
                 let mut image = image.borrow_mut();
                 let image = image.as_mut().unwrap();
                 info!("Dragging to {{ {x}, {y} }}");
@@ -216,7 +212,9 @@ impl ObjectImpl for EditorWindow {
 
         let undo_action = gio::SimpleAction::new("undo", None);
         undo_action.connect_activate(
-            clone!(@strong self.image as image, @strong drawing_area => move |_, _| {
+            clone!(@weak obj, @weak drawing_area => move |_, _| {
+                let imp = obj.imp();
+                let image = &imp.image;
                 match image.try_borrow_mut() {
                     Ok(mut image) => {
                         let image = image.as_mut().unwrap();
@@ -224,15 +222,16 @@ impl ObjectImpl for EditorWindow {
                         drawing_area.queue_draw();
                     }
                     Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
-                }
-
+                };
             }),
         );
         obj.add_action(&undo_action);
 
         let redo_action = gio::SimpleAction::new("redo", None);
         redo_action.connect_activate(
-            clone!(@strong self.image as image, @strong drawing_area => move |_, _| {
+            clone!(@weak obj, @weak drawing_area => move |_, _| {
+                let imp = obj.imp();
+                let image = &imp.image;
                 match image.try_borrow_mut() {
                     Ok(mut image) => {
                         let image = image.as_mut().unwrap();
@@ -240,8 +239,7 @@ impl ObjectImpl for EditorWindow {
                         drawing_area.queue_draw();
                     }
                     Err(why) => tracing::error!("Failed to borrow self.image when trying to handle redo: {why}")
-                }
-
+                };
             }),
         );
         obj.add_action(&redo_action);
