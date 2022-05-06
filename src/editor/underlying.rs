@@ -123,6 +123,30 @@ impl ObjectImpl for EditorWindow {
             ))
         }));
 
+        obj.connect_close_request(|this| {
+            let imp = this.imp();
+            let image = &imp.image;
+
+            let mut image = match image.try_borrow_mut() {
+                Ok(image) => image,
+                Err(why) => {
+                    tracing::info!(
+                        "Failed to borrow_mut image inside connect_close_request: {why}"
+                    );
+                    return gtk4::Inhibit(false);
+                }
+            };
+
+            match image.as_mut() {
+                Some(image) => {
+                    image.surface.finish();
+                }
+                None => {}
+            };
+
+            gtk4::Inhibit(false)
+        });
+
         drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
             let imp = obj.imp();
             let image = imp.image.borrow();
@@ -143,7 +167,6 @@ impl ObjectImpl for EditorWindow {
             } else if this.current_button() == BUTTON_SECONDARY {
                 obj.close();
             }
-
         }));
 
         let motion_event_handler = gtk4::EventControllerMotion::new();
