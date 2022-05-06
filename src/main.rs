@@ -46,6 +46,14 @@ fn main() {
     application.connect_activate(kcshot::build_ui);
 
     application.run();
+
+    #[cfg(feature = "heaptrack")]
+    // SAFETY: At this point there should be no more active cairo objects. IF there are, that is to
+    //         be considered a bug, as it likely means we are leaking cairo objects in some manner.
+    //         I believe in that case _some_ kind of assertion will fire.
+    unsafe {
+        cairo::debug_reset_static_data()
+    };
 }
 
 #[derive(thiserror::Error, Debug)]

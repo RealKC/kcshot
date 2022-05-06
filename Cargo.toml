@@ -45,6 +45,8 @@ gio = "0.15.1"
 
 [features]
 xdg-paths = []
+# Only specify this when trying to diagnose memory leaks, it shouldn't be used for normal usage
+heaptrack = []
 
 [package.metadata.cargo-machete]
 ignored = [
