@@ -284,7 +284,6 @@ mod underlying {
         let quit_button = gtk4::Button::new();
         quit_button.set_child(Some(&make_label("Quit kcshot")));
         quit_button.connect_clicked(glib::clone!(@weak application => move |_| {
-
             application.quit();
         }));
         buttons.append(&quit_button);
