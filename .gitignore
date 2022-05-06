@@ -1,3 +1,4 @@
 /target
 screenshot*
 *.db
+heaptrack.kcshot-rs.*
