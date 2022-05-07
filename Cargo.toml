@@ -41,7 +41,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror = "1.0.30"
 
 [build-dependencies]
-gio = "0.15.1"
+glib-build-tools = { git = "https://github.com/gtk-rs/gtk-rs-core", package = "glib-build-tools" }
 
 [features]
 xdg-paths = []

@@ -715,6 +715,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "glib-build-tools"
+version = "0.1.0"
+source = "git+https://github.com/gtk-rs/gtk-rs-core#4b53020df1fb1ac3a4bcbac855667b88529d6def"
+
+[[package]]
 name = "glib-macros"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -916,7 +921,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "gdk4-x11",
- "gio",
+ "glib-build-tools",
  "gtk4",
  "image",
  "ksni",
