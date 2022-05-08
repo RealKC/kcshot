@@ -94,18 +94,11 @@ mod underlying {
             obj.append(&line_width_spinner);
 
             // Don't bother with the dropdown if the displa
-            if display_server::can_retrieve_windows() {
-                let drop_down = if display_server::can_retrieve_window_decorations() {
-                    gtk4::DropDown::from_strings(SelectionMode::DECORATIONS)
-                } else {
-                    gtk4::DropDown::from_strings(SelectionMode::NO_DECORATIONS)
-                };
+            if display_server::can_retrieve_windows_and_decorations() {
+                let drop_down = gtk4::DropDown::from_strings(SelectionMode::STRINGS);
                 drop_down.set_tooltip_text(Some("Selection mode"));
                 drop_down.connect_selected_item_notify(clone!(@weak editor => move |this| {
-                    if let Some(selection_mode) = SelectionMode::from_integer(
-                        this.selected(),
-                        display_server::can_retrieve_window_decorations(),
-                    ) {
+                    if let Some(selection_mode) = SelectionMode::from_integer(this.selected()) {
                         editor.set_selection_mode(selection_mode);
                     }
                 }));

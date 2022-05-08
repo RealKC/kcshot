@@ -101,23 +101,11 @@ impl WmFeatures {
     }
 }
 
-pub fn can_retrieve_windows() -> bool {
+pub fn can_retrieve_windows_and_decorations() -> bool {
     match WmFeatures::get() {
-        Ok(wm_features) => wm_features.supports_client_list,
+        Ok(wm_features) => wm_features.supports_client_list && wm_features.supports_frame_extents,
         Err(why) => {
             tracing::info!("Encountered {why} in can_retrieve_windows\n\treturning false");
-            false
-        }
-    }
-}
-
-pub fn can_retrieve_window_decorations() -> bool {
-    match WmFeatures::get() {
-        Ok(wm_features) => wm_features.supports_frame_extents,
-        Err(why) => {
-            tracing::info!(
-                "Encountered {why} in can_retrieve_window_decoration_sizes\n\treturning false"
-            );
             false
         }
     }

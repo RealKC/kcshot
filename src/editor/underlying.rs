@@ -238,6 +238,45 @@ impl ObjectImpl for EditorWindow {
         );
         drawing_area.add_controller(&drag_controller);
 
+        let key_event_controller = gtk4::EventControllerKey::new();
+        key_event_controller.connect_key_pressed(
+            clone!(@weak obj, @weak drawing_area => @default-return gtk4::Inhibit(false), move |_, key, _, modifier| {
+                tracing::info!("{key:?} {modifier:?}");
+                let imp = obj.imp();
+                let image = &imp.image;
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                            image.operation_stack.set_ignore_windows(true);
+                            drawing_area.queue_draw();
+                        }
+                    }
+                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
+                };
+                gtk4::Inhibit(false)
+            }),
+        );
+        key_event_controller.connect_key_released(
+            clone!(@weak obj, @weak drawing_area => move |_, key, _, modifier| {
+                tracing::info!("{key:?} {modifier:?}");
+
+                let imp = obj.imp();
+                let image = &imp.image;
+                match image.try_borrow_mut() {
+                    Ok(mut image) => {
+                        let image = image.as_mut().unwrap();
+                        if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                            image.operation_stack.set_ignore_windows(false);
+                            drawing_area.queue_draw();
+                        }
+                    }
+                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
+                };
+            }),
+        );
+        obj.add_controller(&key_event_controller);
+
         let undo_action = gio::SimpleAction::new("undo", None);
         undo_action.connect_activate(
             clone!(@weak obj, @weak drawing_area => move |_, _| {

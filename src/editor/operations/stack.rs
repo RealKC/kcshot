@@ -20,6 +20,7 @@ pub struct OperationStack {
     windows: Vec<Window>,
     current_window: Option<usize>,
     is_in_crop_drag: bool,
+    ignore_windows: bool,
     pub selection_mode: SelectionMode,
     /// Used for arrows, lines, pencil and the contours of rectangles
     pub line_width: f64,
@@ -29,36 +30,19 @@ pub struct OperationStack {
 pub enum SelectionMode {
     WindowsWithDecorations,
     WindowsWithoutDecorations,
-    IgnoreWindows,
 }
 
 impl SelectionMode {
     /// Contains strings representing the variants of [`Self`] with mentions of window decorations.
-    pub const DECORATIONS: &'static [&'static str] = &[
-        "Windows w/ decorations",
-        "Windows w/o decorations",
-        "Ignore windows",
-    ];
+    pub const STRINGS: &'static [&'static str] =
+        &["Windows w/ decorations", "Windows w/o decorations"];
 
-    /// Contains string representing the variants of [`Self`] that make sense when we can't retrieve
-    /// window decorations.
-    pub const NO_DECORATIONS: &'static [&'static str] = &["Windows", "Ignore windows"];
-
-    pub fn from_integer(value: u32, can_retrieve_window_decorations: bool) -> Option<Self> {
+    pub fn from_integer(value: u32) -> Option<Self> {
         use SelectionMode::*;
-        if can_retrieve_window_decorations {
-            match value {
-                0 => Some(WindowsWithDecorations),
-                1 => Some(WindowsWithoutDecorations),
-                2 => Some(IgnoreWindows),
-                _ => None,
-            }
-        } else {
-            match value {
-                0 => Some(WindowsWithoutDecorations),
-                1 => Some(IgnoreWindows),
-                _ => None,
-            }
+        match value {
+            0 => Some(WindowsWithDecorations),
+            1 => Some(WindowsWithoutDecorations),
+            _ => None,
         }
     }
 }
@@ -86,6 +70,7 @@ impl OperationStack {
             windows,
             current_window: None,
             is_in_crop_drag: false,
+            ignore_windows: false,
             selection_mode: SelectionMode::WindowsWithDecorations,
             line_width: 4.0,
         }
@@ -100,7 +85,7 @@ impl OperationStack {
     }
 
     pub fn set_current_window(&mut self, x: f64, y: f64) {
-        if self.selection_mode == SelectionMode::IgnoreWindows {
+        if self.ignore_windows {
             self.current_window = None;
             return;
         }
@@ -111,6 +96,10 @@ impl OperationStack {
                 break;
             }
         }
+    }
+
+    pub fn set_ignore_windows(&mut self, b: bool) {
+        self.ignore_windows = b;
     }
 
     pub fn start_operation_at(&mut self, point: Point) {
@@ -211,7 +200,7 @@ impl OperationStack {
             // less than a pixel, we consider the entire screen or window under the cursor to be
             // the crop region
             if rect.area() < 1.0 {
-                if self.selection_mode != SelectionMode::IgnoreWindows {
+                if !self.ignore_windows {
                     self.windows
                         .iter()
                         .rev()
@@ -219,7 +208,6 @@ impl OperationStack {
                         .map(|window| match self.selection_mode {
                             SelectionMode::WindowsWithDecorations => window.outer_rect,
                             SelectionMode::WindowsWithoutDecorations => window.content_rect,
-                            _ => unreachable!(),
                         })
                 } else {
                     None
@@ -245,16 +233,21 @@ impl OperationStack {
             }
         }
 
-        // We don't want to draw window "crop indicators" in the following cases:
-        //  * we're saving the screenshot
-        //  * the user's tool is not the CropAndSave tool
-        //  * we are in a crop drag
-        if is_in_draw_event && self.current_tool() == Tool::CropAndSave && !self.is_in_crop_drag {
+        // We only want to draw window "crop indicators" when:
+        //  * we're not saving the screenshot
+        //  * the user's tool is the CropAndSave tool
+        //  * we are not in a crop drag
+        //  * we are not in "ignore windows" mode (entered by holding Ctrl)
+        let should_draw_windows = is_in_draw_event
+            && self.current_tool() == Tool::CropAndSave
+            && !self.is_in_crop_drag
+            && !self.ignore_windows;
+
+        if should_draw_windows {
             if let Some(idx) = self.current_window {
                 let Rectangle { x, y, w, h } = match self.selection_mode {
                     SelectionMode::WindowsWithDecorations => self.windows[idx].outer_rect,
                     SelectionMode::WindowsWithoutDecorations => self.windows[idx].content_rect,
-                    _ => unreachable!(),
                 };
                 log_if_err!(cairo.save());
 
