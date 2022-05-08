@@ -87,6 +87,36 @@ impl EditorWindow {
             }
         };
     }
+
+    pub(super) fn with_image<F, T>(&self, func: F) -> Option<T>
+    where
+        F: Fn(&Image) -> T,
+    {
+        match self.image.try_borrow() {
+            Ok(image) => {
+                if let Some(image) = image.as_ref() {
+                    return Some(func(image));
+                }
+            }
+            Err(why) => tracing::info!("Failed to borrow image: {why}"),
+        }
+
+        None
+    }
+
+    pub(super) fn with_image_mut<F>(&self, func: F)
+    where
+        F: Fn(&mut Image),
+    {
+        match self.image.try_borrow_mut() {
+            Ok(mut image) => {
+                if let Some(image) = image.as_mut() {
+                    func(image);
+                }
+            }
+            Err(why) => tracing::info!("Failed to borrow image: {why}"),
+        }
+    }
 }
 
 #[glib::object_subclass]
@@ -129,34 +159,12 @@ impl ObjectImpl for EditorWindow {
             .expect("construct should not be called more than once");
 
         obj.connect_close_request(|this| {
-            let imp = this.imp();
-            let image = &imp.image;
-
-            let mut image = match image.try_borrow_mut() {
-                Ok(image) => image,
-                Err(why) => {
-                    tracing::info!(
-                        "Failed to borrow_mut image inside connect_close_request: {why}"
-                    );
-                    return gtk4::Inhibit(false);
-                }
-            };
-
-            match image.as_mut() {
-                Some(image) => {
-                    image.surface.finish();
-                }
-                None => {}
-            };
-
+            this.imp().with_image_mut(|image| image.surface.finish());
             gtk4::Inhibit(false)
         });
 
         drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
-            let imp = obj.imp();
-            let image = imp.image.borrow();
-            let image = image.as_ref().unwrap();
-            EditorWindow::do_draw(image, cairo, true);
+            obj.imp().with_image(|image| EditorWindow::do_draw(image, cairo, true));
         }));
 
         let click_event_handler = gtk4::GestureClick::new();
@@ -165,10 +173,9 @@ impl ObjectImpl for EditorWindow {
         click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
             tracing::warn!("Got button-press on drawing_area");
             if this.current_button() == BUTTON_PRIMARY {
-                let imp = obj.imp();
-                let mut image = imp.image.borrow_mut();
-                let image = image.as_mut().unwrap();
-                image.operation_stack.start_operation_at(Point { x, y });
+                obj.imp().with_image_mut(|image| {
+                    image.operation_stack.start_operation_at(Point { x, y });
+                });
             } else if this.current_button() == BUTTON_SECONDARY {
                 obj.close();
             }
@@ -176,46 +183,44 @@ impl ObjectImpl for EditorWindow {
 
         let motion_event_handler = gtk4::EventControllerMotion::new();
         motion_event_handler.connect_motion(
-            clone!(@weak obj, @weak drawing_area => move |_this, x, y| {
-                let imp = obj.imp();
-                let image = &imp.image;
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        image.operation_stack.set_current_window(x, y);
-                        drawing_area.queue_draw();
-                    }
-                    Err(why) => info!("Image already borrowed: {why}"),
-                };
+            clone!(@weak obj, @weak drawing_area => move |_, x, y| {
+                obj.imp().with_image_mut(|image| {
+                    image.operation_stack.set_current_window(x, y);
+                    drawing_area.queue_draw();
+                });
             }),
         );
         drawing_area.add_controller(&motion_event_handler);
 
         click_event_handler.connect_released(
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
-                let imp = obj.imp();
-                let image = &imp.image;
-                let mut imagerc = image.borrow_mut();
-                let image = imagerc.as_mut().unwrap();
-                if image.operation_stack.current_tool() == Tool::Text {
-                    tracing::info!("Text tool has been activated");
-                    let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
-                    match res {
-                        DialogResponse::Text(text) => {
-                            image.operation_stack.set_text(text);
-                            drawing_area.queue_draw();
+                obj.imp().with_image_mut(|image| {
+                    if image.operation_stack.current_tool() == Tool::Text {
+                        tracing::info!("Text tool has been activated");
+                        let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
+                        match res {
+                            DialogResponse::Text(text) => {
+                                image.operation_stack.set_text(text);
+                                drawing_area.queue_draw();
+                            }
+                            DialogResponse::Cancel => { /* do nothing */ }
                         }
-                        DialogResponse::Cancel => { /* do nothing */ }
+                        return;
+                    } else if image.operation_stack.current_tool() != Tool::CropAndSave {
+                        tracing::info!("This is called");
+                        image.operation_stack.finish_current_operation();
+                        drawing_area.queue_draw();
+                        return;
                     }
-                    return;
-                } else if image.operation_stack.current_tool() != Tool::CropAndSave {
-                    tracing::info!("This is called");
-                    image.operation_stack.finish_current_operation();
-                    drawing_area.queue_draw();
-                    return;
-                }
 
-                EditorWindow::do_save_surface(&app.model_notifier(), app.conn(), obj.upcast_ref(), image, Point { x, y });
+                    EditorWindow::do_save_surface(
+                        &app.model_notifier(),
+                        app.conn(),
+                        obj.upcast_ref(),
+                        image,
+                        Point { x, y }
+                    );
+                });
             }),
         );
 
@@ -224,91 +229,58 @@ impl ObjectImpl for EditorWindow {
         let drag_controller = gtk4::GestureDrag::new();
         drag_controller.connect_drag_update(
             clone!(@weak obj, @weak drawing_area =>  move |_this, x, y| {
-                let imp = obj.imp();
-                let image = &imp.image;
-                let mut image = image.borrow_mut();
-                let image = image.as_mut().unwrap();
-                info!("Dragging to {{ {x}, {y} }}");
-                image.operation_stack.update_current_operation_end_coordinate(x, y);
-                if image.operation_stack.current_tool() == Tool::CropAndSave {
-                    image.operation_stack.set_is_in_crop_drag(true);
-                }
-                drawing_area.queue_draw();
+                obj.imp().with_image_mut(|image| {
+                    info!("Dragging to {{ {x}, {y} }}");
+                    image.operation_stack.update_current_operation_end_coordinate(x, y);
+                    if image.operation_stack.current_tool() == Tool::CropAndSave {
+                        image.operation_stack.set_is_in_crop_drag(true);
+                    }
+                    drawing_area.queue_draw();
+                });
             }),
         );
         drawing_area.add_controller(&drag_controller);
 
         let key_event_controller = gtk4::EventControllerKey::new();
         key_event_controller.connect_key_pressed(
-            clone!(@weak obj, @weak drawing_area => @default-return gtk4::Inhibit(false), move |_, key, _, modifier| {
-                tracing::info!("{key:?} {modifier:?}");
-                let imp = obj.imp();
-                let image = &imp.image;
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
-                            image.operation_stack.set_ignore_windows(true);
-                            drawing_area.queue_draw();
-                        }
+            clone!(@weak obj, @weak drawing_area => @default-return gtk4::Inhibit(false), move |_, key, _, _| {
+                obj.imp().with_image_mut(|image| {
+                    if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                        image.operation_stack.set_ignore_windows(true);
+                        drawing_area.queue_draw();
                     }
-                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
-                };
+                });
                 gtk4::Inhibit(false)
             }),
         );
         key_event_controller.connect_key_released(
-            clone!(@weak obj, @weak drawing_area => move |_, key, _, modifier| {
-                tracing::info!("{key:?} {modifier:?}");
-
-                let imp = obj.imp();
-                let image = &imp.image;
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
-                            image.operation_stack.set_ignore_windows(false);
-                            drawing_area.queue_draw();
-                        }
+            clone!(@weak obj, @weak drawing_area => move |_, key, _, _| {
+                obj.imp().with_image_mut(|image| {
+                    if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                        image.operation_stack.set_ignore_windows(false);
+                        drawing_area.queue_draw();
                     }
-                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
-                };
+                });
             }),
         );
         obj.add_controller(&key_event_controller);
 
         let undo_action = gio::SimpleAction::new("undo", None);
-        undo_action.connect_activate(
-            clone!(@weak obj, @weak drawing_area => move |_, _| {
-                let imp = obj.imp();
-                let image = &imp.image;
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        image.operation_stack.undo();
-                        drawing_area.queue_draw();
-                    }
-                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle undo: {why}")
-                };
-            }),
-        );
+        undo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
+            obj.imp().with_image_mut(|image| {
+                image.operation_stack.undo();
+                drawing_area.queue_draw();
+            });
+        }));
         obj.add_action(&undo_action);
 
         let redo_action = gio::SimpleAction::new("redo", None);
-        redo_action.connect_activate(
-            clone!(@weak obj, @weak drawing_area => move |_, _| {
-                let imp = obj.imp();
-                let image = &imp.image;
-                match image.try_borrow_mut() {
-                    Ok(mut image) => {
-                        let image = image.as_mut().unwrap();
-                        image.operation_stack.redo();
-                        drawing_area.queue_draw();
-                    }
-                    Err(why) => tracing::error!("Failed to borrow self.image when trying to handle redo: {why}")
-                };
-            }),
-        );
+        redo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
+            obj.imp().with_image_mut(|image| {
+                image.operation_stack.redo();
+                drawing_area.queue_draw();
+            });
+        }));
         obj.add_action(&redo_action);
 
         // FIXME: Figure out how/if we make this work across keyboard layouts that don't have Z and Y

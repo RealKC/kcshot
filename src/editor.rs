@@ -62,13 +62,9 @@ impl EditorWindow {
     }
 
     fn set_current_tool(&self, tool: Tool) {
-        self.imp()
-            .image
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .operation_stack
-            .set_current_tool(tool);
+        self.imp().with_image_mut(|image| {
+            image.operation_stack.set_current_tool(tool);
+        });
     }
 
     /// Returns the primary colour of the editor
@@ -76,19 +72,14 @@ impl EditorWindow {
     /// The primary colour is the one used for filling in shapes
     fn primary_colour(&self) -> Colour {
         self.imp()
-            .image
-            .borrow()
-            .as_ref()
+            .with_image(|image| image.operation_stack.primary_colour)
             .unwrap()
-            .operation_stack
-            .primary_colour
     }
 
     fn set_primary_colour(&self, colour: Colour) {
-        let mut image = self.imp().image.borrow_mut();
-        let image = image.as_mut().unwrap();
-
-        image.operation_stack.primary_colour = colour;
+        self.imp().with_image_mut(|image| {
+            image.operation_stack.primary_colour = colour;
+        });
 
         let settings = kcshot::open_settings();
         if let Err(why) = settings.set_uint("last-used-primary-colour", colour.serialise_to_u32()) {
@@ -102,19 +93,14 @@ impl EditorWindow {
     /// default colour for text and the pencil
     fn secondary_colour(&self) -> Colour {
         self.imp()
-            .image
-            .borrow()
-            .as_ref()
+            .with_image(|image| image.operation_stack.secondary_colour)
             .unwrap()
-            .operation_stack
-            .secondary_colour
     }
 
     fn set_secondary_colour(&self, colour: Colour) {
-        let mut image = self.imp().image.borrow_mut();
-        let image = image.as_mut().unwrap();
-
-        image.operation_stack.secondary_colour = colour;
+        self.imp().with_image_mut(|image| {
+            image.operation_stack.secondary_colour = colour;
+        });
 
         let settings = kcshot::open_settings();
         if let Err(why) = settings.set_uint("last-used-secondary-colour", colour.serialise_to_u32())
@@ -124,26 +110,14 @@ impl EditorWindow {
     }
 
     fn set_selection_mode(&self, selection_mode: SelectionMode) {
-        let image = &self.imp().image;
-
-        match image.try_borrow_mut() {
-            Ok(mut image) => {
-                let image = image.as_mut().unwrap();
-                image.operation_stack.selection_mode = selection_mode;
-            }
-            Err(why) => tracing::info!("Image already borrowed: {why}"),
-        }
+        self.imp().with_image_mut(|image| {
+            image.operation_stack.selection_mode = selection_mode;
+        });
     }
 
     fn set_line_width(&self, line_width: f64) {
-        let image = &self.imp().image;
-
-        match image.try_borrow_mut() {
-            Ok(mut image) => {
-                let image = image.as_mut().unwrap();
-                image.operation_stack.line_width = line_width;
-            }
-            Err(why) => tracing::info!("Image already borrowed: {why}"),
-        }
+        self.imp().with_image_mut(|image| {
+            image.operation_stack.line_width = line_width;
+        });
     }
 }
