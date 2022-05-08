@@ -41,7 +41,7 @@ mod underlying {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ToolbarWidget {
-        const NAME: &'static str = "kcshotToolbarWidget";
+        const NAME: &'static str = "KCShotToolbarWidget";
         type Type = super::ToolbarWidget;
         type ParentType = gtk4::Box;
     }

@@ -44,7 +44,7 @@ mod underlying {
 
     #[glib::object_subclass]
     impl ObjectSubclass for AppWindow {
-        const NAME: &'static str = "AppWindow";
+        const NAME: &'static str = "KCShotAppWindow";
         type Type = super::AppWindow;
         type ParentType = gtk4::ApplicationWindow;
     }

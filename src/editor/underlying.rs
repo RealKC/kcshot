@@ -91,7 +91,7 @@ impl EditorWindow {
 
 #[glib::object_subclass]
 impl ObjectSubclass for EditorWindow {
-    const NAME: &'static str = "EditorWindow";
+    const NAME: &'static str = "KCShotEditorWindow";
     type Type = super::EditorWindow;
     type ParentType = gtk4::ApplicationWindow;
 }
