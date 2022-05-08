@@ -4,7 +4,7 @@ use crate::{historymodel::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
-    @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
 }
 
 impl AppWindow {
@@ -141,6 +141,12 @@ mod underlying {
             hbox.append(&right_frame);
 
             obj.set_child(Some(&hbox));
+        }
+
+        fn dispose(&self, _: &Self::Type) {
+            if let Some(window) = self.window.get() {
+                window.unparent();
+            }
         }
 
         fn properties() -> &'static [ParamSpec] {

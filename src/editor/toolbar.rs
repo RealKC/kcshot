@@ -20,7 +20,7 @@ mod underlying {
         subclass::prelude::*,
         Inhibit, ResponseType,
     };
-    use once_cell::sync::Lazy;
+    use once_cell::sync::{Lazy, OnceCell};
 
     use crate::{
         editor::{
@@ -36,6 +36,7 @@ mod underlying {
     #[derive(Debug, Default)]
     pub struct ToolbarWidget {
         parent_editor: WeakRef<editor::EditorWindow>,
+        buttons: OnceCell<Vec<gtk4::ToggleButton>>,
     }
 
     #[glib::object_subclass]
@@ -83,6 +84,10 @@ mod underlying {
                 make_tool_button(Tool::AutoincrementBubble, box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
                 make_tool_button(Tool::Text, box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
             ];
+
+            self.buttons
+                .set(buttons.iter().map(|(button, _)| button.clone()).collect())
+                .expect("construct should only be called once");
 
             obj.append(&primary_colour_button);
             obj.append(&secondary_colour_button);
@@ -132,6 +137,14 @@ mod underlying {
             );
 
             editor.add_controller(&key_event_handler);
+        }
+
+        fn dispose(&self, _: &Self::Type) {
+            if let Some(buttons) = self.buttons.get() {
+                for button in buttons {
+                    button.unparent();
+                }
+            }
         }
 
         fn properties() -> &'static [ParamSpec] {

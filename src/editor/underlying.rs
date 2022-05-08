@@ -10,7 +10,7 @@ use gtk4::{
     subclass::prelude::*,
     Allocation,
 };
-use once_cell::sync::Lazy;
+use once_cell::sync::{Lazy, OnceCell};
 use tracing::{error, info};
 
 use super::toolbar;
@@ -37,6 +37,7 @@ pub(super) struct Image {
 #[derive(Default, Debug)]
 pub struct EditorWindow {
     pub(super) image: RefCell<Option<Image>>,
+    overlay: OnceCell<gtk4::Overlay>,
 }
 
 impl EditorWindow {
@@ -122,6 +123,10 @@ impl ObjectImpl for EditorWindow {
                 32,
             ))
         }));
+
+        self.overlay
+            .set(overlay)
+            .expect("construct should not be called more than once");
 
         obj.connect_close_request(|this| {
             let imp = this.imp();
@@ -276,6 +281,12 @@ impl ObjectImpl for EditorWindow {
             surface: image,
             operation_stack: OperationStack::new(windows),
         }));
+    }
+
+    fn dispose(&self, _: &Self::Type) {
+        if let Some(overlay) = self.overlay.get() {
+            overlay.unparent();
+        }
     }
 
     fn properties() -> &'static [ParamSpec] {
