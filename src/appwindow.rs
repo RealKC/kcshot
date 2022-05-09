@@ -39,7 +39,6 @@ mod underlying {
     pub struct AppWindow {
         history_model: OnceCell<super::HistoryModel>,
         settings: OnceCell<gio::Settings>,
-        window: OnceCell<gtk4::Window>,
     }
 
     #[glib::object_subclass]
@@ -57,11 +56,7 @@ mod underlying {
 
             let list_model = self.history_model.get().unwrap();
 
-            let (settings_window, button_list) =
-                build_button_pane(&obj.application().unwrap(), list_model);
-            self.window
-                .set(settings_window)
-                .expect("self.constructed called twice");
+            let button_list = build_button_pane(&obj.application().unwrap(), list_model);
             let left_frame = gtk4::Frame::new(None);
             left_frame.set_child(Some(&button_list));
             hbox.append(&left_frame);
@@ -141,12 +136,6 @@ mod underlying {
             hbox.append(&right_frame);
 
             obj.set_child(Some(&hbox));
-        }
-
-        fn dispose(&self, _: &Self::Type) {
-            if let Some(window) = self.window.get() {
-                window.unparent();
-            }
         }
 
         fn properties() -> &'static [ParamSpec] {
@@ -250,7 +239,7 @@ mod underlying {
     fn build_button_pane(
         application: &gtk4::Application,
         history_model: &super::HistoryModel,
-    ) -> (gtk4::Window, gtk4::Box) {
+    ) -> gtk4::Box {
         let buttons = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
 
         let capture_button = gtk4::Button::new();
@@ -266,8 +255,7 @@ mod underlying {
         settings_button.set_child(Some(&make_label("Settings")));
         let settings_window = build_settings_window();
         settings_window.set_icon_name(Some("kcshot"));
-        let settings_window_ = settings_window.clone();
-        settings_button.connect_clicked(move |_| settings_window_.show());
+        settings_button.connect_clicked(move |_| settings_window.show());
         buttons.append(&settings_button);
 
         let screenshots_folder_button = gtk4::Button::new();
@@ -294,7 +282,7 @@ mod underlying {
         }));
         buttons.append(&quit_button);
 
-        (settings_window, buttons)
+        buttons
     }
 
     fn build_settings_window() -> gtk4::Window {
