@@ -85,6 +85,11 @@ pub fn build_ui(app: &KCShot) {
         instance.systray_initialised.replace(true);
     }
 
+    // This ensures that even when called with `--no-window`, kcshot still keeps running
+    // But yes, it feels stupid to me too
+    app.main_window().present();
+    app.main_window().hide();
+
     if take_screenshot {
         instance.take_screenshot.replace(false);
         EditorWindow::show(app.upcast_ref());
