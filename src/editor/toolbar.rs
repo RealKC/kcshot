@@ -92,7 +92,8 @@ mod underlying {
             obj.append(&secondary_colour_button);
             obj.append(&line_width_spinner);
 
-            // Don't bother with the dropdown if the displa
+            // Don't bother with the dropdown if the display server can't provide us with the necessary
+            // data
             if display_server::can_retrieve_windows_and_decorations() {
                 let drop_down = gtk4::DropDown::from_strings(SelectionMode::STRINGS);
                 drop_down.set_tooltip_text(Some("Selection mode"));
