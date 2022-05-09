@@ -19,7 +19,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, clone, signal::Inhibit, ParamSpec, ParamSpecObject},
+        glib::{self, clone, ParamSpec, ParamSpecObject},
         prelude::*,
         subclass::{
             application_window::ApplicationWindowImpl,
@@ -53,6 +53,7 @@ mod underlying {
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
             obj.set_icon_name(Some("kcshot"));
+            obj.set_hide_on_close(true);
 
             let list_model = self.history_model.get().unwrap();
 
@@ -196,12 +197,7 @@ mod underlying {
         }
     }
 
-    impl WindowImpl for AppWindow {
-        fn close_request(&self, window: &Self::Type) -> Inhibit {
-            window.hide();
-            Inhibit(false)
-        }
-    }
+    impl WindowImpl for AppWindow {}
 
     fn build_item_factory() -> SignalListItemFactory {
         let factory = gtk4::SignalListItemFactory::new();
