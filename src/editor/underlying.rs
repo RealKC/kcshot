@@ -217,7 +217,6 @@ impl ObjectImpl for EditorWindow {
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
                 obj.imp().with_image_mut("mouse button released event", |image| {
                     if image.operation_stack.current_tool() == Tool::Text {
-                        tracing::info!("Text tool has been activated");
                         let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
                         match res {
                             DialogResponse::Text(text) => {
@@ -227,7 +226,6 @@ impl ObjectImpl for EditorWindow {
                             DialogResponse::Cancel => { /* do nothing */ }
                         }
                     } else if image.operation_stack.current_tool() != Tool::CropAndSave {
-                        tracing::info!("This is called");
                         image.operation_stack.finish_current_operation();
                         drawing_area.queue_draw();
                     } else {

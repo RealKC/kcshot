@@ -107,8 +107,6 @@ mod underlying {
                 }
             };
 
-            tracing::info!("{last_fetched_screenshot_index}");
-
             if position as usize > last_fetched_screenshot_index
                 || last_fetched_screenshot_index == 0
             {
