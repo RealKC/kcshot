@@ -62,7 +62,7 @@ impl EditorWindow {
     }
 
     fn set_current_tool(&self, tool: Tool) {
-        self.imp().with_image_mut(|image| {
+        self.imp().with_image_mut("set_current_tool", |image| {
             image.operation_stack.set_current_tool(tool);
         });
     }
@@ -72,12 +72,14 @@ impl EditorWindow {
     /// The primary colour is the one used for filling in shapes
     fn primary_colour(&self) -> Colour {
         self.imp()
-            .with_image(|image| image.operation_stack.primary_colour)
+            .with_image("get primary_colour", |image| {
+                image.operation_stack.primary_colour
+            })
             .unwrap()
     }
 
     fn set_primary_colour(&self, colour: Colour) {
-        self.imp().with_image_mut(|image| {
+        self.imp().with_image_mut("set_primary_colour", |image| {
             image.operation_stack.primary_colour = colour;
         });
 
@@ -93,12 +95,14 @@ impl EditorWindow {
     /// default colour for text and the pencil
     fn secondary_colour(&self) -> Colour {
         self.imp()
-            .with_image(|image| image.operation_stack.secondary_colour)
+            .with_image("get secondary_colour", |image| {
+                image.operation_stack.secondary_colour
+            })
             .unwrap()
     }
 
     fn set_secondary_colour(&self, colour: Colour) {
-        self.imp().with_image_mut(|image| {
+        self.imp().with_image_mut("set_secondary_colour", |image| {
             image.operation_stack.secondary_colour = colour;
         });
 
@@ -110,13 +114,13 @@ impl EditorWindow {
     }
 
     fn set_selection_mode(&self, selection_mode: SelectionMode) {
-        self.imp().with_image_mut(|image| {
+        self.imp().with_image_mut("set_selection_mode", |image| {
             image.operation_stack.selection_mode = selection_mode;
         });
     }
 
     fn set_line_width(&self, line_width: f64) {
-        self.imp().with_image_mut(|image| {
+        self.imp().with_image_mut("set_line_width", |image| {
             image.operation_stack.line_width = line_width;
         });
     }

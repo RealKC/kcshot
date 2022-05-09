@@ -88,7 +88,7 @@ impl EditorWindow {
         };
     }
 
-    pub(super) fn with_image<F, T>(&self, func: F) -> Option<T>
+    pub(super) fn with_image<F, T>(&self, ctx: &str, func: F) -> Option<T>
     where
         F: Fn(&Image) -> T,
     {
@@ -98,13 +98,23 @@ impl EditorWindow {
                     return Some(func(image));
                 }
             }
-            Err(why) => tracing::info!("Failed to borrow image: {why}"),
+            Err(why) => {
+                if ctx.is_empty() {
+                    tracing::info!(
+                        "Failed to immutably borrow self.image:\n\t- error: '{why}' ({why:?})"
+                    );
+                } else {
+                    tracing::info!(
+                        "Failed to immutably borrow self.image:\n\t- error: '{why}' ({why:?})\n\t- context: {ctx}"
+                    );
+                }
+            }
         }
 
         None
     }
 
-    pub(super) fn with_image_mut<F>(&self, func: F)
+    pub(super) fn with_image_mut<F>(&self, ctx: &str, func: F)
     where
         F: Fn(&mut Image),
     {
@@ -114,7 +124,17 @@ impl EditorWindow {
                     func(image);
                 }
             }
-            Err(why) => tracing::info!("Failed to borrow image: {why}"),
+            Err(why) => {
+                if ctx.is_empty() {
+                    tracing::info!(
+                        "Failed to mutably borrow self.image:\n\t- error: '{why}' ({why:?})"
+                    );
+                } else {
+                    tracing::info!(
+                        "Failed to borrow mutably self.image:\n\t- error: '{why}' ({why:?})\n\t- context: {ctx}"
+                    );
+                }
+            }
         }
     }
 }
@@ -159,12 +179,13 @@ impl ObjectImpl for EditorWindow {
             .expect("construct should not be called more than once");
 
         obj.connect_close_request(|this| {
-            this.imp().with_image_mut(|image| image.surface.finish());
+            this.imp()
+                .with_image_mut("close_request", |image| image.surface.finish());
             gtk4::Inhibit(false)
         });
 
         drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
-            obj.imp().with_image(|image| EditorWindow::do_draw(image, cairo, true));
+            obj.imp().with_image("draw event", |image| EditorWindow::do_draw(image, cairo, true));
         }));
 
         let click_event_handler = gtk4::GestureClick::new();
@@ -173,7 +194,7 @@ impl ObjectImpl for EditorWindow {
         click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
             tracing::warn!("Got button-press on drawing_area");
             if this.current_button() == BUTTON_PRIMARY {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("primary button pressed", |image| {
                     image.operation_stack.start_operation_at(Point { x, y });
                 });
             } else if this.current_button() == BUTTON_SECONDARY {
@@ -184,7 +205,7 @@ impl ObjectImpl for EditorWindow {
         let motion_event_handler = gtk4::EventControllerMotion::new();
         motion_event_handler.connect_motion(
             clone!(@weak obj, @weak drawing_area => move |_, x, y| {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("motion event", |image| {
                     image.operation_stack.set_current_window(x, y);
                     drawing_area.queue_draw();
                 });
@@ -194,7 +215,7 @@ impl ObjectImpl for EditorWindow {
 
         click_event_handler.connect_released(
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("mouse button released event", |image| {
                     if image.operation_stack.current_tool() == Tool::Text {
                         tracing::info!("Text tool has been activated");
                         let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
@@ -229,7 +250,7 @@ impl ObjectImpl for EditorWindow {
         let drag_controller = gtk4::GestureDrag::new();
         drag_controller.connect_drag_update(
             clone!(@weak obj, @weak drawing_area =>  move |_this, x, y| {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("drag update event", |image| {
                     info!("Dragging to {{ {x}, {y} }}");
                     image.operation_stack.update_current_operation_end_coordinate(x, y);
                     if image.operation_stack.current_tool() == Tool::CropAndSave {
@@ -244,7 +265,7 @@ impl ObjectImpl for EditorWindow {
         let key_event_controller = gtk4::EventControllerKey::new();
         key_event_controller.connect_key_pressed(
             clone!(@weak obj, @weak drawing_area => @default-return gtk4::Inhibit(false), move |_, key, _, _| {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("key pressed event", |image| {
                     if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
                         image.operation_stack.set_ignore_windows(true);
                         drawing_area.queue_draw();
@@ -255,7 +276,7 @@ impl ObjectImpl for EditorWindow {
         );
         key_event_controller.connect_key_released(
             clone!(@weak obj, @weak drawing_area => move |_, key, _, _| {
-                obj.imp().with_image_mut(|image| {
+                obj.imp().with_image_mut("key released event", |image| {
                     if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
                         image.operation_stack.set_ignore_windows(false);
                         drawing_area.queue_draw();
@@ -267,7 +288,7 @@ impl ObjectImpl for EditorWindow {
 
         let undo_action = gio::SimpleAction::new("undo", None);
         undo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
-            obj.imp().with_image_mut(|image| {
+            obj.imp().with_image_mut("win.undo activated", |image| {
                 image.operation_stack.undo();
                 drawing_area.queue_draw();
             });
@@ -276,7 +297,7 @@ impl ObjectImpl for EditorWindow {
 
         let redo_action = gio::SimpleAction::new("redo", None);
         redo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
-            obj.imp().with_image_mut(|image| {
+            obj.imp().with_image_mut("win.redo activated", |image| {
                 image.operation_stack.redo();
                 drawing_area.queue_draw();
             });
