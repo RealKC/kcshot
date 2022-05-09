@@ -226,21 +226,19 @@ impl ObjectImpl for EditorWindow {
                             }
                             DialogResponse::Cancel => { /* do nothing */ }
                         }
-                        return;
                     } else if image.operation_stack.current_tool() != Tool::CropAndSave {
                         tracing::info!("This is called");
                         image.operation_stack.finish_current_operation();
                         drawing_area.queue_draw();
-                        return;
+                    } else {
+                        EditorWindow::do_save_surface(
+                            &app.model_notifier(),
+                            app.conn(),
+                            obj.upcast_ref(),
+                            image,
+                            Point { x, y }
+                        );
                     }
-
-                    EditorWindow::do_save_surface(
-                        &app.model_notifier(),
-                        app.conn(),
-                        obj.upcast_ref(),
-                        image,
-                        Point { x, y }
-                    );
                 });
             }),
         );
