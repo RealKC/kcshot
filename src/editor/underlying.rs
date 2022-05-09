@@ -276,6 +276,8 @@ impl ObjectImpl for EditorWindow {
                     if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
                         image.operation_stack.set_ignore_windows(false);
                         drawing_area.queue_draw();
+                    } else if key == gdk::Key::Escape {
+                        obj.close();
                     }
                 });
             }),

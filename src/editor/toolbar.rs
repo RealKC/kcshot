@@ -14,7 +14,6 @@ impl ToolbarWidget {
 
 mod underlying {
     use gtk4::{
-        gdk::Key,
         glib::{self, clone, ParamSpec, ParamSpecObject, WeakRef},
         prelude::*,
         subclass::prelude::*,
@@ -113,10 +112,8 @@ mod underlying {
 
             let key_event_handler = gtk4::EventControllerKey::new();
             key_event_handler.connect_key_pressed(
-                clone!(@weak editor => @default-return Inhibit(false), move |_this, key, _, _| {
-                    if key == Key::Escape {
-                        editor.close();
-                    } else if let Some(tool) = key.to_unicode().and_then(Tool::from_unicode) {
+                clone!(@weak editor => @default-return Inhibit(false), move |_, key, _, _| {
+                    if let Some(tool) = key.to_unicode().and_then(Tool::from_unicode) {
                         editor.set_current_tool(tool);
                         for (button, button_tool) in buttons.iter() {
                             if *button_tool == tool {
