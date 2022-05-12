@@ -87,8 +87,14 @@ pub fn build_ui(app: &KCShot) {
 
     // This ensures that even when called with `--no-window`, kcshot still keeps running
     // But yes, it feels stupid to me too
-    app.main_window().present();
-    app.main_window().hide();
+    if *instance.first_instance.borrow()
+        && !app.main_window().is_visible()
+        && (take_screenshot || !show_main_window)
+    {
+        app.main_window().present();
+        app.main_window().hide();
+        instance.first_instance.replace(false);
+    }
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
@@ -119,6 +125,7 @@ mod underlying {
     pub struct KCShot {
         pub(super) show_main_window: RefCell<bool>,
         pub(super) take_screenshot: RefCell<bool>,
+        pub(super) first_instance: RefCell<bool>,
         pub(super) database_connection: OnceCell<SqliteConnection>,
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
@@ -144,6 +151,7 @@ mod underlying {
             Self {
                 show_main_window: RefCell::new(true),
                 take_screenshot: RefCell::new(false),
+                first_instance: RefCell::new(true),
                 database_connection: Default::default(),
                 history_model: Default::default(),
                 model_notifier: Default::default(),
