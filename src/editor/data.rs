@@ -41,7 +41,7 @@ impl Colour {
     }
 
     /// Creates a [`Self`] from a `u32` whose byte layout is assumed to be `RGBA`.
-    /// 
+    ///
     /// [`Self::serialise_to_u32`] will create a `u32` in this layout, and you should use this
     /// function paired with that one.
     #[rustfmt::skip]
@@ -51,7 +51,7 @@ impl Colour {
         let green = (raw >> 16 & 0xFF) as u8;
         let blue  = (raw >>  8 & 0xFF) as u8;
         let alpha = (raw       & 0xFF) as u8;
-    
+
         Self { red, green, blue, alpha }
     }
 }
