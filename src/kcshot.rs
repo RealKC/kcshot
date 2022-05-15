@@ -75,42 +75,45 @@ pub fn open_settings() -> gio::Settings {
 pub fn build_ui(app: &KCShot) {
     let instance = app.imp();
 
-    let take_screenshot = *instance.take_screenshot.borrow();
-    let show_main_window = *instance.show_main_window.borrow();
+    let take_screenshot = instance.take_screenshot.get();
+    let show_main_window = instance.show_main_window.get();
 
     // We initialise the systray here because I believe that with other backends it might not be valid
     // to do it in startup (through we only support one systray backend for now...)
-    if !*instance.systray_initialised.borrow() {
+    if !instance.systray_initialised.get() {
         systray::init(app);
-        instance.systray_initialised.replace(true);
+        instance.systray_initialised.set(true);
     }
 
     // This ensures that even when called with `--no-window`, kcshot still keeps running
     // But yes, it feels stupid to me too
-    if *instance.first_instance.borrow()
+    if instance.first_instance.get()
         && !app.main_window().is_visible()
         && (take_screenshot || !show_main_window)
     {
         app.main_window().present();
         app.main_window().hide();
-        instance.first_instance.replace(false);
+        instance.first_instance.set(false);
     }
 
     if take_screenshot {
-        instance.take_screenshot.replace(false);
+        instance.take_screenshot.set(false);
 
         let editing_starts_with_cropping = open_settings().boolean("editing-starts-with-cropping");
 
         EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
     } else if show_main_window {
-        instance.show_main_window.replace(false);
+        instance.show_main_window.set(false);
 
         app.main_window().present();
     }
 }
 
 mod underlying {
-    use std::{cell::RefCell, ffi::OsString};
+    use std::{
+        cell::{Cell, RefCell},
+        ffi::OsString,
+    };
 
     use diesel::SqliteConnection;
     use gtk4::{
@@ -126,13 +129,13 @@ mod underlying {
     };
 
     pub struct KCShot {
-        pub(super) show_main_window: RefCell<bool>,
-        pub(super) take_screenshot: RefCell<bool>,
-        pub(super) first_instance: RefCell<bool>,
+        pub(super) show_main_window: Cell<bool>,
+        pub(super) take_screenshot: Cell<bool>,
+        pub(super) first_instance: Cell<bool>,
         pub(super) database_connection: OnceCell<SqliteConnection>,
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
-        pub(super) systray_initialised: RefCell<bool>,
+        pub(super) systray_initialised: Cell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
         /// We store the identifier on the application instance as calling WindowIdentifier::from_native
         /// more than once is invalid on Wayland, see https://github.com/bilelmoussaoui/ashpd/issues/20
@@ -152,13 +155,13 @@ mod underlying {
     impl Default for KCShot {
         fn default() -> Self {
             Self {
-                show_main_window: RefCell::new(true),
-                take_screenshot: RefCell::new(false),
-                first_instance: RefCell::new(true),
+                show_main_window: Cell::new(true),
+                take_screenshot: Cell::new(false),
+                first_instance: Cell::new(true),
                 database_connection: Default::default(),
                 history_model: Default::default(),
                 model_notifier: Default::default(),
-                systray_initialised: RefCell::new(false),
+                systray_initialised: Cell::new(false),
                 window: Default::default(),
                 window_identifier: Default::default(),
             }
@@ -245,13 +248,13 @@ mod underlying {
             for argument in command_line.arguments() {
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
                     show_main_window = false;
-                    self.take_screenshot.replace(false);
+                    self.take_screenshot.set(false);
                 } else if SCREENSHOT_FLAGS_OS.contains(&argument) {
-                    self.take_screenshot.replace(true);
+                    self.take_screenshot.set(true);
                     show_main_window = false;
                 }
             }
-            self.show_main_window.replace(show_main_window);
+            self.show_main_window.set(show_main_window);
 
             app.activate();
 
