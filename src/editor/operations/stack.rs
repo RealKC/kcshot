@@ -9,21 +9,27 @@ use crate::{
 
 #[derive(Debug)]
 pub struct OperationStack {
+    // The stack itself
     operations: Vec<Operation>,
     undone_operations: Vec<Operation>,
+
+    // State relating to the operation going on right now
     current_tool: Tool,
     current_operation: Option<Operation>,
     autoincrement_bubble_number: i32,
     pub primary_colour: Colour,
     pub secondary_colour: Colour,
+    pub line_width: f64,
+
+    // State relating to crop selection
+    pub selection_mode: SelectionMode,
+    is_in_crop_drag: bool,
     /// This in in stacking order
     windows: Vec<Window>,
     current_window: Option<usize>,
-    is_in_crop_drag: bool,
     ignore_windows: bool,
-    pub selection_mode: SelectionMode,
+
     /// Used for arrows, lines, pencil and the contours of rectangles
-    pub line_width: f64,
     editing_started_with_cropping: bool,
     screen_dimensions: Rectangle,
 }
