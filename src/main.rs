@@ -25,7 +25,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 
 fn main() {
     let collector = tracing_subscriber::registry()
-        .with(EnvFilter::from_default_env().add_directive(tracing::Level::TRACE.into()))
+        .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with(fmt::Layer::new().with_writer(std::io::stderr));
 
     match make_file_writer() {

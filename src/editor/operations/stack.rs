@@ -3,7 +3,7 @@ use tracing::{error, warn};
 
 use super::{Colour, Operation, Point, Rectangle, Tool};
 use crate::{
-    editor::{data::Text, display_server::Window, utils::CairoExt},
+    editor::{data::Text, display_server::Window, operations::shapes, utils::CairoExt},
     log_if_err,
 };
 
@@ -24,6 +24,8 @@ pub struct OperationStack {
     pub selection_mode: SelectionMode,
     /// Used for arrows, lines, pencil and the contours of rectangles
     pub line_width: f64,
+    editing_started_with_cropping: bool,
+    screen_dimensions: Rectangle,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -48,11 +50,19 @@ impl SelectionMode {
 }
 
 impl OperationStack {
-    pub fn new(windows: Vec<Window>) -> Self {
+    pub fn new(
+        windows: Vec<Window>,
+        screen_dimensions: Rectangle,
+        editing_started_with_cropping: bool,
+    ) -> Self {
         Self {
             operations: vec![],
             undone_operations: vec![],
-            current_tool: Tool::CropAndSave,
+            current_tool: if editing_started_with_cropping {
+                Tool::Crop
+            } else {
+                Tool::CropAndSave
+            },
             current_operation: None,
             autoincrement_bubble_number: 1,
             primary_colour: Colour {
@@ -73,6 +83,8 @@ impl OperationStack {
             ignore_windows: false,
             selection_mode: SelectionMode::WindowsWithDecorations,
             line_width: 4.0,
+            editing_started_with_cropping,
+            screen_dimensions,
         }
     }
 
@@ -120,6 +132,10 @@ impl OperationStack {
     }
 
     pub fn undo(&mut self) {
+        if self.operations.len() == 1 && matches!(self.operations[0], Operation::Crop(_)) {
+            return;
+        }
+
         if let Some(op) = self.operations.pop() {
             self.undone_operations.push(op);
         }
@@ -187,20 +203,40 @@ impl OperationStack {
     }
 
     pub fn finish_current_operation(&mut self) {
-        if let Some(operation) = self.current_operation.take() {
-            self.operations.push(operation);
+        if let Some(mut operation) = self.current_operation.take() {
+            if self.current_tool == Tool::Crop {
+                self.ignore_windows = true;
+                if let Operation::Crop(rect) = operation {
+                    if should_crop_selected_window_or_screen(rect) {
+                        if let Some(current_window) = self.current_window {
+                            // FIXME: We should allow selecting the content rect somehow
+                            operation = Operation::Crop(self.windows[current_window].outer_rect);
+                        }
+                    }
+                }
+            }
+
+            self.operations.push(dbg!(operation));
+            tracing::info!("{:#?}", self.operations);
         }
     }
 
-    pub fn crop_region(&self, point: Point) -> Option<Rectangle> {
-        // We do not look at the top of `self.operations` as cropping should be the last operation
-        // in the UX I want.
-        if let Some(Operation::Crop(rect)) = &self.current_operation {
-            // If the width or height of the rectangle are 0, or the area of the rectangle covers
-            // less than a pixel, we consider the entire screen or window under the cursor to be
-            // the crop region
-            if rect.area() < 1.0 {
+    pub fn crop_region(&self, point: Option<Point>) -> Option<Rectangle> {
+        // We do this in order to support both "crop-first" and "crop-last" modes
+        let crop_rect = match self.operations.last() {
+            Some(Operation::Crop(rect)) => Some(rect),
+            _ => match self.operations.first() {
+                Some(Operation::Crop(rect)) => Some(rect),
+                _ => None,
+            },
+        };
+
+        if let Some(rect) = crop_rect {
+            if should_crop_selected_window_or_screen(*rect) {
                 if !self.ignore_windows {
+                    let point =
+                        point.expect("If we're trying to select windows, the point should be set, as it only makes sense for it to be unset when saving in crop-first mode, where save doesn't involve clicking anywhere");
+
                     self.windows
                         .iter()
                         .rev()
@@ -221,14 +257,24 @@ impl OperationStack {
     }
 
     pub fn execute(&self, surface: &ImageSurface, cairo: &Context, is_in_draw_event: bool) {
-        for operation in &self.operations {
-            if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
+        for operation in self.operations.iter() {
+            if let Err(why) = operation.execute(
+                surface,
+                cairo,
+                is_in_draw_event,
+                !self.editing_started_with_cropping,
+            ) {
                 error!("Got error trying to execute an operation({operation:?}): {why}");
             }
         }
 
         if let Some(operation) = &self.current_operation {
-            if let Err(why) = operation.execute(surface, cairo, is_in_draw_event) {
+            if let Err(why) = operation.execute(
+                surface,
+                cairo,
+                is_in_draw_event,
+                !self.editing_started_with_cropping,
+            ) {
                 error!("Got error trying to execute self.current_operation({operation:?}): {why}");
             }
         }
@@ -239,9 +285,19 @@ impl OperationStack {
         //  * we are not in a crop drag
         //  * we are not in "ignore windows" mode (entered by holding Ctrl)
         let should_draw_windows = is_in_draw_event
-            && self.current_tool() == Tool::CropAndSave
+            && self.current_tool().is_cropping_tool()
             && !self.is_in_crop_drag
             && !self.ignore_windows;
+
+        // We only want to dimmen around the "manual selection"/whole screen if
+        //  * we won't be drawing windows (they have their own dimming logic)
+        //  * editing started with cropping (we don't want to dimmen in the crop last mode)
+        let should_dimmen_manual_selection_or_whole_screen =
+            (!should_draw_windows || self.windows.is_empty()) && self.editing_started_with_cropping;
+
+        if should_dimmen_manual_selection_or_whole_screen {
+            self.dimmen_manual_selection_or_whole_screen(cairo);
+        }
 
         if should_draw_windows {
             if let Some(idx) = self.current_window {
@@ -260,10 +316,55 @@ impl OperationStack {
                     blue: 190,
                     alpha: 255,
                 });
-                cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+
+                if !self.editing_started_with_cropping {
+                    cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                }
+
                 log_if_err!(cairo.stroke());
+
+                if self.editing_started_with_cropping {
+                    shapes::dimmen_rectangle_around(
+                        cairo,
+                        self.screen_dimensions,
+                        Rectangle { x, y, w, h },
+                    );
+                    log_if_err!(cairo.fill());
+                }
+
                 log_if_err!(cairo.restore());
             }
         }
     }
+
+    fn dimmen_manual_selection_or_whole_screen(&self, cairo: &Context) {
+        if let Some(Operation::Crop(rect)) = self.current_operation {
+            shapes::dimmen_rectangle_around(cairo, self.screen_dimensions, rect.normalised());
+            log_if_err!(cairo.fill());
+        } else if let Some(&Operation::Crop(rect)) = self.operations.get(0) {
+            shapes::dimmen_rectangle_around(cairo, self.screen_dimensions, rect.normalised());
+            log_if_err!(cairo.fill());
+        } else if self.operations.is_empty() {
+            cairo.set_source_colour(Colour {
+                red: 0,
+                green: 0,
+                blue: 0,
+                alpha: 128,
+            });
+            cairo.rectangle(
+                self.screen_dimensions.x,
+                self.screen_dimensions.y,
+                self.screen_dimensions.w,
+                self.screen_dimensions.h,
+            );
+            log_if_err!(cairo.fill());
+        }
+    }
+}
+
+/// If the width or height of the rectangle are 0, or the area of the rectangle covers
+/// less than a pixel, we consider the entire screen or window under the cursor to be
+/// the crop region
+fn should_crop_selected_window_or_screen(rect: Rectangle) -> bool {
+    rect.area() < 1.0
 }

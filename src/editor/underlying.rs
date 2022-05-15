@@ -1,6 +1,6 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
-use cairo::Context;
+use cairo::{glib::ParamSpecBoolean, Context};
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
@@ -38,6 +38,7 @@ pub(super) struct Image {
 pub struct EditorWindow {
     pub(super) image: RefCell<Option<Image>>,
     overlay: OnceCell<gtk4::Overlay>,
+    editing_started_with_cropping: Cell<bool>,
 }
 
 impl EditorWindow {
@@ -52,12 +53,12 @@ impl EditorWindow {
             .execute(&image.surface, cairo, is_in_draw_event);
     }
 
-    fn do_save_surface(
+    pub(super) fn do_save_surface(
         model_notifier: &ModelNotifier,
         conn: &SqliteConnection,
         window: &gtk4::Window,
         image: &Image,
-        point: Point,
+        point: Option<Point>,
     ) {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
@@ -156,23 +157,32 @@ impl ObjectImpl for EditorWindow {
             tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]
         });
+        let screen_dimensions =
+            display_server::get_screen_resolution(app.main_window().upcast_ref());
 
         let overlay = gtk4::Overlay::new();
         obj.set_child(Some(&overlay));
         let drawing_area = gtk4::DrawingArea::builder().can_focus(true).build();
 
         overlay.set_child(Some(&drawing_area));
-        overlay.add_overlay(&toolbar::ToolbarWidget::new(obj));
 
-        overlay.connect_get_child_position(clone!(@weak app => @default-return Some(gdk::Rectangle::new(0, 0, 1920, 1080)), move|_this, widget| {
-            let Rectangle { w: screen_width, h: screen_height, .. } = display_server::get_screen_resolution(app.main_window().upcast_ref());
+        let toolbar = toolbar::ToolbarWidget::new(obj, self.editing_started_with_cropping.get());
+        overlay.add_overlay(&toolbar);
+
+        overlay.connect_get_child_position(move |_this, widget| {
+            let Rectangle {
+                w: screen_width,
+                h: screen_height,
+                ..
+            } = screen_dimensions;
+
             Some(Allocation::new(
                 (screen_width / 2.0 - widget.width() as f64 / 2.0) as i32,
                 (screen_height / 5.0) as i32,
                 11 * 32,
                 32,
             ))
-        }));
+        });
 
         self.overlay
             .set(overlay)
@@ -225,16 +235,18 @@ impl ObjectImpl for EditorWindow {
                             }
                             DialogResponse::Cancel => { /* do nothing */ }
                         }
-                    } else if image.operation_stack.current_tool() != Tool::CropAndSave {
+                    } else if !image.operation_stack.current_tool().is_saving_tool() {
                         image.operation_stack.finish_current_operation();
                         drawing_area.queue_draw();
                     } else {
+                        image.operation_stack.finish_current_operation();
+
                         EditorWindow::do_save_surface(
                             &app.model_notifier(),
                             app.conn(),
                             obj.upcast_ref(),
                             image,
-                            Point { x, y }
+                            Some(Point { x, y })
                         );
                     }
                 });
@@ -249,8 +261,21 @@ impl ObjectImpl for EditorWindow {
                 obj.imp().with_image_mut("drag update event", |image| {
                     info!("Dragging to {{ {x}, {y} }}");
                     image.operation_stack.update_current_operation_end_coordinate(x, y);
-                    if image.operation_stack.current_tool() == Tool::CropAndSave {
+                    if image.operation_stack.current_tool().is_cropping_tool() {
                         image.operation_stack.set_is_in_crop_drag(true);
+                    }
+                    drawing_area.queue_draw();
+                });
+            }),
+        );
+        drag_controller.connect_drag_end(
+            clone!(@weak obj, @weak drawing_area, @weak toolbar => move |_, x, y| {
+                obj.imp().with_image_mut("drag end event", |image| {
+                    image.operation_stack.update_current_operation_end_coordinate(x, y);
+                    if image.operation_stack.current_tool() == Tool::Crop {
+                        toolbar.set_visible(true);
+                        image.operation_stack.finish_current_operation();
+                        image.operation_stack.set_current_tool(Tool::Pencil);
                     }
                     drawing_area.queue_draw();
                 });
@@ -265,6 +290,25 @@ impl ObjectImpl for EditorWindow {
                     if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
                         image.operation_stack.set_ignore_windows(true);
                         drawing_area.queue_draw();
+                    } else if key == gdk::Key::Return {
+                        if !obj.imp().editing_started_with_cropping.get() {
+                            // Saving a screenshot using `Return` only makes sense in "crop-first"
+                            // mode
+                            return;
+                        }
+
+                        let app = obj
+                            .application()
+                            .and_then(|app| app.downcast::<KCShot>().ok())
+                            .expect("The EditorWindow's application should always be an instance of `KCShot`");
+
+                        Self::do_save_surface(
+                            &app.model_notifier(),
+                            app.conn(),
+                            obj.upcast_ref(),
+                            image,
+                            None
+                        );
                     }
                 });
                 gtk4::Inhibit(false)
@@ -309,7 +353,11 @@ impl ObjectImpl for EditorWindow {
 
         self.image.replace(Some(Image {
             surface: image,
-            operation_stack: OperationStack::new(windows),
+            operation_stack: OperationStack::new(
+                windows,
+                screen_dimensions,
+                self.editing_started_with_cropping.get(),
+            ),
         }));
     }
 
@@ -321,13 +369,22 @@ impl ObjectImpl for EditorWindow {
 
     fn properties() -> &'static [ParamSpec] {
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![ParamSpecObject::new(
-                "application",
-                "Application",
-                "Application",
-                KCShot::static_type(),
-                glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-            )]
+            vec![
+                ParamSpecObject::new(
+                    "application",
+                    "Application",
+                    "Application",
+                    KCShot::static_type(),
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                ),
+                ParamSpecBoolean::new(
+                    "editing-starts-with-cropping",
+                    "Editing starts with cropping",
+                    "Editing starts with cropping",
+                    false,
+                    glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                ),
+            ]
         });
 
         PROPERTIES.as_ref()
@@ -350,6 +407,17 @@ impl ObjectImpl for EditorWindow {
             "application" => {
                 let application = value.get::<KCShot>().ok();
                 obj.set_application(application.as_ref());
+            }
+            "editing-starts-with-cropping" => {
+                let editing_starts_with_cropping = value.get::<bool>();
+                match editing_starts_with_cropping {
+                    Ok(b) => {
+                        self.editing_started_with_cropping.set(b);
+                    }
+                    Err(why) => {
+                        tracing::error!("set_property called for editing-starts-with-cropping but with the wrong type: {why}");
+                    }
+                }
             }
             name => tracing::warn!("Unknown property: {name}"),
         }

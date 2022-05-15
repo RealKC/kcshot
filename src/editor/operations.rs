@@ -105,6 +105,12 @@ pub enum Tool {
     AutoincrementBubble = 8,
     Text = 9,
     Pencil = 10,
+
+    // These are used for the editing starts with cropping mode
+
+    // Unlike CropAndSave, this one is not visible
+    Crop = 11,
+    Save = 12,
 }
 
 impl Tool {
@@ -121,6 +127,8 @@ impl Tool {
             Tool::AutoincrementBubble => "/kc/kcshot/editor/tool-autoincrementbubble.png",
             Tool::Text => "/kc/kcshot/editor/tool-text.png",
             Tool::Pencil => "/kc/kcshot/editor/tool-pencil.png",
+            Tool::Crop => panic!("Nothing should try to get the associated path of the simple Crop tool, as it intentionally does not have a button"),
+            Tool::Save => "/kc/kcshot/editor/tool-checkmark.png",
         }
     }
 
@@ -155,7 +163,17 @@ impl Tool {
             Tool::AutoincrementBubble => "Auto<u>i</u>crement bubble tool",
             Tool::Text => "<u>T</u>ext tool",
             Tool::Pencil => "Pe<u>n</u>cil tool",
+            Tool::Crop => panic!("Nothing should try to get the tooltip of the simple Crop tool, as it does not have a button"),
+            Tool::Save => "Save current screenshot",
         }
+    }
+
+    pub const fn is_saving_tool(self) -> bool {
+        matches!(self, Self::CropAndSave | Self::Save)
+    }
+
+    pub const fn is_cropping_tool(self) -> bool {
+        matches!(self, Self::CropAndSave | Self::Crop)
     }
 }
 
@@ -178,7 +196,8 @@ impl Operation {
         let font_description = FontDescription::from_string("Fira Code, 40pt");
 
         match tool {
-            Tool::CropAndSave => Self::Crop(Rectangle {
+            Tool::Save => panic!("`Tool::Save` should never be converted to an `Operation`"),
+            Tool::CropAndSave | Tool::Crop => Self::Crop(Rectangle {
                 x: start.x,
                 y: start.y,
                 // Width and height are zero to signal `OperationStack::crop_rectangle` to return `None`
@@ -256,6 +275,7 @@ impl Operation {
         surface: &ImageSurface,
         cairo: &Context,
         is_in_draw_event: bool,
+        should_crop_indicators_be_dashed: bool,
     ) -> Result<(), Error> {
         match self {
             Operation::Crop(rect) => {
@@ -272,7 +292,9 @@ impl Operation {
                         blue: 190,
                         alpha: 255,
                     });
-                    cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                    if should_crop_indicators_be_dashed {
+                        cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
+                    }
                     cairo.set_line_width(2.0);
                     cairo.stroke()?;
                     cairo.restore()?;

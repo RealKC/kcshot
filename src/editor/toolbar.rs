@@ -1,4 +1,4 @@
-use gtk4::glib;
+use gtk4::{glib, traits::WidgetExt};
 
 glib::wrapper! {
     pub struct ToolbarWidget(ObjectSubclass<underlying::ToolbarWidget>)
@@ -6,13 +6,27 @@ glib::wrapper! {
 }
 
 impl ToolbarWidget {
-    pub fn new(parent_editor: &super::EditorWindow) -> Self {
-        glib::Object::new(&[("parent-editor", parent_editor)])
-            .expect("Failed to make a ToolbarWidget")
+    pub fn new(parent_editor: &super::EditorWindow, editing_started_with_cropping: bool) -> Self {
+        let obj = glib::Object::new::<Self>(&[
+            ("parent-editor", parent_editor),
+            (
+                "editing-started-with-cropping",
+                &editing_started_with_cropping,
+            ),
+        ])
+        .expect("Failed to make a ToolbarWidget");
+
+        // We want to start as hidden if editing started with cropping
+        obj.set_visible(!editing_started_with_cropping);
+
+        obj
     }
 }
 
 mod underlying {
+    use std::cell::Cell;
+
+    use cairo::glib::ParamSpecBoolean;
     use gtk4::{
         glib::{self, clone, ParamSpec, ParamSpecObject, WeakRef},
         prelude::*,
@@ -27,8 +41,10 @@ mod underlying {
             data::Colour,
             display_server,
             operations::{SelectionMode, Tool},
+            underlying::EditorWindow as EditorWindowImp,
             utils::CairoExt,
         },
+        kcshot::KCShot,
         log_if_err,
     };
 
@@ -36,6 +52,7 @@ mod underlying {
     pub struct ToolbarWidget {
         parent_editor: WeakRef<editor::EditorWindow>,
         buttons: OnceCell<Vec<gtk4::ToggleButton>>,
+        editing_started_with_cropping: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -61,9 +78,14 @@ mod underlying {
             line_width_spinner.set_visible(false);
 
             let box_ = obj.upcast_ref();
+            let group_source_tool = if self.editing_started_with_cropping.get() {
+                Tool::Save
+            } else {
+                Tool::CropAndSave
+            };
             let (group_source, _) =
-                make_tool_button(Tool::CropAndSave, box_, &editor, None, None, None, None);
-            group_source.set_active(true);
+                make_tool_button(group_source_tool, box_, &editor, None, None, None, None);
+            group_source.set_active(!should_start_saving_immediately(group_source_tool));
 
             let primary_colour_button = Self::make_primary_colour_chooser_button(editor.clone());
             primary_colour_button.set_tooltip_text(Some("Set primary colour"));
@@ -83,6 +105,10 @@ mod underlying {
                 make_tool_button(Tool::AutoincrementBubble, box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
                 make_tool_button(Tool::Text, box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
             ];
+
+            if self.editing_started_with_cropping.get() {
+                buttons[0].0.set_active(true);
+            }
 
             self.buttons
                 .set(buttons.iter().map(|(button, _)| button.clone()).collect())
@@ -109,7 +135,7 @@ mod underlying {
                 obj.append(&drop_down);
             }
 
-            buttons.insert(0, (group_source, Tool::CropAndSave));
+            buttons.insert(0, (group_source, group_source_tool));
 
             let key_event_handler = gtk4::EventControllerKey::new();
             key_event_handler.connect_key_pressed(
@@ -140,13 +166,22 @@ mod underlying {
 
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                vec![ParamSpecObject::new(
-                    "parent-editor",
-                    "ParentEditor",
-                    "Parent Editor",
-                    editor::EditorWindow::static_type(),
-                    glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-                )]
+                vec![
+                    ParamSpecObject::new(
+                        "parent-editor",
+                        "ParentEditor",
+                        "Parent Editor",
+                        editor::EditorWindow::static_type(),
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    ParamSpecBoolean::new(
+                        "editing-started-with-cropping",
+                        "EditingStartedWithCropping",
+                        "Editing started with cropping",
+                        false,
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -164,6 +199,13 @@ mod underlying {
                 "parent-editor" => {
                     let parent_editor = value.get::<editor::EditorWindow>().unwrap();
                     self.parent_editor.set(Some(&parent_editor));
+                }
+                "editing-started-with-cropping" => {
+                    let editing_started_with_cropping = value.get::<bool>();
+                    match editing_started_with_cropping {
+                        Ok(b) => self.editing_started_with_cropping.set(b),
+                        Err(why) => tracing::error!("set_property called for editing-started-with-cropping but with the wrong type: {why}")
+                    }
                 }
                 name => tracing::warn!("Unknown property: {name}"),
             }
@@ -324,9 +366,32 @@ mod underlying {
         button.connect_clicked(clone!(@weak editor => move |_| {
             tracing::info!("Entered on-click handler of {tool:?}");
             editor.set_current_tool(tool);
+
+            if should_start_saving_immediately(tool) {
+                editor.imp().with_image_mut("on_click of {tool:?} - immediate save", |image| {
+                    let app = editor.application().and_then(|app| app.downcast::<KCShot>().ok()).unwrap();
+
+                    EditorWindowImp::do_save_surface(
+                        &app.model_notifier(),
+                        app.conn(),
+                        editor.upcast_ref(),
+                        image,
+                        None
+                    );
+                });
+            }
         }));
         button.set_active(false);
         toolbar.append(&button);
         (button, tool)
+    }
+
+    /// This functions returns whether the button calling this needs to immediately start the saving
+    /// process on click
+    ///
+    /// This is applicable only for the "crop-first" mode, as there the "Save" action is logically
+    /// the final thing you do, and needing to click somewhere on screen would be weird
+    fn should_start_saving_immediately(tool: Tool) -> bool {
+        matches!(tool, Tool::Save)
     }
 }

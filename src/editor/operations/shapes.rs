@@ -32,6 +32,44 @@ pub fn draw_rectangle(
     Ok(())
 }
 
+pub fn dimmen_rectangle_around(
+    cairo: &Context,
+    containing_rectangle: Rectangle,
+    inner_rectangle: Rectangle,
+) {
+    cairo.set_source_colour(Colour {
+        red: 0,
+        green: 0,
+        blue: 0,
+        alpha: 128,
+    });
+
+    cairo.rectangle(
+        containing_rectangle.x,
+        containing_rectangle.y,
+        inner_rectangle.x,
+        containing_rectangle.h,
+    );
+    cairo.rectangle(
+        inner_rectangle.x,
+        containing_rectangle.y,
+        inner_rectangle.w,
+        inner_rectangle.y,
+    );
+    cairo.rectangle(
+        inner_rectangle.x + inner_rectangle.w,
+        containing_rectangle.y,
+        containing_rectangle.w - (inner_rectangle.x + inner_rectangle.w),
+        containing_rectangle.h,
+    );
+    cairo.rectangle(
+        inner_rectangle.x,
+        inner_rectangle.y + inner_rectangle.h,
+        inner_rectangle.w,
+        containing_rectangle.h - (inner_rectangle.y + inner_rectangle.h),
+    );
+}
+
 pub fn draw_ellipse(
     cairo: &Context,
     ellipse: &Ellipse,

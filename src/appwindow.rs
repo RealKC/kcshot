@@ -242,7 +242,10 @@ mod underlying {
         capture_button.set_child(Some(&make_label("Capture")));
         capture_button.connect_clicked(
             glib::clone!(@weak application, @weak history_model => move |_| {
-                EditorWindow::show(&application);
+                let editing_starts_with_cropping = kcshot::open_settings()
+                    .boolean("editing-starts-with-cropping");
+
+                EditorWindow::show(&application, editing_starts_with_cropping);
             }),
         );
         buttons.append(&capture_button);
@@ -371,6 +374,34 @@ mod underlying {
         capture_mouse_cursor_container.append(&capture_mouse_cursor_button);
 
         content_area.append(&capture_mouse_cursor_container);
+        content_area.set_margin_top(5);
+        content_area.set_margin_bottom(10);
+        content_area.set_margin_start(10);
+        content_area.set_margin_end(10);
+
+        let editing_starts_by_cropping_label = gtk4::Label::builder()
+            .label("Editing starts by cropping")
+            .halign(gtk4::Align::Start)
+            .build();
+        let editing_starts_by_cropping_button =
+            gtk4::Switch::builder().halign(gtk4::Align::End).build();
+        settings
+            .bind(
+                "editing-starts-with-cropping",
+                &editing_starts_by_cropping_button,
+                "active",
+            )
+            .flags(gio::SettingsBindFlags::DEFAULT)
+            .build();
+        let editing_starts_by_cropping_container = gtk4::Box::builder()
+            .orientation(gtk4::Orientation::Horizontal)
+            .spacing(6)
+            .homogeneous(true)
+            .build();
+        editing_starts_by_cropping_container.append(&editing_starts_by_cropping_label);
+        editing_starts_by_cropping_container.append(&editing_starts_by_cropping_button);
+
+        content_area.append(&editing_starts_by_cropping_container);
         content_area.set_margin_top(5);
         content_area.set_margin_bottom(10);
         content_area.set_margin_start(10);

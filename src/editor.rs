@@ -28,9 +28,15 @@ glib::wrapper! {
 }
 
 impl EditorWindow {
-    pub fn new(app: &gtk4::Application) -> Self {
-        let editor = glib::Object::new::<Self>(&[("application", app)])
-            .expect("Failed to make an EditorWindow");
+    pub fn new(app: &gtk4::Application, editing_starts_with_cropping: bool) -> Self {
+        let editor = glib::Object::new::<Self>(&[
+            ("application", app),
+            (
+                "editing-starts-with-cropping",
+                &editing_starts_with_cropping,
+            ),
+        ])
+        .expect("Failed to make an EditorWindow");
 
         let settings = kcshot::open_settings();
 
@@ -43,8 +49,8 @@ impl EditorWindow {
         editor
     }
 
-    pub fn show(app: &gtk4::Application) {
-        let window = Self::new(app);
+    pub fn show(app: &gtk4::Application, editing_starts_with_cropping: bool) {
+        let window = Self::new(app, editing_starts_with_cropping);
         window.set_decorated(false);
         window.show();
         window.fullscreen();

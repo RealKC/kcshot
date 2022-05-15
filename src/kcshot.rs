@@ -98,7 +98,10 @@ pub fn build_ui(app: &KCShot) {
 
     if take_screenshot {
         instance.take_screenshot.replace(false);
-        EditorWindow::show(app.upcast_ref());
+
+        let editing_starts_with_cropping = open_settings().boolean("editing-starts-with-cropping");
+
+        EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
     } else if show_main_window {
         instance.show_main_window.replace(false);
 

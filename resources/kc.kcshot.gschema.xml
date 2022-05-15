@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <schemalist>
     <schema id="kc.kcshot" path="/kc/kcshot/">
+        <key name="editing-starts-with-cropping" type="b">
+            <default>false</default>
+            <summary>Whether editing starts with cropping, or not</summary>
+        </key>
+
         <key name="is-history-enabled" type="b">
             <default>true</default>
             <summary>Whether the history is enabled or not</summary>
