@@ -19,7 +19,6 @@ use crate::{
         data::{Point, Rectangle},
         display_server,
         operations::{OperationStack, Tool},
-        textdialog::DialogResponse,
         utils,
     },
     historymodel::ModelNotifier,
@@ -227,14 +226,7 @@ impl ObjectImpl for EditorWindow {
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
                 obj.imp().with_image_mut("mouse button released event", |image| {
                     if image.operation_stack.current_tool() == Tool::Text {
-                        let res = super::textdialog::pop_text_dialog_and_get_text(obj.upcast_ref());
-                        match res {
-                            DialogResponse::Text(text) => {
-                                image.operation_stack.set_text(text);
-                                drawing_area.queue_draw();
-                            }
-                            DialogResponse::Cancel => { /* do nothing */ }
-                        }
+                        super::textdialog::pop_text_dialog_and_get_text(&obj);
                     } else if !image.operation_stack.current_tool().is_saving_tool() {
                         image.operation_stack.finish_current_operation();
                         drawing_area.queue_draw();

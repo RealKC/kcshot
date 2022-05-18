@@ -1,19 +1,14 @@
-use std::{cell::RefCell, rc::Rc};
-
-use gtk4::{glib, glib::clone, prelude::*, DialogFlags, Orientation, ResponseType};
+use gtk4::{
+    glib, glib::clone, prelude::*, subclass::prelude::ObjectSubclassIsExt, DialogFlags,
+    Orientation, ResponseType,
+};
 
 use super::data::{Colour, Text};
 
-#[derive(Debug)]
-pub enum DialogResponse {
-    Cancel,
-    Text(Text),
-}
-
-pub fn pop_text_dialog_and_get_text(parent: &gtk4::Window) -> DialogResponse {
+pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
     let dialog = gtk4::Dialog::with_buttons(
         Some("Add text"),
-        Some(parent),
+        Some(editor),
         DialogFlags::MODAL | DialogFlags::DESTROY_WITH_PARENT,
         &[("Cancel", ResponseType::Cancel), ("Ok", ResponseType::Ok)],
     );
@@ -49,44 +44,30 @@ pub fn pop_text_dialog_and_get_text(parent: &gtk4::Window) -> DialogResponse {
     let dialog_content_area = dialog.content_area();
     dialog_content_area.append(&content);
 
-    let nested_loop = glib::MainLoop::new(None, false);
+    dialog.connect_response(clone!(
+        @weak editor,
+        @weak text_buffer,
+        @weak font_button,
+        @weak colour_chooser
+    => move |this, response| {
+        this.close();
 
-    let response = Rc::new(RefCell::new(ResponseType::Cancel));
-    dialog.connect_response(
-        clone!(@strong nested_loop, @strong response => move |_this, dialog_response| {
-            response.replace(dialog_response);
-            shutdown_loop(&nested_loop);
-        }),
-    );
+        if response != ResponseType::Ok {
+            tracing::trace!("Text dialog response wasn't 'Ok', returning...");
+            return;
+        }
 
-    dialog.connect_unmap(clone!(@strong nested_loop => move |_this| shutdown_loop(&nested_loop)));
+        editor.imp().with_image_mut("text dialog response", |image| {
+            let text = Text {
+                string: text_buffer.text(),
+                font_description: font_button
+                    .font_desc()
+                    .expect("There should be a font description"),
+                colour: Colour::from_gdk_rgba(colour_chooser.rgba()),
+            };
+            image.operation_stack.set_text(text);
+        });
+    }));
+
     dialog.show();
-
-    // FIXME/NOTE/LOOK INTO IT: gtk4 removed Dialog::run() as it was deemed an inappropriate method
-    //      in the context of gtk's event based model. And we just replicate its behaviour using
-    //      nested main loops here.
-    //      We should figure out if there is a better way to do this without blocking, or if the
-    //      gtk team's concern is purely ideological.
-    nested_loop.run();
-
-    let response = response.borrow();
-    let response = match *response {
-        ResponseType::Ok => DialogResponse::Text(Text {
-            string: text_buffer.text(),
-            font_description: font_button
-                .font_desc()
-                .expect("There should be a font description"),
-            colour: Colour::from_gdk_rgba(colour_chooser.rgba()),
-        }),
-        _ => DialogResponse::Cancel,
-    };
-    dialog.hide();
-
-    response
-}
-
-fn shutdown_loop(nested_loop: &glib::MainLoop) {
-    if nested_loop.is_running() {
-        nested_loop.quit();
-    }
 }
