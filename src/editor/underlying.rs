@@ -13,7 +13,7 @@ use gtk4::{
 use once_cell::sync::{Lazy, OnceCell};
 use tracing::{error, info};
 
-use super::toolbar;
+use super::{toolbar, utils::ContextLogger};
 use crate::{
     editor::{
         data::{Point, Rectangle},
@@ -92,6 +92,8 @@ impl EditorWindow {
     where
         F: Fn(&Image) -> T,
     {
+        let _ctx = ContextLogger::new(ctx, "with_image");
+
         match self.image.try_borrow() {
             Ok(image) => {
                 if let Some(image) = image.as_ref() {
@@ -118,6 +120,8 @@ impl EditorWindow {
     where
         F: Fn(&mut Image),
     {
+        let _ctx = ContextLogger::new(ctx, "with_image_mut");
+
         match self.image.try_borrow_mut() {
             Ok(mut image) => {
                 if let Some(image) = image.as_mut() {

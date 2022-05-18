@@ -50,3 +50,23 @@ impl CairoExt for Context {
         self.set_source_rgba(red, green, blue, alpha);
     }
 }
+
+pub struct ContextLogger<'s> {
+    ctx: &'s str,
+    method: &'static str,
+}
+
+impl<'s> ContextLogger<'s> {
+    pub fn new(ctx: &'s str, method: &'static str) -> Self {
+        tracing::trace!("\x1b[32mEntering\x1b[0m context inside {method}: '{ctx}'");
+
+        Self { ctx, method }
+    }
+}
+
+impl<'s> Drop for ContextLogger<'s> {
+    fn drop(&mut self) {
+        let Self { method, ctx } = self;
+        tracing::trace!("\x1b[31mExiting\x1b[0m context inside {method}: '{ctx}'");
+    }
+}
