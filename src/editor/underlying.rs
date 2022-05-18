@@ -116,16 +116,16 @@ impl EditorWindow {
         None
     }
 
-    pub(super) fn with_image_mut<F>(&self, ctx: &str, func: F)
+    pub(super) fn with_image_mut<F, T>(&self, ctx: &str, func: F) -> Option<T>
     where
-        F: Fn(&mut Image),
+        F: Fn(&mut Image) -> T,
     {
         let _ctx = ContextLogger::new(ctx, "with_image_mut");
 
         match self.image.try_borrow_mut() {
             Ok(mut image) => {
                 if let Some(image) = image.as_mut() {
-                    func(image);
+                    return Some(func(image));
                 }
             }
             Err(why) => {
@@ -140,6 +140,8 @@ impl EditorWindow {
                 }
             }
         }
+
+        None
     }
 }
 
@@ -228,12 +230,13 @@ impl ObjectImpl for EditorWindow {
 
         click_event_handler.connect_released(
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
-                obj.imp().with_image_mut("mouse button released event", |image| {
+                let should_queue_draw = obj.imp().with_image_mut("mouse button released event", |image| {
                     if image.operation_stack.current_tool() == Tool::Text {
                         super::textdialog::pop_text_dialog_and_get_text(&obj);
+                        true
                     } else if !image.operation_stack.current_tool().is_saving_tool() {
                         image.operation_stack.finish_current_operation();
-                        drawing_area.queue_draw();
+                        true
                     } else {
                         image.operation_stack.finish_current_operation();
 
@@ -244,8 +247,13 @@ impl ObjectImpl for EditorWindow {
                             image,
                             Some(Point { x, y })
                         );
+                        false
                     }
                 });
+
+                if should_queue_draw.unwrap_or(true) {
+                    drawing_area.queue_draw();
+                }
             }),
         );
 
