@@ -1,4 +1,10 @@
-use gtk4::{gdk::RGBA, pango::FontDescription};
+use std::borrow::Cow;
+
+use gtk4::{
+    gdk::RGBA,
+    glib::{self, FromVariant, StaticVariantType, ToVariant},
+    pango::FontDescription,
+};
 
 mod point;
 pub use point::Point;
@@ -53,6 +59,25 @@ impl Colour {
         let alpha = (raw       & 0xFF) as u8;
 
         Self { red, green, blue, alpha }
+    }
+}
+
+impl StaticVariantType for Colour {
+    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
+        Cow::Borrowed(glib::VariantTy::UINT32)
+    }
+}
+
+impl FromVariant for Colour {
+    fn from_variant(variant: &glib::Variant) -> Option<Self> {
+        let raw = u32::from_variant(variant)?;
+        Some(Self::deserialise_from_u32(raw))
+    }
+}
+
+impl ToVariant for Colour {
+    fn to_variant(&self) -> glib::Variant {
+        self.serialise_to_u32().to_variant()
     }
 }
 
