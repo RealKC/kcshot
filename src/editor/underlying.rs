@@ -193,12 +193,6 @@ impl ObjectImpl for EditorWindow {
             .set(overlay)
             .expect("construct should not be called more than once");
 
-        obj.connect_close_request(|this| {
-            this.imp()
-                .with_image_mut("close_request", |image| image.surface.finish());
-            gtk4::Inhibit(false)
-        });
-
         drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
             obj.imp().with_image("draw event", |image| EditorWindow::do_draw(image, cairo, true));
         }));
@@ -369,6 +363,8 @@ impl ObjectImpl for EditorWindow {
         if let Some(overlay) = self.overlay.get() {
             overlay.unparent();
         }
+
+        self.with_image_mut("dispose", |image| image.surface.finish());
     }
 
     fn properties() -> &'static [ParamSpec] {
