@@ -368,7 +368,7 @@ mod underlying {
             editor.set_current_tool(tool);
 
             if should_start_saving_immediately(tool) {
-                editor.imp().with_image_mut("on_click of {tool:?} - immediate save", |image| {
+                editor.imp().with_image_mut(&format!("on_click of {tool:?} - immediate save"), |image| {
                     let app = editor.application().and_then(|app| app.downcast::<KCShot>().ok()).unwrap();
 
                     EditorWindowImp::do_save_surface(
