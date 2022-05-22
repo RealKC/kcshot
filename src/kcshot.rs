@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
@@ -11,11 +11,6 @@ use crate::{
 };
 
 #[gsettings_macro::gen_settings(file = "./resources/kc.kcshot.gschema.xml", id = "kc.kcshot")]
-#[gen_settings_define(
-    key_name = "saved-screenshots-path",
-    arg_type = "&Path",
-    ret_type = "PathBuf"
-)]
 #[gen_settings_define(
     key_name = "last-used-primary-colour",
     arg_type = "Colour",
@@ -59,7 +54,7 @@ impl KCShot {
     }
 
     pub fn screenshot_folder() -> PathBuf {
-        Settings::open().saved_screenshots_path()
+        Settings::open().saved_screenshots_path().into()
     }
 
     /// This is to be used for the purpose of notifying the [`crate::historymodel::HistoryMode`]
@@ -339,7 +334,7 @@ Application Options:
 
             let settings = Settings::open();
 
-            if settings.saved_screenshots_path().as_os_str().is_empty() {
+            if settings.saved_screenshots_path().is_empty() {
                 #[cfg(not(feature = "xdg-paths"))]
                 let default_folder = std::env::current_dir().unwrap();
                 #[cfg(feature = "xdg-paths")]
@@ -348,7 +343,7 @@ Application Options:
                     .get_data_home();
 
                 tracing::info!("'saved-screenshots-path' was empty, set it to {default_folder:?}");
-                settings.set_saved_screenshots_path(&default_folder);
+                settings.set_saved_screenshots_path(default_folder.to_str().unwrap());
             }
         }
     }

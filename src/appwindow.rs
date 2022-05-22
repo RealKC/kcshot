@@ -294,7 +294,12 @@ mod underlying {
         folder_chooser.connect_response(move |this, response| {
             if response == gtk4::ResponseType::Apply {
                 let folder = this.file().unwrap();
-                settings_.set_saved_screenshots_path(&folder.path().unwrap());
+                settings_.set_saved_screenshots_path(
+                    &folder
+                        .path()
+                        .and_then(|path| path.to_str().map(str::to_owned))
+                        .unwrap(),
+                );
             }
             this.destroy();
         });

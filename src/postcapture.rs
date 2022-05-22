@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Write as _};
 
 use diesel::SqliteConnection;
 use gtk4::{
@@ -48,9 +48,9 @@ impl PostCaptureAction for SaveToDisk {
         let now = now.to_rfc3339();
 
         let settings = Settings::open();
-        let path = settings
-            .saved_screenshots_path()
-            .join(format!("screenshot_{}.png", now));
+        let mut path = settings.saved_screenshots_path();
+        write!(path, "/screenshot_{}.png", now).expect("Writing to a string shouldn't fail");
+
         let res = pixbuf.savev(&path, "png", &[]);
 
         match res {
@@ -58,7 +58,6 @@ impl PostCaptureAction for SaveToDisk {
             Err(why) => tracing::error!("Failed to save screenshot to file: {why}"),
         }
 
-        let path = path.to_string_lossy().into_owned();
         if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
         {
             tracing::error!("Failed to add screenshot to history: {why}");
