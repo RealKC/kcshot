@@ -779,6 +779,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gsettings-macro"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c758353b3c3b2ca94578afc1f39f515b31ef878835c0ba539698b59975708c4b"
+dependencies = [
+ "heck",
+ "proc-macro-error",
+ "proc-macro2",
+ "quick-xml",
+ "quote",
+ "serde",
+ "syn",
+]
+
+[[package]]
 name = "gsk4"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -922,6 +937,7 @@ dependencies = [
  "diesel_migrations",
  "gdk4-x11",
  "glib-build-tools",
+ "gsettings-macro",
  "gtk4",
  "image",
  "ksni",
@@ -1278,6 +1294,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8533f14c8382aaad0d592c812ac3b826162128b65662331e1127b45c3d18536b"
 dependencies = [
  "memchr",
+ "serde",
 ]
 
 [[package]]

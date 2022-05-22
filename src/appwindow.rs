@@ -18,7 +18,6 @@ mod underlying {
     use std::process::Command;
 
     use gtk4::{
-        gio,
         glib::{self, clone, ParamSpec, ParamSpecObject},
         prelude::*,
         subclass::{
@@ -32,13 +31,13 @@ mod underlying {
     use crate::{
         editor::EditorWindow,
         historymodel::RowData,
-        kcshot::{self, KCShot},
+        kcshot::{KCShot, Settings},
     };
 
     #[derive(Default, Debug)]
     pub struct AppWindow {
         history_model: OnceCell<super::HistoryModel>,
-        settings: OnceCell<gio::Settings>,
+        settings: OnceCell<Settings>,
     }
 
     #[glib::object_subclass]
@@ -104,11 +103,11 @@ mod underlying {
             stack.add_named(&message, Some("message"));
 
             self.settings
-                .set(kcshot::open_settings())
+                .set(Settings::open())
                 .expect("self.settings should only be set once");
 
             let settings = self.settings.get().unwrap();
-            let is_history_enabled = settings.boolean("is-history-enabled");
+            let is_history_enabled = settings.is_history_enabled();
 
             if is_history_enabled {
                 stack.set_visible_child_name("image-grid");
@@ -116,20 +115,14 @@ mod underlying {
                 stack.set_visible_child_name("message");
             }
 
-            settings.connect_changed(
-                None,
-                clone!(@strong stack => move |settings, key| {
-                    tracing::info!("Called with key: {key}");
-                    if key == "is-history-enabled" {
-                        let is_history_enabled = settings.boolean(key);
-                        if is_history_enabled {
-                            stack.set_visible_child_name("image-grid");
-                        } else {
-                            stack.set_visible_child_name("message");
-                        }
+            settings.connect_is_history_enabled_changed(clone!(@strong stack => move |settings| {
+                    let is_history_enabled = settings.boolean("is-history-enabled");
+                    if is_history_enabled {
+                        stack.set_visible_child_name("image-grid");
+                    } else {
+                        stack.set_visible_child_name("message");
                     }
-                }),
-            );
+            }));
 
             let right_frame = gtk4::Frame::new(None);
             right_frame.set_child(Some(&stack));
@@ -242,8 +235,7 @@ mod underlying {
         capture_button.set_child(Some(&make_label("Capture")));
         capture_button.connect_clicked(
             glib::clone!(@weak application, @weak history_model => move |_| {
-                let editing_starts_with_cropping = kcshot::open_settings()
-                    .boolean("editing-starts-with-cropping");
+                let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
 
                 EditorWindow::show(&application, editing_starts_with_cropping);
             }),
@@ -287,7 +279,7 @@ mod underlying {
     fn build_settings_window() -> gtk4::Window {
         let window = gtk4::Window::new();
         window.set_title(Some("kcshot - Settings"));
-        let settings = kcshot::open_settings();
+        let settings = Settings::open();
 
         let folder_chooser = gtk4::FileChooserDialog::new(
             Some("Choose a folder for your screenshot history"),
@@ -302,12 +294,7 @@ mod underlying {
         folder_chooser.connect_response(move |this, response| {
             if response == gtk4::ResponseType::Apply {
                 let folder = this.file().unwrap();
-                settings_
-                    .set(
-                        "saved-screenshots-path",
-                        &folder.path().unwrap().to_str().unwrap(),
-                    )
-                    .unwrap();
+                settings_.set_saved_screenshots_path(&folder.path().unwrap());
             }
             this.destroy();
         });
@@ -316,8 +303,7 @@ mod underlying {
         let folder_chooser_button = gtk4::Button::new();
 
         settings
-            .bind("saved-screenshots-path", &folder_chooser_button, "label")
-            .flags(gio::SettingsBindFlags::DEFAULT)
+            .bind_saved_screenshots_path(&folder_chooser_button, "label")
             .build();
         folder_chooser_button.connect_clicked(move |_| {
             folder_chooser.show();
@@ -326,10 +312,7 @@ mod underlying {
         let content_area = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
 
         let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
-        settings
-            .bind("is-history-enabled", &hbox, "sensitive")
-            .flags(gio::SettingsBindFlags::DEFAULT)
-            .build();
+        settings.bind_is_history_enabled(&hbox, "sensitive").build();
         hbox.append(&folder_chooser_about);
         hbox.append(&folder_chooser_button);
 
@@ -340,8 +323,7 @@ mod underlying {
         let history_enabled_button = gtk4::Switch::new();
         history_enabled_button.set_halign(gtk4::Align::End);
         settings
-            .bind("is-history-enabled", &history_enabled_button, "active")
-            .flags(gio::SettingsBindFlags::DEFAULT)
+            .bind_is_history_enabled(&history_enabled_button, "active")
             .build();
 
         let history_enabled = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
@@ -360,12 +342,7 @@ mod underlying {
         let capture_mouse_cursor_button = gtk4::Switch::new();
         capture_mouse_cursor_button.set_halign(gtk4::Align::End);
         settings
-            .bind(
-                "capture-mouse-cursor",
-                &capture_mouse_cursor_button,
-                "active",
-            )
-            .flags(gio::SettingsBindFlags::DEFAULT)
+            .bind_capture_mouse_cursor(&capture_mouse_cursor_button, "active")
             .build();
 
         let capture_mouse_cursor_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
@@ -386,12 +363,7 @@ mod underlying {
         let editing_starts_by_cropping_button =
             gtk4::Switch::builder().halign(gtk4::Align::End).build();
         settings
-            .bind(
-                "editing-starts-with-cropping",
-                &editing_starts_by_cropping_button,
-                "active",
-            )
-            .flags(gio::SettingsBindFlags::DEFAULT)
+            .bind_editing_starts_with_cropping(&editing_starts_by_cropping_button, "active")
             .build();
         let editing_starts_by_cropping_container = gtk4::Box::builder()
             .orientation(gtk4::Orientation::Horizontal)

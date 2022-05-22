@@ -1,5 +1,4 @@
 use cairo::{self, Format as CairoImageFormat, ImageSurface};
-use gtk4::prelude::SettingsExt;
 use once_cell::sync::OnceCell;
 use xcb::{
     shape,
@@ -11,7 +10,7 @@ use xcb::{
 };
 
 use super::{Result, Window, WmFeatures};
-use crate::{editor::data::Rectangle, kcshot};
+use crate::{editor::data::Rectangle, kcshot::Settings};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -65,7 +64,7 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                 .data()
                 .to_vec();
 
-            let capture_mouse_cursor = kcshot::open_settings().boolean("capture-mouse-cursor");
+            let capture_mouse_cursor = Settings::open().capture_mouse_cursor();
 
             if capture_mouse_cursor {
                 let cursor_cookie = connection.send_request(&xfixes::GetCursorImage {});

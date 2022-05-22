@@ -1,17 +1,13 @@
 use cairo::glib::Cast;
 use gtk4::{
-    gio,
-    gio::prelude::SettingsExt,
-    glib,
+    gio, glib,
     subclass::prelude::ObjectSubclassIsExt,
     traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
 
-use self::{
-    data::Colour,
-    operations::{SelectionMode, Tool},
-};
-use crate::kcshot;
+pub use self::data::Colour;
+use self::operations::{SelectionMode, Tool};
+use crate::kcshot::Settings;
 
 mod data;
 mod display_server;
@@ -38,13 +34,13 @@ impl EditorWindow {
         ])
         .expect("Failed to make an EditorWindow");
 
-        let settings = kcshot::open_settings();
+        let settings = Settings::open();
 
-        let restored_primary_colour = settings.uint("last-used-primary-colour");
-        let restored_secondary_colour = settings.uint("last-used-secondary-colour");
+        let restored_primary_colour = settings.last_used_primary_colour();
+        let restored_secondary_colour = settings.last_used_secondary_colour();
 
-        editor.set_primary_colour(Colour::deserialise_from_u32(restored_primary_colour));
-        editor.set_secondary_colour(Colour::deserialise_from_u32(restored_secondary_colour));
+        editor.set_primary_colour(restored_primary_colour);
+        editor.set_secondary_colour(restored_secondary_colour);
 
         editor
     }
@@ -89,8 +85,8 @@ impl EditorWindow {
             image.operation_stack.primary_colour = colour;
         });
 
-        let settings = kcshot::open_settings();
-        if let Err(why) = settings.set_uint("last-used-primary-colour", colour.serialise_to_u32()) {
+        let settings = Settings::open();
+        if let Err(why) = settings.try_set_last_used_primary_colour(colour) {
             tracing::warn!("Failed to update `last-used-primary-colour` setting value: {why}");
         }
     }
@@ -112,9 +108,8 @@ impl EditorWindow {
             image.operation_stack.secondary_colour = colour;
         });
 
-        let settings = kcshot::open_settings();
-        if let Err(why) = settings.set_uint("last-used-secondary-colour", colour.serialise_to_u32())
-        {
+        let settings = Settings::open();
+        if let Err(why) = settings.try_set_last_used_secondary_colour(colour) {
             tracing::warn!("Failed to update `last-used-secondary-colour` setting value: {why}");
         }
     }

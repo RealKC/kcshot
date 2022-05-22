@@ -9,7 +9,7 @@ use gtk4::{
 use crate::{
     db,
     historymodel::{ModelNotifier, RowData},
-    kcshot,
+    kcshot::Settings,
 };
 
 /// Trait for the post capture actions.
@@ -47,14 +47,10 @@ impl PostCaptureAction for SaveToDisk {
         let now = chrono::Local::now();
         let now = now.to_rfc3339();
 
-        let settings = kcshot::open_settings();
-        let path = settings.string("saved-screenshots-path");
-        let path = if path.ends_with('/') {
-            format!("{}screenshot_{}.png", path, now)
-        } else {
-            format!("{}/screenshot_{}.png", path, now)
-        };
-
+        let settings = Settings::open();
+        let path = settings
+            .saved_screenshots_path()
+            .join(format!("screenshot_{}.png", now));
         let res = pixbuf.savev(&path, "png", &[]);
 
         match res {
@@ -62,6 +58,7 @@ impl PostCaptureAction for SaveToDisk {
             Err(why) => tracing::error!("Failed to save screenshot to file: {why}"),
         }
 
+        let path = path.to_string_lossy().into_owned();
         if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
         {
             tracing::error!("Failed to add screenshot to history: {why}");
@@ -120,8 +117,7 @@ pub fn run_postcapture_actions(
 }
 
 fn get_actions_from_settings() -> Vec<&'static dyn PostCaptureAction> {
-    let settings = kcshot::open_settings();
-    let action_names = settings.strv("post-capture-actions");
+    let action_names = Settings::open().post_capture_actions();
 
     let action_ids_to_objects: HashMap<String, &dyn PostCaptureAction> = get_postcapture_actions()
         .iter()

@@ -1,12 +1,38 @@
+use std::path::{Path, PathBuf};
+
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     appwindow,
-    editor::EditorWindow,
+    editor::{Colour, EditorWindow},
     historymodel::{HistoryModel, ModelNotifier},
     systray,
 };
+
+#[gsettings_macro::gen_settings(file = "./resources/kc.kcshot.gschema.xml", id = "kc.kcshot")]
+#[gen_settings_define(
+    key_name = "saved-screenshots-path",
+    arg_type = "&Path",
+    ret_type = "PathBuf"
+)]
+#[gen_settings_define(
+    key_name = "last-used-primary-colour",
+    arg_type = "Colour",
+    ret_type = "Colour"
+)]
+#[gen_settings_define(
+    key_name = "last-used-secondary-colour",
+    arg_type = "Colour",
+    ret_type = "Colour"
+)]
+pub struct Settings;
+
+impl Settings {
+    pub fn open() -> Self {
+        Self::default()
+    }
+}
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
@@ -32,8 +58,8 @@ impl KCShot {
         impl_.database_connection.get().unwrap()
     }
 
-    pub fn screenshot_folder() -> String {
-        open_settings().string("saved-screenshots-path").into()
+    pub fn screenshot_folder() -> PathBuf {
+        Settings::open().saved_screenshots_path()
     }
 
     /// This is to be used for the purpose of notifying the [`crate::historymodel::HistoryMode`]
@@ -67,11 +93,6 @@ impl KCShot {
     }
 }
 
-/// Creates a Settings whose data is associated with our application
-pub fn open_settings() -> gio::Settings {
-    gio::Settings::new("kc.kcshot")
-}
-
 pub fn build_ui(app: &KCShot) {
     let instance = app.imp();
 
@@ -99,7 +120,7 @@ pub fn build_ui(app: &KCShot) {
     if take_screenshot {
         instance.take_screenshot.set(false);
 
-        let editing_starts_with_cropping = open_settings().boolean("editing-starts-with-cropping");
+        let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
 
         EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
     } else if show_main_window {
@@ -123,6 +144,7 @@ mod underlying {
     };
     use once_cell::sync::{Lazy, OnceCell};
 
+    use super::Settings;
     use crate::{
         appwindow, db,
         historymodel::{HistoryModel, ModelNotifier, RowData},
@@ -315,9 +337,9 @@ Application Options:
                 tracing::error!("Failed loading resources: {why}");
             }
 
-            let settings = super::open_settings();
+            let settings = Settings::open();
 
-            if settings.string("saved-screenshots-path").is_empty() {
+            if settings.saved_screenshots_path().as_os_str().is_empty() {
                 #[cfg(not(feature = "xdg-paths"))]
                 let default_folder = std::env::current_dir().unwrap();
                 #[cfg(feature = "xdg-paths")]
@@ -326,9 +348,7 @@ Application Options:
                     .get_data_home();
 
                 tracing::info!("'saved-screenshots-path' was empty, set it to {default_folder:?}");
-                settings
-                    .set_string("saved-screenshots-path", default_folder.to_str().unwrap())
-                    .unwrap();
+                settings.set_saved_screenshots_path(&default_folder);
             }
         }
     }

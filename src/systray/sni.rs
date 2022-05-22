@@ -9,7 +9,7 @@ use image::ImageResult;
 use super::Initialised;
 use crate::{
     editor::EditorWindow,
-    kcshot::{self, KCShot},
+    kcshot::{KCShot, Settings},
 };
 
 /// Attempts to create a systray icon using the [KDE/freedesktop StatusNotifierItem spec][`kde_sni`].
@@ -62,10 +62,9 @@ pub(super) fn try_init(app: &KCShot) -> Initialised {
                     }
                 }
                 Message::TakeScreenshot => {
-                    let editing_starts_with_cropping = kcshot::open_settings()
-                        .boolean("editing-starts-with-cropping");
+                    let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
 
-                        EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
+                    EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
                 },
                 Message::Quit => app.quit(),
             }
