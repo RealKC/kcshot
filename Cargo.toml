@@ -17,7 +17,7 @@ gtk4 = "0.4.1"
 gdk4-x11 = "0.4.0"
 # Use my fork until a good solution is found for https://github.com/rust-x-bindings/rust-xcb/issues/186
 # or the hacky patch is merged, I guess
-xcb = { git = "https://github.com/RealKC/rust-xcb", branch = "hackfixfor186", features = [
+xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
     "debug_atom_names",
     "shape",
     "xfixes",
