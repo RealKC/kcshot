@@ -49,7 +49,15 @@ impl PostCaptureAction for SaveToDisk {
 
         let settings = Settings::open();
         let mut path = settings.saved_screenshots_path();
-        write!(path, "/screenshot_{}.png", now).expect("Writing to a string shouldn't fail");
+        if !path.ends_with('/') {
+            path.push('/');
+        }
+
+        if let Err(why) = std::fs::create_dir_all(&path) {
+            tracing::error!("Failed to create directory='{path}': {why}");
+        }
+
+        write!(path, "screenshot_{}.png", now).expect("Writing to a string shouldn't fail");
 
         let res = pixbuf.savev(&path, "png", &[]);
 
