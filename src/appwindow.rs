@@ -116,12 +116,11 @@ mod underlying {
             }
 
             settings.connect_is_history_enabled_changed(clone!(@strong stack => move |settings| {
-                    let is_history_enabled = settings.boolean("is-history-enabled");
-                    if is_history_enabled {
-                        stack.set_visible_child_name("image-grid");
-                    } else {
-                        stack.set_visible_child_name("message");
-                    }
+                if settings.is_history_enabled() {
+                    stack.set_visible_child_name("image-grid");
+                } else {
+                    stack.set_visible_child_name("message");
+                }
             }));
 
             let right_frame = gtk4::Frame::new(None);

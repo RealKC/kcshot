@@ -780,9 +780,9 @@ dependencies = [
 
 [[package]]
 name = "gsettings-macro"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c758353b3c3b2ca94578afc1f39f515b31ef878835c0ba539698b59975708c4b"
+checksum = "950e88d56a5d9f8be4b1cf56b09dac2f8f93f2250d2e8e678044ae7fc6bc3c5a"
 dependencies = [
  "heck",
  "proc-macro-error",
