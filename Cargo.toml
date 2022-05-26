@@ -20,7 +20,6 @@ xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
     "shape",
     "xfixes",
 ] }
-x11 = { version = "2.19", features = ["xlib"] }
 ksni = "0.2.0"
 
 # User settings, history

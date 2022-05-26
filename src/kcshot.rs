@@ -321,13 +321,6 @@ Application Options:
         fn startup(&self, application: &Self::Type) {
             self.parent_startup(application);
 
-            // I think we need to call this because we use multiplt threads in kcshot.
-            // SAFETY: This function should be safe to call as it only sets up xlib to be useable
-            // with threads.
-            unsafe {
-                x11::xlib::XInitThreads();
-            }
-
             if let Err(why) = gio::resources_register_include!("compiled.gresource") {
                 tracing::error!("Failed loading resources: {why}");
             }
