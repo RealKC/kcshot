@@ -1,0 +1,38 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+name: CI
+
+jobs:
+  rustfmt:
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  build:
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
+    runs-on: ubuntu-22.04
+    steps:
+      - run: |
+          sudo apt-get update -y
+          sudo apt install -y libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+      - name: compile
+        run: cargo build
+      - name: clippy
+        run: cargo clippy
