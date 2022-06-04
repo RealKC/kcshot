@@ -219,10 +219,9 @@ mod underlying {
             self.history_model.replace(Some(HistoryModel::new(obj)));
             let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
 
-            if self.model_notifier.set(tx).is_err() {
-                tracing::error!("KCShot::constructed called multiple times on the same instance!");
-                panic!()
-            }
+            self.model_notifier
+                .set(tx)
+                .expect("KCShot::constructed called multiple times on the same instance!");
 
             let model = self.history_model();
             // The purpose of this code is to ensure that the model behaves correctly to its consumers
