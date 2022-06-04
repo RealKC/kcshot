@@ -125,8 +125,9 @@ fn overlay_cursor(
     let h_draw = usize::min(h, height - cy);
 
     for x in 0..w_draw {
+        #[allow(clippy::identity_op /*, reason = "Identity ops add a symmetry that makes the code nicer and easier to read." */)]
         for y in 0..h_draw {
-            let r = cursor[y * w + x] & 0xff;
+            let r = cursor[y * w + x] >> 0 & 0xff;
             let g = cursor[y * w + x] >> 8 & 0xff;
             let b = cursor[y * w + x] >> 16 & 0xff;
             let a = cursor[y * w + x] >> 24 & 0xff;
@@ -136,7 +137,6 @@ fn overlay_cursor(
 
             // Cursor data is RGBA, but screenshot data is RGB-Unused byte, so we do manual
             // blending to paste the cursor _over_ the image
-            #[allow(clippy::identity_op)]
             if a == 255 {
                 screenshot[pixel_idx + 0] = r as u8;
                 screenshot[pixel_idx + 1] = g as u8;
