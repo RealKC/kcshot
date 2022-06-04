@@ -11,6 +11,9 @@ extern crate diesel_migrations;
 use std::{env, fs, io, path};
 
 use gtk4::prelude::*;
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
+
+use self::kcshot::KCShot;
 
 mod appwindow;
 mod db;
@@ -19,9 +22,6 @@ mod historymodel;
 mod kcshot;
 mod postcapture;
 mod systray;
-
-use kcshot::KCShot;
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 
 fn main() {
     let collector = tracing_subscriber::registry()

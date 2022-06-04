@@ -4,11 +4,10 @@ use gtk4::{
     subclass::prelude::ObjectSubclassIsExt,
 };
 
+pub use self::rowdata::RowData;
 use crate::kcshot::KCShot;
 
 mod rowdata;
-
-pub use rowdata::RowData;
 
 glib::wrapper! {
     pub struct HistoryModel(ObjectSubclass<underlying::ListModel>)

@@ -6,8 +6,9 @@ use gtk4::{
     pango::FontDescription,
 };
 
+pub use self::point::Point;
+
 mod point;
-pub use point::Point;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Colour {

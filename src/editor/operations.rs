@@ -3,16 +3,15 @@ use gtk4::pango::FontDescription;
 use image::flat;
 use rand::Rng;
 
-mod pixelops;
-mod shapes;
-mod stack;
-
-pub use stack::*;
-
+pub use self::stack::*;
 use super::{
     data::*,
     utils::{self, CairoExt},
 };
+
+mod pixelops;
+mod shapes;
+mod stack;
 
 const HIGHLIGHT_COLOUR: Colour = Colour {
     red: 255,
