@@ -62,7 +62,7 @@ impl EditorWindow {
         let cairo = match Context::new(&image.surface) {
             Ok(cairo) => cairo,
             Err(err) => {
-                error!("Got error constructing cairo context inside button press event: {err}");
+                error!("Got error constructing Cairo context inside do_save_surface: {err}");
                 return;
             }
         };

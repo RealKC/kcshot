@@ -269,7 +269,7 @@ impl OperationStack {
                 is_in_draw_event,
                 !self.editing_started_with_cropping,
             ) {
-                error!("Got error trying to execute an operation({operation:?}): {why}");
+                error!("Got error trying to execute {operation:?}: {why}");
             }
         }
 
@@ -280,7 +280,7 @@ impl OperationStack {
                 is_in_draw_event,
                 !self.editing_started_with_cropping,
             ) {
-                error!("Got error trying to execute self.current_operation({operation:?}): {why}");
+                error!("Got error trying to execute {operation:?}: {why}");
             }
         }
 
