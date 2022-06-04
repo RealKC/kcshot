@@ -223,7 +223,6 @@ impl OperationStack {
             }
 
             self.operations.push(dbg!(operation));
-            tracing::info!("{:#?}", self.operations);
         }
     }
 

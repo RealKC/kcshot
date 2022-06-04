@@ -11,7 +11,7 @@ use gtk4::{
     Allocation,
 };
 use once_cell::sync::{Lazy, OnceCell};
-use tracing::{error, info};
+use tracing::error;
 
 use super::{toolbar, utils::ContextLogger};
 use crate::{
@@ -201,7 +201,6 @@ impl ObjectImpl for EditorWindow {
 
         click_event_handler.set_button(0);
         click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
-            tracing::warn!("Got button-press on drawing_area");
             if this.current_button() == BUTTON_PRIMARY {
                 obj.imp().with_image_mut("primary button pressed", |image| {
                     image.operation_stack.start_operation_at(Point { x, y });
@@ -257,7 +256,6 @@ impl ObjectImpl for EditorWindow {
         drag_controller.connect_drag_update(
             clone!(@weak obj, @weak drawing_area =>  move |_this, x, y| {
                 obj.imp().with_image_mut("drag update event", |image| {
-                    info!("Dragging to {{ {x}, {y} }}");
                     image.operation_stack.update_current_operation_end_coordinate(x, y);
                     if image.operation_stack.current_tool().is_cropping_tool() {
                         image.operation_stack.set_is_in_crop_drag(true);

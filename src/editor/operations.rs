@@ -2,7 +2,6 @@ use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::pango::FontDescription;
 use image::flat;
 use rand::Rng;
-use tracing::{error, info};
 
 mod pixelops;
 mod shapes;
@@ -317,8 +316,6 @@ impl Operation {
                 cairo.restore()?;
             }
             Operation::Pixelate { rect, seed } => {
-                info!("Pixelate");
-
                 let rect = rect.normalised();
 
                 pixelops::pixelate(cairo, surface, &rect, *seed)?;
@@ -329,7 +326,6 @@ impl Operation {
                 colour,
                 line_width,
             } => {
-                info!("Line");
                 shapes::draw_line(cairo, *start, *end, *colour, *line_width)?;
             }
             Operation::DrawRectangle {
@@ -338,7 +334,6 @@ impl Operation {
                 fill,
                 line_width,
             } => {
-                info!("Rectangle");
                 shapes::draw_rectangle(cairo, rect, *border, *fill, *line_width)?;
             }
             Operation::Text {
@@ -347,7 +342,6 @@ impl Operation {
                 colour,
                 font_description,
             } => {
-                info!("Text");
                 cairo.save()?;
                 draw_text_at(cairo, *top_left, text, *colour, font_description)?;
                 cairo.restore()?;
@@ -358,11 +352,9 @@ impl Operation {
                 colour,
                 line_width,
             } => {
-                info!("Arrow");
                 shapes::draw_arrow(cairo, *start, *end, *colour, *line_width)?;
             }
             Operation::Highlight { rect } => {
-                info!("Highlight");
                 shapes::draw_rectangle(cairo, rect, INVISIBLE, HIGHLIGHT_COLOUR, 1.0)?;
             }
             Operation::DrawEllipse {
@@ -371,7 +363,6 @@ impl Operation {
                 fill,
                 line_width,
             } => {
-                info!("Ellipse");
                 cairo.save()?;
                 shapes::draw_ellipse(cairo, ellipse, *border, *fill, *line_width)?;
                 cairo.restore()?;
@@ -383,7 +374,6 @@ impl Operation {
                 number,
                 font_description,
             } => {
-                info!("Bubble");
                 let Point { x, y } = centre;
                 let num_str = number.to_string();
 
