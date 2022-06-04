@@ -210,10 +210,9 @@ mod underlying {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            let res = self.database_connection.set(db::open().unwrap());
-
-            if res.is_err() {
-                tracing::error!("Failed setting self.database_connection");
+            // We don't use `expect` here because diesel's SqliteConnection doesn't implement Debug
+            if self.database_connection.set(db::open().unwrap()).is_err() {
+                panic!("KCShot::constructed called multiple times")
             }
 
             self.history_model.replace(Some(HistoryModel::new(obj)));
