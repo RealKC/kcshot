@@ -269,7 +269,6 @@ impl Operation {
         }
     }
 
-    #[allow(unused_variables)]
     pub fn execute(
         &self,
         surface: &ImageSurface,
