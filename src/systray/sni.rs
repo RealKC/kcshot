@@ -1,10 +1,10 @@
 use std::{process::Command, thread::Builder as ThreadBuilder};
 
 use gtk4::{
+    gdk_pixbuf::Pixbuf,
     glib::{self, Continue, MainContext, Sender},
     prelude::*,
 };
-use image::ImageResult;
 
 use super::Initialised;
 use crate::{
@@ -83,12 +83,14 @@ enum Message {
     Quit,
 }
 
-fn load_icon() -> ImageResult<ksni::Icon> {
+fn load_icon() -> Result<ksni::Icon, glib::Error> {
     const ICON_BYTES: &[u8] = include_bytes!("../../resources/logo/tray.png");
-    let image = image::load_from_memory(ICON_BYTES)?.to_rgba8();
 
-    let (width, height) = image.dimensions();
-    let mut raw_image_data = image.into_raw();
+    let image = Pixbuf::from_read(ICON_BYTES)?;
+
+    let width = image.width();
+    let height = image.height();
+    let mut raw_image_data = image.pixel_bytes().unwrap().to_vec();
 
     // We convert the image to ARGB as that's the required format of the image as defined in the SNI spec
     for chunk in raw_image_data.chunks_mut(4) {
@@ -97,8 +99,8 @@ fn load_icon() -> ImageResult<ksni::Icon> {
     }
 
     Ok(ksni::Icon {
-        width: width as i32,
-        height: height as i32,
+        width,
+        height,
         data: raw_image_data,
     })
 }
