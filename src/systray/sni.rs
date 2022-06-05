@@ -19,7 +19,7 @@ use crate::{
 ///
 /// [`kde_sni`]: https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierItem/
 /// [`ksni`]: https://crates.io/crates/ksni
-pub(super) fn try_init(app: &KCShot) -> Initialised {
+pub(super) fn try_init(app: KCShot) -> Initialised {
     let icon = match load_icon() {
         Ok(icon) => icon,
         Err(why) => {
@@ -48,29 +48,26 @@ pub(super) fn try_init(app: &KCShot) -> Initialised {
         return Initialised::No;
     }
 
-    rx.attach(
-        None,
-        glib::clone!(@strong app => @default-return Continue(false), move |msg| {
-            match msg {
-                Message::OpenMainWindow => app.main_window().present(),
-                Message::OpenScreenshotFolder => {
-                    let res = Command::new("xdg-open")
-                        .arg(&KCShot::screenshot_folder())
-                        .spawn();
-                    if let Err(why) = res {
-                        tracing::error!("Failed to spawn xdg-open: {why}");
-                    }
+    rx.attach(None, move |msg| {
+        match msg {
+            Message::OpenMainWindow => app.main_window().present(),
+            Message::OpenScreenshotFolder => {
+                let res = Command::new("xdg-open")
+                    .arg(&KCShot::screenshot_folder())
+                    .spawn();
+                if let Err(why) = res {
+                    tracing::error!("Failed to spawn xdg-open: {why}");
                 }
-                Message::TakeScreenshot => {
-                    let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
-
-                    EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
-                },
-                Message::Quit => app.quit(),
             }
-            Continue(true)
-        }),
-    );
+            Message::TakeScreenshot => {
+                let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
+
+                EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
+            }
+            Message::Quit => app.quit(),
+        }
+        Continue(true)
+    });
 
     Initialised::Yes
 }

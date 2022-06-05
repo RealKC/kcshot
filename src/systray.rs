@@ -11,7 +11,7 @@ mod sni;
 /// desktop environments may choose to not offer support for them or for the protocols we use
 /// or the user may be using a WM without one.
 pub fn init(app: &KCShot) {
-    if sni::try_init(app) == Initialised::Yes {
+    if sni::try_init(app.clone()) == Initialised::Yes {
         return;
     }
 
