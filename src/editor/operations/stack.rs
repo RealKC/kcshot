@@ -222,7 +222,7 @@ impl OperationStack {
                 }
             }
 
-            self.operations.push(dbg!(operation));
+            self.operations.push(operation);
         }
     }
 

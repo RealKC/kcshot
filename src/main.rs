@@ -4,6 +4,7 @@
 #![warn(clippy::semicolon_if_nothing_returned)]
 #![warn(clippy::items_after_statements)]
 #![warn(clippy::useless_conversion)]
+#![warn(clippy::dbg_macro)]
 
 #[macro_use]
 extern crate diesel;
