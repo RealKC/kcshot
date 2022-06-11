@@ -294,13 +294,13 @@ impl OperationStack {
             && !self.is_in_crop_drag
             && !self.ignore_windows;
 
-        // We only want to dimmen around the "manual selection"/whole screen if
+        // We only want to dim around the "manual selection"/whole screen if
         //  * we won't be drawing windows (they have their own dimming logic)
-        //  * editing started with cropping (we don't want to dimmen in the crop last mode)
-        let should_dimmen_manual_selection_or_whole_screen =
+        //  * editing started with cropping (we don't want to dim in the crop last mode)
+        let should_dim_manual_selection_or_whole_screen =
             (!should_draw_windows || self.windows.is_empty()) && self.editing_started_with_cropping;
 
-        if should_dimmen_manual_selection_or_whole_screen {
+        if should_dim_manual_selection_or_whole_screen {
             self.dimmen_manual_selection_or_whole_screen(cairo);
         }
 

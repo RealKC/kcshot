@@ -92,7 +92,7 @@ pub fn draw_ellipse(
 
     cairo.set_source_colour(border);
     cairo.set_line_width(line_width);
-    // 4. Draw a border arround it
+    // 4. Draw a border around it
     cairo.stroke()?;
 
     Ok(())
@@ -128,11 +128,11 @@ pub fn draw_arrow(
     cairo.move_to(start.x, start.y);
     cairo.line_to(end.x, end.y);
 
-    // Since cos(theta) = adjacent / hypothenuse, x1 = arrow_length * cos(theta)
+    // Since cos(theta) = adjacent / hypotenuse, x1 = arrow_length * cos(theta)
     let x1 = -arrow_length * (angle - ARROWHEAD_APERTURE).cos();
     let x2 = -arrow_length * (angle + ARROWHEAD_APERTURE).cos();
 
-    // Since sin(theta) = opposite / hypothenuse, y1 = arrow_length * sin(theta)
+    // Since sin(theta) = opposite / hypotenuse, y1 = arrow_length * sin(theta)
     let y1 = -arrow_length * (angle - ARROWHEAD_APERTURE).sin();
     let y2 = -arrow_length * (angle + ARROWHEAD_APERTURE).sin();
 

@@ -156,19 +156,19 @@ xcb::atoms_struct! {
     /// This structs contains the atoms we'll use multiple times over the course of the program and as
     /// such are cached. None of the atoms here will ever be [`xcb::x::ATOM_NONE`]
     struct AtomsOfInterest {
-        /// This corresponds to _NET_CLIENT_LIST_STACKING, querrying this property on the root window
+        /// This corresponds to _NET_CLIENT_LIST_STACKING, querying this property on the root window
         /// gives us the list of windows in stacking order.
         ///
         /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391305328
         wm_client_list => b"_NET_CLIENT_LIST_STACKING",
-        /// This corresponds to _NET_FRAME_EXTENTS, querrrying this property on a window gives us the
+        /// This corresponds to _NET_FRAME_EXTENTS, quarrying this property on a window gives us the
         /// widths of the left, right, top and bottom borders added by a window manager,
         ///
-        /// Some window managers have this attom despite not actually supporting it.
+        /// Some window managers have this atom despite not actually supporting it.
         ///
         /// https://specifications.freedesktop.org/wm-spec/wm-spec-latest.html#idm45381391244864
         frame_extents => b"_NET_FRAME_EXTENTS",
-        /// This corresponds to _NET_WM_STATE, querrying this property on a window returns the window
+        /// This corresponds to _NET_WM_STATE, querying this property on a window returns the window
         /// state, i.e. whether the window is fullscreen or not.
         ///
         /// https://specifications.freedesktop.org/wm-spec/latest/ar01s05.html#idm46476783496896
