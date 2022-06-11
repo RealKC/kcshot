@@ -4,6 +4,7 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
     gdk_pixbuf::Pixbuf,
+    glib,
 };
 
 use crate::{
@@ -44,8 +45,11 @@ impl PostCaptureAction for SaveToDisk {
     }
 
     fn handle(&self, model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
-        let now = chrono::Local::now();
-        let now = now.to_rfc3339();
+        let now = glib::DateTime::now_local()
+            .unwrap()
+            .format_iso8601()
+            .unwrap()
+            .to_string();
 
         let settings = Settings::open();
         let mut path = settings.saved_screenshots_path();
@@ -57,7 +61,7 @@ impl PostCaptureAction for SaveToDisk {
             tracing::error!("Failed to create directory='{path}': {why}");
         }
 
-        write!(path, "screenshot_{}.png", now).expect("Writing to a string shouldn't fail");
+        write!(path, "screenshot_{now}.png").expect("Writing to a string shouldn't fail");
 
         let res = pixbuf.savev(&path, "png", &[]);
 
