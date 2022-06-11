@@ -48,6 +48,11 @@ mod underlying {
 
     impl ObjectImpl for AppWindow {
         fn constructed(&self, obj: &Self::Type) {
+            self.settings
+                .set(Settings::open())
+                .expect("self.settings should only be set once");
+            let settings = self.settings.get().unwrap();
+
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
             obj.set_icon_name(Some("kcshot"));
@@ -55,7 +60,7 @@ mod underlying {
 
             let list_model = self.history_model.get().unwrap();
 
-            let button_list = build_button_pane(&obj.application().unwrap(), list_model);
+            let button_list = build_button_pane(&obj.application().unwrap(), list_model, settings);
             let left_frame = gtk4::Frame::new(None);
             left_frame.set_child(Some(&button_list));
             hbox.append(&left_frame);
@@ -101,11 +106,6 @@ mod underlying {
             stack.add_named(&history_view, Some("image-grid"));
             stack.add_named(&message, Some("message"));
 
-            self.settings
-                .set(Settings::open())
-                .expect("self.settings should only be set once");
-
-            let settings = self.settings.get().unwrap();
             let is_history_enabled = settings.is_history_enabled();
 
             if is_history_enabled {
@@ -226,6 +226,7 @@ mod underlying {
     fn build_button_pane(
         application: &gtk4::Application,
         history_model: &super::HistoryModel,
+        settings: &Settings,
     ) -> gtk4::Box {
         let buttons = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
 
@@ -262,6 +263,9 @@ mod underlying {
         let history_button = gtk4::Button::new();
         history_button.set_child(Some(&make_label("History")));
         history_button.connect_clicked(|_| tracing::error!("TODO: Implement history button"));
+        settings
+            .bind_is_history_enabled(&history_button, "visible")
+            .build();
         buttons.append(&history_button);
 
         let quit_button = gtk4::Button::new();
