@@ -24,7 +24,6 @@ mod underlying {
             application_window::ApplicationWindowImpl,
             prelude::{ObjectImpl, ObjectSubclass, WidgetImpl, WindowImpl},
         },
-        SignalListItemFactory,
     };
     use once_cell::sync::{Lazy, OnceCell};
 
@@ -191,7 +190,7 @@ mod underlying {
 
     impl WindowImpl for AppWindow {}
 
-    fn build_item_factory() -> SignalListItemFactory {
+    fn build_item_factory() -> gtk4::SignalListItemFactory {
         let factory = gtk4::SignalListItemFactory::new();
 
         factory.connect_setup(|_this, list_item| {

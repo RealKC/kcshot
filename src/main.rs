@@ -28,7 +28,7 @@ mod systray;
 fn main() {
     let collector = tracing_subscriber::registry()
         .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
-        .with(fmt::Layer::new().with_writer(std::io::stderr));
+        .with(fmt::Layer::new().with_writer(io::stderr));
 
     match make_file_writer() {
         Ok(file_writer) => {
@@ -54,8 +54,8 @@ fn main() {
     //         be considered a bug, as it likely means we are leaking cairo objects in some manner.
     //         I believe in that case _some_ kind of assertion will fire.
     unsafe {
-        cairo::debug_reset_static_data()
-    };
+        cairo::debug_reset_static_data();
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
