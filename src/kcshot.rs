@@ -101,17 +101,6 @@ pub fn build_ui(app: &KCShot) {
         instance.systray_initialised.set(true);
     }
 
-    // This ensures that even when called with `--no-window`, kcshot still keeps running
-    // But yes, it feels stupid to me too
-    if instance.first_instance.get()
-        && !app.main_window().is_visible()
-        && (take_screenshot || !show_main_window)
-    {
-        app.main_window().present();
-        app.main_window().hide();
-        instance.first_instance.set(false);
-    }
-
     if take_screenshot {
         instance.take_screenshot.set(false);
 
@@ -148,7 +137,6 @@ mod underlying {
     pub struct KCShot {
         pub(super) show_main_window: Cell<bool>,
         pub(super) take_screenshot: Cell<bool>,
-        pub(super) first_instance: Cell<bool>,
         pub(super) database_connection: OnceCell<SqliteConnection>,
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
@@ -174,7 +162,6 @@ mod underlying {
             Self {
                 show_main_window: Cell::new(true),
                 take_screenshot: Cell::new(false),
-                first_instance: Cell::new(true),
                 database_connection: Default::default(),
                 history_model: Default::default(),
                 model_notifier: Default::default(),
@@ -318,6 +305,11 @@ Application Options:
 
         fn startup(&self, application: &Self::Type) {
             self.parent_startup(application);
+
+            // This hold has no matching release intentionally so that the application keeps running
+            // in the background even when no top-level windows are spawned. (This is the case when
+            // we get started with `--no-window`)
+            application.hold();
 
             if let Err(why) = gio::resources_register_include!("compiled.gresource") {
                 tracing::error!("Failed loading resources: {why}");
