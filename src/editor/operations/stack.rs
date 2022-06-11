@@ -40,21 +40,6 @@ pub enum SelectionMode {
     WindowsWithoutDecorations,
 }
 
-impl SelectionMode {
-    /// Contains strings representing the variants of [`Self`] with mentions of window decorations.
-    pub const STRINGS: &'static [&'static str] =
-        &["Windows w/ decorations", "Windows w/o decorations"];
-
-    pub fn from_integer(value: u32) -> Option<Self> {
-        use SelectionMode::*;
-        match value {
-            0 => Some(WindowsWithDecorations),
-            1 => Some(WindowsWithoutDecorations),
-            _ => None,
-        }
-    }
-}
-
 impl OperationStack {
     pub fn new(
         windows: Vec<Window>,

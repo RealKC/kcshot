@@ -18,7 +18,7 @@ use crate::{
     editor::{
         data::{Point, Rectangle},
         display_server,
-        operations::{OperationStack, Tool},
+        operations::{OperationStack, SelectionMode, Tool},
         utils,
     },
     historymodel::ModelNotifier,
@@ -309,6 +309,8 @@ impl ObjectImpl for EditorWindow {
                             image,
                             None
                         );
+                    } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
+                        image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
                     }
                 });
                 gtk4::Inhibit(false)
@@ -322,6 +324,8 @@ impl ObjectImpl for EditorWindow {
                         drawing_area.queue_draw();
                     } else if key == gdk::Key::Escape {
                         obj.close();
+                    } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
+                        image.operation_stack.selection_mode = SelectionMode::WindowsWithDecorations;
                     }
                 });
             }),

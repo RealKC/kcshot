@@ -97,16 +97,6 @@ impl WmFeatures {
     }
 }
 
-pub fn can_retrieve_windows_and_decorations() -> bool {
-    match WmFeatures::get() {
-        Ok(wm_features) => wm_features.supports_client_list && wm_features.supports_frame_extents,
-        Err(why) => {
-            tracing::info!("Encountered {why} in can_retrieve_windows\n\treturning false");
-            false
-        }
-    }
-}
-
 pub fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
     if WmFeatures::get()?.is_wayland {
         wayland::take_screenshot(app)

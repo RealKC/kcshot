@@ -6,7 +6,7 @@ use gtk4::{
 };
 
 pub use self::data::Colour;
-use self::operations::{SelectionMode, Tool};
+use self::operations::Tool;
 use crate::kcshot::Settings;
 
 mod data;
@@ -112,12 +112,6 @@ impl EditorWindow {
         if let Err(why) = settings.try_set_last_used_secondary_colour(colour) {
             tracing::warn!("Failed to update `last-used-secondary-colour` setting value: {why}");
         }
-    }
-
-    fn set_selection_mode(&self, selection_mode: SelectionMode) {
-        self.imp().with_image_mut("set_selection_mode", |image| {
-            image.operation_stack.selection_mode = selection_mode;
-        });
     }
 
     fn set_line_width(&self, line_width: f64) {

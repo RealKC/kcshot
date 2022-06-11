@@ -37,11 +37,7 @@ mod underlying {
 
     use crate::{
         editor::{
-            self,
-            data::Colour,
-            display_server,
-            operations::{SelectionMode, Tool},
-            underlying::EditorWindow as EditorWindowImp,
+            self, data::Colour, operations::Tool, underlying::EditorWindow as EditorWindowImp,
             utils::CairoExt,
         },
         kcshot::KCShot,
@@ -117,23 +113,6 @@ mod underlying {
             obj.append(&primary_colour_button);
             obj.append(&secondary_colour_button);
             obj.append(&line_width_spinner);
-
-            // Don't bother with the dropdown if the display server can't provide us with the necessary
-            // data
-            if display_server::can_retrieve_windows_and_decorations() {
-                let drop_down = gtk4::DropDown::from_strings(SelectionMode::STRINGS);
-                drop_down.set_tooltip_text(Some("Selection mode"));
-                drop_down.connect_selected_item_notify(clone!(@weak editor => move |this| {
-                    if let Some(selection_mode) = SelectionMode::from_integer(this.selected()) {
-                        editor.set_selection_mode(selection_mode);
-                    }
-                }));
-
-                let drop_down_ = drop_down.clone();
-                group_source.connect_toggled(move |this| drop_down_.set_visible(this.is_active()));
-
-                obj.append(&drop_down);
-            }
 
             buttons.insert(0, (group_source, group_source_tool));
 
