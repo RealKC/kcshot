@@ -18,7 +18,7 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered an I/O error: {0}")]
     Io(#[from] io::Error),
-    #[error("Failed to estabilish a connection to the X server: {0:?}")]
+    #[error("Failed to establish a connection to the X server: {0:?}")]
     XcbConnection(#[from] xcb::ConnError),
     #[error("Encountered an X protocol error: {0:?}")]
     XcbProtocol(xcb::ProtocolError),
