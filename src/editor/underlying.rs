@@ -71,7 +71,7 @@ impl EditorWindow {
         let rectangle = image
             .operation_stack
             .crop_region(point)
-            .unwrap_or_else(|| display_server::get_screen_resolution(window));
+            .unwrap_or(image.operation_stack.screen_dimensions);
 
         window.close();
 
@@ -162,8 +162,12 @@ impl ObjectImpl for EditorWindow {
             tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]
         });
-        let screen_dimensions =
-            display_server::get_screen_resolution(app.main_window().upcast_ref());
+        let screen_dimensions = Rectangle {
+            x: 0.0,
+            y: 0.0,
+            w: image.width() as f64,
+            h: image.height() as f64,
+        };
 
         let overlay = gtk4::Overlay::new();
         obj.set_child(Some(&overlay));

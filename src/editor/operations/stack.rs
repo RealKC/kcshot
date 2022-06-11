@@ -31,7 +31,7 @@ pub struct OperationStack {
 
     /// Used for arrows, lines, pencil and the contours of rectangles
     editing_started_with_cropping: bool,
-    screen_dimensions: Rectangle,
+    pub screen_dimensions: Rectangle,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

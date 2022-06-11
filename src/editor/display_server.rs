@@ -1,10 +1,6 @@
 use std::{env, io};
 
 use cairo::{self, Error as CairoError, ImageSurface};
-use gtk4::{
-    prelude::{DisplayExt, MonitorExt, SurfaceExt},
-    traits::NativeExt,
-};
 use once_cell::sync::OnceCell;
 use tracing::error;
 
@@ -125,22 +121,5 @@ pub fn get_windows() -> Result<Vec<Window>> {
         wayland::get_windows()
     } else {
         xorg::get_windows()
-    }
-}
-
-/// Gets the screen resolution
-pub fn get_screen_resolution(window: &gtk4::Window) -> Rectangle {
-    // Code based on https://discourse.gnome.org/t/get-screen-resolution-scale-factor-and-width-and-height-in-mm-for-wayland/7448
-
-    let surface = window.surface();
-    let display = surface.display();
-    let monitor = display.monitor_at_surface(&surface);
-    let geometry = monitor.geometry();
-
-    Rectangle {
-        x: geometry.x() as f64,
-        y: geometry.y() as f64,
-        w: geometry.width() as f64,
-        h: geometry.height() as f64,
     }
 }
