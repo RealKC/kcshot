@@ -2,6 +2,8 @@
 #![warn(clippy::match_same_arms)]
 #![warn(clippy::trivially_copy_pass_by_ref)]
 #![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(clippy::items_after_statements)]
+#![warn(clippy::useless_conversion)]
 
 #[macro_use]
 extern crate diesel;
