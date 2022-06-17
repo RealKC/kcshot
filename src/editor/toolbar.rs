@@ -298,8 +298,8 @@ mod underlying {
                 colour_picker.set_child(Some(&gtk4::Image::from_resource(
                     "/kc/kcshot/editor/tool-colourpicker.png",
                 )));
-                dialog.add_button("OK", ResponseType::Ok);
-                dialog.add_button("Cancel", ResponseType::Cancel);
+                dialog.add_button("OK", ResponseType::Ok).add_css_class("suggested-action");
+                dialog.add_button("Cancel", ResponseType::Cancel).add_css_class("destructive-action");
 
                 colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
 
