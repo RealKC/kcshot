@@ -37,8 +37,8 @@ mod underlying {
 
     use crate::{
         editor::{
-            self, data::Colour, operations::Tool, underlying::EditorWindow as EditorWindowImp,
-            utils::CairoExt,
+            self, colourchooser::ColourChooserWidget, data::Colour, operations::Tool,
+            underlying::EditorWindow as EditorWindowImp, utils::CairoExt,
         },
         kcshot::KCShot,
         log_if_err,
@@ -276,26 +276,37 @@ mod underlying {
             button.set_visible(false);
 
             button.connect_clicked(move |_this| {
-                let colour_chooser =
-                    gtk4::ColorChooserDialog::new(Some("Pick a colour"), Some(&editor));
-                colour_chooser.set_modal(true);
+                let colour_chooser = ColourChooserWidget::default();
+                colour_chooser.set_margin_bottom(10);
+                colour_chooser.set_margin_top(10);
+                colour_chooser.set_margin_start(10);
+                colour_chooser.set_margin_end(10);
 
-                colour_chooser.connect_response(
-                    clone!(@weak editor, @weak button_drawing_area => move |this, response| {
-                        if response == ResponseType::Ok {
-                            if IS_PRIMARY {
-                                editor.set_primary_colour(Colour::from_gdk_rgba(this.rgba()));
-                            } else {
-                                editor.set_secondary_colour(Colour::from_gdk_rgba(this.rgba()));
-                            }
-                            button_drawing_area.queue_draw();
-                        }
-
-                        this.close();
-                    }),
+                let dialog = gtk4::Dialog::with_buttons(
+                    Some("kcshot - Pick a colour"),
+                    Some(&editor),
+                    gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
+                    &[("Ok", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
                 );
+                dialog.content_area().append(&colour_chooser);
 
-                colour_chooser.show();
+                dialog.connect_response(clone!(
+                    @weak editor,
+                    @weak button_drawing_area,
+                    @weak colour_chooser
+                => move |this, response| {
+                    if response == ResponseType::Ok {
+                        if IS_PRIMARY {
+                             editor.set_primary_colour(colour_chooser.colour());
+                        } else {
+                             editor.set_secondary_colour(colour_chooser.colour());
+                        }
+                        button_drawing_area.queue_draw();
+                    }
+                    this.close();
+                }));
+
+                dialog.show();
             });
 
             button

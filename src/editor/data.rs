@@ -82,6 +82,51 @@ impl ToVariant for Colour {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Hsv {
+    pub h: f32,
+    pub s: f32,
+    pub v: f32,
+}
+
+impl From<RGBA> for Hsv {
+    fn from(color: RGBA) -> Self {
+        let (h, s, v) = gtk4::rgb_to_hsv(color.red(), color.green(), color.blue());
+
+        Hsv { h, s, v }
+    }
+}
+
+impl From<Hsv> for RGBA {
+    fn from(color: Hsv) -> Self {
+        let (red, green, blue) = gtk4::hsv_to_rgb(color.h, color.s, color.v);
+
+        Self::new(red, green, blue, 1.0)
+    }
+}
+
+impl Hsv {
+    pub fn to_colour(self) -> Colour {
+        Colour::from_gdk_rgba(self.into())
+    }
+
+    pub fn as_int(&self) -> (i32, i32, i32) {
+        (
+            (self.h * 359.0 + 1.0) as i32,
+            (self.s * 99.0 + 1.0) as i32,
+            (self.v * 99.0 + 1.0) as i32,
+        )
+    }
+
+    pub fn from_int(h: i32, s: i32, v: i32) -> Self {
+        Self {
+            h: (h as f32 - 1.0) / 359.0,
+            s: (s as f32 - 1.0) / 99.0,
+            v: (v as f32 - 1.0) / 99.0,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Rectangle {
     pub x: f64,

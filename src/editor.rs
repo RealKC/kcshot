@@ -9,6 +9,8 @@ pub use self::data::Colour;
 use self::operations::Tool;
 use crate::kcshot::Settings;
 
+mod colourchooser;
+mod colourwheel;
 mod data;
 mod display_server;
 mod operations;
