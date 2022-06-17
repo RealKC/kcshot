@@ -1,6 +1,5 @@
 use gtk4::{glib, traits::WidgetExt};
 
-
 glib::wrapper! {
     pub struct ToolbarWidget(ObjectSubclass<underlying::ToolbarWidget>)
         @extends gtk4::Widget, gtk4::Box;
@@ -305,7 +304,7 @@ mod underlying {
                 ok_button.set_margin_start(5);
                 ok_button.set_margin_end(5);
                 ok_button.set_margin_bottom(10);
-                
+
                 let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
                 cancel_button.add_css_class("destructive-action");
                 cancel_button.set_margin_end(10);
@@ -330,7 +329,7 @@ mod underlying {
                         this.close();
                     } else if response == ResponseType::Other(COLOUR_PICKER_RESPONSE_ID) {
                         this.hide();
-                        
+
                         let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
                         editor.start_picking_a_colour(colour_tx);
