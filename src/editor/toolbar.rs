@@ -1,5 +1,6 @@
 use gtk4::{glib, traits::WidgetExt};
 
+
 glib::wrapper! {
     pub struct ToolbarWidget(ObjectSubclass<underlying::ToolbarWidget>)
         @extends gtk4::Widget, gtk4::Box;
@@ -276,6 +277,8 @@ mod underlying {
             button.set_visible(false);
 
             button.connect_clicked(move |_this| {
+                const COLOUR_PICKER_RESPONSE_ID: u16 = 123;
+
                 let colour_chooser = ColourChooserWidget::default();
                 colour_chooser.set_margin_bottom(10);
                 colour_chooser.set_margin_top(10);
@@ -286,8 +289,20 @@ mod underlying {
                     Some("kcshot - Pick a colour"),
                     Some(&editor),
                     gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
-                    &[("Ok", ResponseType::Ok), ("Cancel", ResponseType::Cancel)],
+                    &[],
                 );
+                let colour_picker = dialog
+                    .add_button("", ResponseType::Other(COLOUR_PICKER_RESPONSE_ID))
+                    .downcast::<gtk4::Button>()
+                    .unwrap();
+                colour_picker.set_child(Some(&gtk4::Image::from_resource(
+                    "/kc/kcshot/editor/tool-colourpicker.png",
+                )));
+                dialog.add_button("OK", ResponseType::Ok);
+                dialog.add_button("Cancel", ResponseType::Cancel);
+
+                colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
+
                 dialog.content_area().append(&colour_chooser);
 
                 dialog.connect_response(clone!(
@@ -302,8 +317,25 @@ mod underlying {
                              editor.set_secondary_colour(colour_chooser.colour());
                         }
                         button_drawing_area.queue_draw();
+                        this.close();
+                    } else if response == ResponseType::Other(COLOUR_PICKER_RESPONSE_ID) {
+                        this.hide();
+                        
+                        let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+
+                        editor.start_picking_a_colour(colour_tx);
+
+                        colour_rx.attach(None, glib::clone!(
+                            @weak this,
+                            @weak editor
+                        => @default-return Continue(false), move |colour| {
+                            colour_chooser.set_colour(colour);
+                            this.show();
+                            Continue(false)
+                        }));
+                    } else {
+                        this.close();
                     }
-                    this.close();
                 }));
 
                 dialog.show();

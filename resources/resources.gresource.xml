@@ -13,5 +13,6 @@
         <file>editor/tool-rectanglecrop.png</file>
         <file>editor/tool-text.png</file>
         <file>editor/tool-pencil.png</file>
+        <file>editor/tool-colourpicker.png</file>
     </gresource>
 </gresources>

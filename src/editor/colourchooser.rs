@@ -1,4 +1,5 @@
-use gtk4::{glib, subclass::prelude::*};
+use cairo::glib::{ObjectExt, ToValue};
+use gtk4::{gdk, glib, subclass::prelude::*};
 
 use crate::editor::Colour;
 
@@ -15,6 +16,21 @@ impl ColourChooserWidget {
             alpha: self.imp().alpha.get(),
             ..Colour::from_gdk_rgba(rgba)
         }
+    }
+
+    pub fn set_colour(&self, colour: Colour) {
+        let rgba = gdk::RGBA::new(
+            colour.red as f32 / 255.0,
+            colour.green as f32 / 255.0,
+            colour.blue as f32 / 255.0,
+            1.0,
+        );
+        let imp = self.imp();
+
+        imp.colour_wheel
+            .get()
+            .unwrap()
+            .set_property_from_value("rgba", &rgba.to_value());
     }
 }
 

@@ -13,7 +13,7 @@ use gtk4::{
 use once_cell::sync::{Lazy, OnceCell};
 use tracing::error;
 
-use super::{toolbar, utils::ContextLogger};
+use super::{toolbar, utils::ContextLogger, Colour};
 use crate::{
     editor::{
         data::{Point, Rectangle},
@@ -33,11 +33,57 @@ pub(super) struct Image {
     pub(super) operation_stack: OperationStack,
 }
 
-#[derive(Default, Debug)]
+impl Image {
+    fn get_colour_at(&self, x: f64, y: f64) -> Colour {
+        let (x, y) = (x as usize, y as usize);
+
+        let width = self.surface.width() as usize;
+        let idx = x + (y * width);
+
+        let mut red = 255;
+        let mut green = 255;
+        let mut blue = 255;
+
+        self.surface
+            .with_data(|data| {
+                blue = data[idx];
+                green = data[idx + 1];
+                red = data[idx + 2];
+            })
+            .unwrap();
+
+        Colour {
+            red,
+            green,
+            blue,
+            alpha: 255,
+        }
+    }
+}
+
+#[derive(Default)]
 pub struct EditorWindow {
     pub(super) image: RefCell<Option<Image>>,
+    pub(super) is_picking_colour: Cell<bool>,
     overlay: OnceCell<gtk4::Overlay>,
     editing_started_with_cropping: Cell<bool>,
+
+    pub(super) colour_tx: Cell<Option<glib::Sender<Colour>>>,
+}
+
+impl std::fmt::Debug for EditorWindow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EditorWindow")
+            .field("image", &self.image)
+            .field("is_picking_colour", &self.is_picking_colour)
+            .field("overlay", &self.overlay)
+            .field(
+                "editing_started_with_cropping",
+                &self.editing_started_with_cropping,
+            )
+            .field("colour_tx", &"<...>")
+            .finish()
+    }
 }
 
 impl EditorWindow {
@@ -206,9 +252,25 @@ impl ObjectImpl for EditorWindow {
         click_event_handler.set_button(0);
         click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
             if this.current_button() == BUTTON_PRIMARY {
-                obj.imp().with_image_mut("primary button pressed", |image| {
-                    image.operation_stack.start_operation_at(Point { x, y });
-                });
+                let is_picking_colour = obj.imp().is_picking_colour.get();
+
+                if is_picking_colour {
+                    obj.imp().with_image("colour picker", |image| {
+                        let colour = image.get_colour_at(x, y);
+                        if let Some(colour_tx) = obj.imp().colour_tx.take() {
+                            if let Err(why) = colour_tx.send(colour) {
+                                tracing::error!("Failed to send colour through colour_tx: {why}");
+                            }
+                        } else {
+                            tracing::error!("A colour has been picked but we don't have a colour_tx?!");
+                        }
+                        obj.imp().is_picking_colour.set(false);
+                    });
+                } else {
+                    obj.imp().with_image_mut("primary button pressed", |image| {
+                        image.operation_stack.start_operation_at(Point { x, y });
+                    });
+                }
             } else if this.current_button() == BUTTON_SECONDARY {
                 obj.close();
             }

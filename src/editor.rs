@@ -1,6 +1,6 @@
-use cairo::glib::Cast;
 use gtk4::{
-    gio, glib,
+    gio,
+    glib::{self, Cast},
     subclass::prelude::ObjectSubclassIsExt,
     traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
@@ -63,6 +63,12 @@ impl EditorWindow {
             surface.set_skip_taskbar_hint(true);
             surface.set_skip_pager_hint(true);
         }
+    }
+
+    fn start_picking_a_colour(&self, colour_tx: glib::Sender<Colour>) {
+        let imp = self.imp();
+        imp.is_picking_colour.set(true);
+        imp.colour_tx.set(Some(colour_tx));
     }
 
     fn set_current_tool(&self, tool: Tool) {
