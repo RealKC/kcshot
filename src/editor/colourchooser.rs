@@ -205,15 +205,6 @@ mod underlying {
             hbox.append(&label);
 
             let adjustment = gtk4::Adjustment::new(255.0, 0.0, 256.0, 1.0, 1.0, 1.0);
-            let scale = gtk4::Scale::new(gtk4::Orientation::Horizontal, Some(&adjustment));
-            for i in (0..201).step_by(50) {
-                scale.add_mark(i as f64, gtk4::PositionType::Bottom, Some(&i.to_string()));
-            }
-            scale.add_mark(255.0, gtk4::PositionType::Bottom, Some("255"));
-            scale.set_vexpand(false);
-            scale.set_hexpand(true);
-            scale.set_halign(gtk4::Align::Fill);
-            hbox.append(&scale);
 
             let entry = gtk4::SpinButton::new(Some(&adjustment), 1.0, 0);
             entry
@@ -222,7 +213,17 @@ mod underlying {
                 .build();
             entry.set_vexpand(false);
             entry.set_valign(gtk4::Align::Center);
+            entry.set_margin_start(5);
             hbox.append(&entry);
+
+            let scale = gtk4::Scale::new(gtk4::Orientation::Horizontal, Some(&adjustment));
+            for i in (0..201).step_by(50) {
+                scale.add_mark(i as f64, gtk4::PositionType::Bottom, Some(&i.to_string()));
+            }
+            scale.add_mark(255.0, gtk4::PositionType::Bottom, Some("255"));
+            scale.set_vexpand(false);
+            scale.set_hexpand(true);
+            hbox.append(&scale);
 
             let colour_button = self
                 .colour_button
