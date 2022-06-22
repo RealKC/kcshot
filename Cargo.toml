@@ -16,11 +16,13 @@ image = { version = "0.24.0", default-features = false, features = ["png"] }
 gtk4 = "0.4.1"
 gdk4-x11 = "0.4.0"
 xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
-    "debug_atom_names",
-    "shape",
-    "xfixes",
+  "debug_atom_names",
+  "shape",
+  "xfixes",
 ] }
 ksni = "0.2.0"
+pulldown-cmark = { version = "0.9.1", default-features = false }
+regex = "1.5.6"
 
 # User settings, history
 diesel = { version = "1.4.8", features = ["sqlite"] }
@@ -47,5 +49,5 @@ heaptrack = []
 
 [package.metadata.cargo-machete]
 ignored = [
-    "cairo-rs", # The crate exported by this package is called cairo
+  "cairo-rs", # The crate exported by this package is called cairo
 ]
