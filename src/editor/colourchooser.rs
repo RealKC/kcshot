@@ -1,5 +1,10 @@
-use cairo::glib::{ObjectExt, ToValue};
-use gtk4::{gdk, glib, subclass::prelude::*};
+use gtk4::{
+    gdk, glib,
+    glib::{ObjectExt, ToValue},
+    prelude::*,
+    subclass::prelude::*,
+    ResponseType,
+};
 
 use crate::editor::Colour;
 
@@ -38,6 +43,49 @@ impl Default for ColourChooserWidget {
     fn default() -> Self {
         glib::Object::new(&[]).unwrap()
     }
+}
+
+/// The Response ID used by the colour picker when a colour was picked from the image being edited
+pub const PICKER_RESPONSE_ID: u16 = 123;
+
+pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
+    let colour_chooser = ColourChooserWidget::default();
+    colour_chooser.set_margin_bottom(10);
+    colour_chooser.set_margin_top(10);
+    colour_chooser.set_margin_start(10);
+    colour_chooser.set_margin_end(10);
+
+    let dialog = gtk4::Dialog::with_buttons(
+        Some("kcshot - Pick a colour"),
+        Some(parent),
+        gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
+        &[],
+    );
+    let colour_picker = dialog
+        .add_button("", ResponseType::Other(PICKER_RESPONSE_ID))
+        .downcast::<gtk4::Button>()
+        .unwrap();
+    colour_picker.set_child(Some(&gtk4::Image::from_resource(
+        "/kc/kcshot/editor/tool-colourpicker.png",
+    )));
+    colour_picker.set_margin_bottom(10);
+
+    let ok_button = dialog.add_button("OK", ResponseType::Ok);
+    ok_button.add_css_class("suggested-action");
+    ok_button.set_margin_start(5);
+    ok_button.set_margin_end(5);
+    ok_button.set_margin_bottom(10);
+
+    let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
+    cancel_button.add_css_class("destructive-action");
+    cancel_button.set_margin_end(10);
+    cancel_button.set_margin_bottom(10);
+
+    colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
+
+    dialog.content_area().append(&colour_chooser);
+
+    (dialog, colour_chooser)
 }
 
 mod underlying {

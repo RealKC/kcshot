@@ -26,9 +26,8 @@ impl ToolbarWidget {
 mod underlying {
     use std::cell::Cell;
 
-    use cairo::glib::ParamSpecBoolean;
     use gtk4::{
-        glib::{self, clone, ParamSpec, ParamSpecObject, WeakRef},
+        glib::{self, clone, ParamSpec, ParamSpecBoolean, ParamSpecObject, WeakRef},
         prelude::*,
         subclass::prelude::*,
         Inhibit, ResponseType,
@@ -37,7 +36,7 @@ mod underlying {
 
     use crate::{
         editor::{
-            self, colourchooser::ColourChooserWidget, data::Colour, operations::Tool,
+            self, colourchooser, data::Colour, operations::Tool,
             underlying::EditorWindow as EditorWindowImp, utils::CairoExt,
         },
         kcshot::KCShot,
@@ -276,43 +275,7 @@ mod underlying {
             button.set_visible(false);
 
             button.connect_clicked(move |_this| {
-                const COLOUR_PICKER_RESPONSE_ID: u16 = 123;
-
-                let colour_chooser = ColourChooserWidget::default();
-                colour_chooser.set_margin_bottom(10);
-                colour_chooser.set_margin_top(10);
-                colour_chooser.set_margin_start(10);
-                colour_chooser.set_margin_end(10);
-
-                let dialog = gtk4::Dialog::with_buttons(
-                    Some("kcshot - Pick a colour"),
-                    Some(&editor),
-                    gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
-                    &[],
-                );
-                let colour_picker = dialog
-                    .add_button("", ResponseType::Other(COLOUR_PICKER_RESPONSE_ID))
-                    .downcast::<gtk4::Button>()
-                    .unwrap();
-                colour_picker.set_child(Some(&gtk4::Image::from_resource(
-                    "/kc/kcshot/editor/tool-colourpicker.png",
-                )));
-                colour_picker.set_margin_bottom(10);
-
-                let ok_button = dialog.add_button("OK", ResponseType::Ok);
-                ok_button.add_css_class("suggested-action");
-                ok_button.set_margin_start(5);
-                ok_button.set_margin_end(5);
-                ok_button.set_margin_bottom(10);
-
-                let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
-                cancel_button.add_css_class("destructive-action");
-                cancel_button.set_margin_end(10);
-                cancel_button.set_margin_bottom(10);
-
-                colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
-
-                dialog.content_area().append(&colour_chooser);
+                let (dialog, colour_chooser) = colourchooser::dialog(editor.upcast_ref());
 
                 dialog.connect_response(clone!(
                     @weak editor,
@@ -327,7 +290,7 @@ mod underlying {
                         }
                         button_drawing_area.queue_draw();
                         this.close();
-                    } else if response == ResponseType::Other(COLOUR_PICKER_RESPONSE_ID) {
+                    } else if response == ResponseType::Other(colourchooser::PICKER_RESPONSE_ID) {
                         this.hide();
 
                         let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
