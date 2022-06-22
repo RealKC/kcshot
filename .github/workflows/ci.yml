@@ -37,7 +37,7 @@ jobs:
       - name: clippy
         run: cargo clippy
   test:
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]'"
+    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
     steps:
       - run: |
