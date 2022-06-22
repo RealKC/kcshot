@@ -61,27 +61,27 @@ pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
         gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
         &[],
     );
-    let colour_picker = dialog
-        .add_button("", ResponseType::Other(PICKER_RESPONSE_ID))
-        .downcast::<gtk4::Button>()
-        .unwrap();
+    dialog.set_resizable(false);
+
+    let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
+    cancel_button.add_css_class("destructive-action");
+    cancel_button.set_margin_bottom(10);
+    cancel_button.set_margin_end(5);
+
+    let colour_picker = gtk4::Button::new();
     colour_picker.set_child(Some(&gtk4::Image::from_resource(
         "/kc/kcshot/editor/tool-colourpicker.png",
     )));
     colour_picker.set_margin_bottom(10);
+    colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
+    colour_picker.set_halign(gtk4::Align::Start);
+    dialog.add_action_widget(&colour_picker, ResponseType::Other(PICKER_RESPONSE_ID));
 
     let ok_button = dialog.add_button("OK", ResponseType::Ok);
     ok_button.add_css_class("suggested-action");
     ok_button.set_margin_start(5);
-    ok_button.set_margin_end(5);
+    ok_button.set_margin_end(10);
     ok_button.set_margin_bottom(10);
-
-    let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
-    cancel_button.add_css_class("destructive-action");
-    cancel_button.set_margin_end(10);
-    cancel_button.set_margin_bottom(10);
-
-    colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
 
     dialog.content_area().append(&colour_chooser);
 
