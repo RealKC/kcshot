@@ -12,7 +12,7 @@ license = "EUPL v1.2"
 ashpd = { version = "0.3.0", features = ["log", "feature_gtk4"] }
 cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
 pangocairo = "0.15.1"
-image = { version = "0.24.0", default-features = false, features = ["png"] }
+stackblur-iter = { git = "https://github.com/LoganDark/stackblur-iter/", rev = "53be4ee685f2bc1fbbb79b9ab02ee6679de85694" }
 gtk4 = "0.4.1"
 gdk4-x11 = "0.4.0"
 xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [

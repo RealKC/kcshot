@@ -1,13 +1,9 @@
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::pango::FontDescription;
-use image::flat;
 use rand::Rng;
 
 pub use self::stack::*;
-use super::{
-    data::*,
-    utils::{self, CairoExt},
-};
+use super::{data::*, utils::CairoExt};
 
 mod pixelops;
 mod shapes;
@@ -302,16 +298,7 @@ impl Operation {
             }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
-
-                let rect = rect.normalised();
-                let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
-                let point = Point {
-                    x: rect.x,
-                    y: rect.y,
-                };
-
-                pixelops::blur(cairo, pixbuf, *radius, point)?;
-
+                pixelops::blur(cairo, surface, *radius as usize, rect.normalised())?;
                 cairo.restore()?;
             }
             Operation::Pixelate { rect, seed } => {
@@ -434,8 +421,6 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered a cairo error while trying to borrow something: {0}")]
     Borrow(#[from] cairo::BorrowError),
-    #[error("Encountered an error while converting a `image::flat::FlatSamples` to a `image::flat::View: {0}")]
-    Image(#[from] flat::Error),
     #[error("Couldn't make Pixbuf from ImageSurface with rect: {0:?}")]
     Pixbuf(Rectangle),
     #[error("`pixel_bytes` on a Pixbuf returned None")]

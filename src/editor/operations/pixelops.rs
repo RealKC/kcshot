@@ -3,59 +3,111 @@ use gtk4::{
     gdk::prelude::GdkCairoContextExt,
     gdk_pixbuf::{Colorspace, Pixbuf},
 };
-use image::{flat::SampleLayout, imageops, FlatSamples, Rgb};
 use rand::{prelude::StdRng, Rng, SeedableRng};
+use stackblur_iter::{blur_argb as stackblur, imgref::ImgRefMut};
 
 use super::Error;
-use crate::editor::{
-    data::{Point, Rectangle},
-    utils,
-};
+use crate::editor::{data::Rectangle, utils};
 
 /// How big will pixelate boxes be, in this case, we will group the rectangle into 4x4 boxes, which we will set all of its pixels to the same value
 const PIXELATE_SIZE: u64 = 4;
 
+// NOTE: The blurred rect becomes gray at times, see: https://github.com/LoganDark/stackblur-iter/issues/8
 pub fn blur(
     cairo: &Context,
-    pixbuf: Pixbuf,
-    sigma: f32,
-    Point { x, y }: Point,
+    surface: &cairo::Surface,
+    radius: usize,
+    rect @ Rectangle { x, y, .. }: Rectangle,
 ) -> Result<(), Error> {
-    let flat_samples = FlatSamples {
-        samples: pixbuf.pixel_bytes().ok_or(Error::PixelBytes)?.to_vec(),
-        layout: SampleLayout {
-            channels: pixbuf.n_channels() as u8,
-            channel_stride: 1,
-            width: pixbuf.width() as u32,
-            width_stride: 3,
-            height: pixbuf.height() as u32,
-            height_stride: pixbuf.rowstride() as usize,
-        },
-        color_hint: None,
-    };
-    let image = flat_samples.as_view::<Rgb<u8>>()?;
-    let mut blurred_image = imageops::blur(&image, sigma);
-    let width = blurred_image.width() as i32;
-    let height = blurred_image.height() as i32;
-    let blurred_flat_samples = blurred_image.as_flat_samples_mut();
+    if rect.area() < 1.0 {
+        return Ok(());
+    }
 
-    let blurred_pixbuf = Pixbuf::from_mut_slice(
-        blurred_flat_samples.samples,
+    let pixbuf = utils::pixbuf_for(surface, rect).ok_or(Error::Pixbuf(rect))?;
+    assert_eq!(
+        pixbuf.colorspace(),
         Colorspace::Rgb,
-        false,
-        8,
-        width,
-        height,
-        blurred_flat_samples.layout.height_stride as i32,
+        "blur only supports the Rgb colourspace (w/ or w/o alpha)"
     );
+    assert_eq!(
+        pixbuf.bits_per_sample(),
+        8,
+        "our blur can't handle Pixbufs that don't have 8 bits per sample"
+    );
+
+    let height = pixbuf.height() as usize;
+    let width = pixbuf.width() as usize;
+    let has_alpha = pixbuf.has_alpha();
+    let n_channels = pixbuf.n_channels() as usize;
+
+    assert!(
+        n_channels == 3 && !has_alpha,
+        "Our code can't handle Pixbufs that also have the alpha channel"
+    );
+
+    let mut pixels = pixbuf.pixel_bytes().ok_or(Error::PixelBytes)?.to_vec();
+    let extend_by = 3 - pixels.len() % n_channels;
+    pixels.resize(pixels.len() + extend_by, 0);
+
+    let mut pixels = match n_channels {
+        3 => blur_rgb(
+            pixels,
+            width,
+            height,
+            pixbuf.rowstride() as usize / n_channels,
+            radius,
+        ),
+        _ => unreachable!(),
+    };
 
     cairo.save()?;
     cairo.set_operator(cairo::Operator::Over);
-    cairo.set_source_pixbuf(&blurred_pixbuf, x, y);
+    let pixbuf = Pixbuf::from_mut_slice(
+        &mut pixels,
+        Colorspace::Rgb,
+        has_alpha,
+        8,
+        width as i32,
+        height as i32,
+        pixbuf.rowstride(),
+    );
+    cairo.set_source_pixbuf(&pixbuf, x, y);
     cairo.paint()?;
     cairo.restore()?;
 
     Ok(())
+}
+
+fn blur_rgb(pixels: Vec<u8>, width: usize, height: usize, stride: usize, radius: usize) -> Vec<u8> {
+    assert!(
+        pixels.len() % 3 == 0,
+        "The pixel buffer's length should be a multiple of 3, but it was '{}'.",
+        pixels.len()
+    );
+
+    let mut pixels = pixels
+        .chunks_exact(3)
+        .map(|chunk| {
+            let red = chunk[0];
+            let green = chunk[1];
+            let blue = chunk[2];
+
+            u32::from_be_bytes([0xff, red, green, blue])
+        })
+        .collect::<Vec<_>>();
+
+    let mut img = ImgRefMut::new_stride(&mut pixels, width, height, stride);
+
+    stackblur(&mut img, radius);
+
+    pixels
+        .into_iter()
+        .flat_map(|pixel| {
+            let [_, r, g, b] = pixel.to_be_bytes();
+
+            [r, g, b]
+        })
+        .collect()
 }
 
 pub fn pixelate(
