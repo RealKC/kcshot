@@ -83,7 +83,7 @@ mod underlying {
                 Ok(n_items) => {
                     assert!(
                         0 <= n_items && n_items <= u32::MAX as i64,
-                        "n_items was {} which is not within [0, i32::MAX]",
+                        "n_items was {} which is not within [0, u32::MAX]",
                         n_items
                     );
                     n_items as u32

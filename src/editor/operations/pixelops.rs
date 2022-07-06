@@ -27,12 +27,12 @@ pub fn blur(
     assert_eq!(
         pixbuf.colorspace(),
         Colorspace::Rgb,
-        "blur only supports the Rgb colourspace (w/ or w/o alpha)"
+        "Blur only supports the Rgb colourspace"
     );
     assert_eq!(
         pixbuf.bits_per_sample(),
         8,
-        "our blur can't handle Pixbufs that don't have 8 bits per sample"
+        "Our blur can't handle Pixbufs that don't have 8 bits per sample"
     );
 
     let height = pixbuf.height() as usize;
