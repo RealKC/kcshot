@@ -12,7 +12,6 @@ use crate::editor::{data::Rectangle, utils};
 /// How big will pixelate boxes be, in this case, we will group the rectangle into 4x4 boxes, which we will set all of its pixels to the same value
 const PIXELATE_SIZE: u64 = 4;
 
-// NOTE: The blurred rect becomes gray at times, see: https://github.com/LoganDark/stackblur-iter/issues/8
 pub fn blur(
     cairo: &Context,
     surface: &cairo::Surface,
@@ -49,16 +48,7 @@ pub fn blur(
     let extend_by = 3 - pixels.len() % n_channels;
     pixels.resize(pixels.len() + extend_by, 0);
 
-    let mut pixels = match n_channels {
-        3 => blur_rgb(
-            pixels,
-            width,
-            height,
-            pixbuf.rowstride() as usize / n_channels,
-            radius,
-        ),
-        _ => unreachable!(),
-    };
+    let (mut pixels, stride) = blur_rgb(pixels, width, height, pixbuf.rowstride() as usize, radius);
 
     cairo.save()?;
     cairo.set_operator(cairo::Operator::Over);
@@ -69,7 +59,7 @@ pub fn blur(
         8,
         width as i32,
         height as i32,
-        pixbuf.rowstride(),
+        stride,
     );
     cairo.set_source_pixbuf(&pixbuf, x, y);
     cairo.paint()?;
@@ -78,36 +68,64 @@ pub fn blur(
     Ok(())
 }
 
-fn blur_rgb(pixels: Vec<u8>, width: usize, height: usize, stride: usize, radius: usize) -> Vec<u8> {
+/// Blurs an rgb image, the size of the passed in pixel buffer must be a multiple of 3.
+///
+/// # Returns
+/// The blurred buffer and its row stride
+fn blur_rgb(
+    pixels: Vec<u8>,
+    width: usize,
+    height: usize,
+    stride: usize,
+    radius: usize,
+) -> (Vec<u8>, i32) {
     assert!(
         pixels.len() % 3 == 0,
         "The pixel buffer's length should be a multiple of 3, but it was '{}'.",
         pixels.len()
     );
 
-    let mut pixels = pixels
-        .chunks_exact(3)
-        .map(|chunk| {
-            let red = chunk[0];
-            let green = chunk[1];
-            let blue = chunk[2];
+    let mut pixels_iter = pixels.into_iter();
+    let mut pixels = Vec::with_capacity(width * height);
 
-            u32::from_be_bytes([0xff, red, green, blue])
-        })
-        .collect::<Vec<_>>();
+    for _ in 0..height {
+        for _ in 0..width {
+            pixels.push(u32::from_be_bytes([
+                0xff,
+                pixels_iter.next().unwrap(),
+                pixels_iter.next().unwrap(),
+                pixels_iter.next().unwrap(),
+            ]));
+        }
 
-    let mut img = ImgRefMut::new_stride(&mut pixels, width, height, stride);
+        // GdkPixbuf's stride may not be a multiple of 3, which would mean that a naive approach of
+        // just calling `.chunks` on the Vec would result in channels getting shifted by either 1
+        // or 2, this would result in the image becoming grayscale due to the vertical pass of
+        // stackblur averaging out different channels, and also X axis drift.
+        //
+        // The fix is to simply skip the extra bytes in the row.
+        //
+        // See https://github.com/LoganDark/stackblur-iter/issues/8#issuecomment-1176850999
+        for _ in 0..stride.saturating_sub(width * 3) {
+            pixels_iter.next();
+        }
+    }
+
+    let mut img = ImgRefMut::new(&mut pixels, width, height);
 
     stackblur(&mut img, radius);
 
-    pixels
-        .into_iter()
-        .flat_map(|pixel| {
-            let [_, r, g, b] = pixel.to_be_bytes();
+    (
+        pixels
+            .into_iter()
+            .flat_map(|pixel| {
+                let [_, r, g, b] = pixel.to_be_bytes();
 
-            [r, g, b]
-        })
-        .collect()
+                [r, g, b]
+            })
+            .collect(),
+        width as i32 * 3,
+    )
 }
 
 pub fn pixelate(
