@@ -11,7 +11,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use std::{env, fs, io, path};
+use std::{env, fs, io, path, process::ExitCode};
 
 use gtk4::prelude::*;
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
@@ -26,7 +26,7 @@ mod kcshot;
 mod postcapture;
 mod systray;
 
-fn main() {
+fn main() -> ExitCode {
     let collector = tracing_subscriber::registry()
         .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with(fmt::Layer::new().with_writer(io::stderr));
@@ -48,7 +48,8 @@ fn main() {
 
     application.connect_activate(kcshot::build_ui);
 
-    application.run();
+    #[allow(clippy::let_and_return /*, reason = "false posititve, see https://github.com/rust-lang/rust-clippy/issues/9150" */)]
+    let rc = ExitCode::from(application.run() as u8);
 
     #[cfg(feature = "heaptrack")]
     // SAFETY: At this point there should be no more active cairo objects. IF there are, that is to
@@ -57,6 +58,8 @@ fn main() {
     unsafe {
         cairo::debug_reset_static_data();
     }
+
+    rc
 }
 
 #[derive(thiserror::Error, Debug)]
