@@ -331,6 +331,8 @@ Application Options:
                 tracing::info!("'saved-screenshots-path' was empty, set it to {default_folder:?}");
                 settings.set_saved_screenshots_path(default_folder.to_str().unwrap());
             }
+
+            gtk4::Window::set_default_icon_name("kcshot");
         }
     }
 
