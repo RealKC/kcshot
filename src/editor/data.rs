@@ -19,6 +19,7 @@ pub struct Colour {
 }
 
 impl Colour {
+    #[must_use]
     pub fn from_gdk_rgba(rgba: RGBA) -> Self {
         Self {
             red: (rgba.red() * 255.0).floor() as u8,
@@ -36,6 +37,7 @@ impl Colour {
     };
 
     /// Serialises `self` as an u32 where each byte represents a component of `Colour`.
+    #[must_use]
     pub const fn serialise_to_u32(self) -> u32 {
         let Colour {
             red,
@@ -52,6 +54,7 @@ impl Colour {
     /// [`Self::serialise_to_u32`] will create a `u32` in this layout, and you should use this
     /// function paired with that one.
     #[rustfmt::skip]
+    #[must_use]
     pub const fn deserialise_from_u32(raw: u32) -> Self {
         // NOTE: formatting is disabled on this function because IMO this looks nicer
         let red   = (raw >> 24       ) as u8;
@@ -106,10 +109,12 @@ impl From<Hsv> for RGBA {
 }
 
 impl Hsv {
+    #[must_use]
     pub fn to_colour(self) -> Colour {
         Colour::from_gdk_rgba(self.into())
     }
 
+    #[must_use]
     pub fn as_int(&self) -> (i32, i32, i32) {
         (
             (self.h * 359.0 + 1.0) as i32,
@@ -118,6 +123,7 @@ impl Hsv {
         )
     }
 
+    #[must_use]
     pub fn from_int(h: i32, s: i32, v: i32) -> Self {
         Self {
             h: (h as f32 - 1.0) / 359.0,
@@ -136,6 +142,7 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
+    #[must_use = "This function doesn't modify `self`, but returns a new `Rectangle`"]
     pub fn normalised(&self) -> Self {
         let Self {
             mut x,
@@ -157,11 +164,13 @@ impl Rectangle {
         Self { x, y, w, h }
     }
 
+    #[must_use]
     pub fn contains(&self, Point { x: x1, y: y1 }: Point) -> bool {
         let &Rectangle { x, y, w, h } = self;
         (x..x + w).contains(&x1) && (y..y + h).contains(&y1)
     }
 
+    #[must_use]
     pub fn area(&self) -> f64 {
         self.w * self.h
     }

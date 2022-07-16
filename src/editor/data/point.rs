@@ -13,6 +13,7 @@ impl From<(f64, f64)> for Point {
 }
 
 impl Point {
+    #[must_use]
     pub fn dist(&self) -> f64 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
