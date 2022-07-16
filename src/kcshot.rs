@@ -5,9 +5,8 @@ use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
 use crate::{
     appwindow,
-    editor::{Colour, EditorWindow},
+    editor::Colour,
     historymodel::{HistoryModel, ModelNotifier},
-    systray,
 };
 
 #[gsettings_macro::gen_settings(file = "./resources/kc.kcshot.gschema.xml", id = "kc.kcshot")]
@@ -88,32 +87,6 @@ impl KCShot {
     }
 }
 
-pub fn build_ui(app: &KCShot) {
-    let instance = app.imp();
-
-    let take_screenshot = instance.take_screenshot.get();
-    let show_main_window = instance.show_main_window.get();
-
-    // We initialise the systray here because I believe that with other backends it might not be valid
-    // to do it in startup (through we only support one systray backend for now...)
-    if !instance.systray_initialised.get() {
-        systray::init(app);
-        instance.systray_initialised.set(true);
-    }
-
-    if take_screenshot {
-        instance.take_screenshot.set(false);
-
-        let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
-
-        EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
-    } else if show_main_window {
-        instance.show_main_window.set(false);
-
-        app.main_window().present();
-    }
-}
-
 mod underlying {
     use std::{
         cell::{Cell, RefCell},
@@ -124,6 +97,7 @@ mod underlying {
     use gtk4::{
         gio::{self, prelude::*},
         glib,
+        prelude::*,
         subclass::prelude::*,
     };
     use once_cell::sync::{Lazy, OnceCell};
@@ -131,7 +105,9 @@ mod underlying {
     use super::Settings;
     use crate::{
         appwindow, db,
+        editor::EditorWindow,
         historymodel::{HistoryModel, ModelNotifier, RowData},
+        systray,
     };
 
     pub struct KCShot {
@@ -240,6 +216,32 @@ mod underlying {
     const NO_WINDOW_FLAGS: &[&str] = &["-n", "--no-window"];
 
     impl ApplicationImpl for KCShot {
+        fn activate(&self, application: &Self::Type) {
+            self.parent_activate(application);
+
+            let take_screenshot = self.take_screenshot.get();
+            let show_main_window = self.show_main_window.get();
+
+            // We initialise the systray here because I believe that with other backends it might not be valid
+            // to do it in startup (through we only support one systray backend for now...)
+            if !self.systray_initialised.get() {
+                systray::init(application);
+                self.systray_initialised.set(true);
+            }
+
+            if take_screenshot {
+                self.take_screenshot.set(false);
+
+                let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
+
+                EditorWindow::show(application.upcast_ref(), editing_starts_with_cropping);
+            } else if show_main_window {
+                self.show_main_window.set(false);
+
+                application.main_window().present();
+            }
+        }
+
         // This is called in the primary instance
         fn command_line(
             &self,

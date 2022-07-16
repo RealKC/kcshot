@@ -46,8 +46,6 @@ fn main() -> ExitCode {
 
     let application = KCShot::new();
 
-    application.connect_activate(kcshot::build_ui);
-
     #[allow(clippy::let_and_return /*, reason = "false posititve, see https://github.com/rust-lang/rust-clippy/issues/9150" */)]
     let rc = ExitCode::from(application.run() as u8);
 
