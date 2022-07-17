@@ -13,8 +13,10 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: actions/checkout@v3
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        id: toolchain-install
         with:
           components: rustfmt
       - uses: actions/cache@v3
@@ -35,8 +37,10 @@ jobs:
       - run: |
           sudo apt-get update -y
           sudo apt install -y $KCSHOT_UBUNTU_DEPS
-      - uses: actions/checkout@v2
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v3
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+        id: toolchain-install
         with:
           components: clippy
       - uses: actions/cache@v3
@@ -59,8 +63,10 @@ jobs:
       - run: |
           sudo apt-get update -y
           sudo apt install -y $KCSHOT_UBUNTU_DEPS
-      - uses: actions/checkout@v2
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v3
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@stable
+        id: toolchain-install
       - uses: actions/cache@v3
         with:
           path: |
