@@ -5,6 +5,9 @@ on:
 
 name: CI
 
+env:
+  KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
+
 jobs:
   rustfmt:
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
@@ -22,7 +25,7 @@ jobs:
     steps:
       - run: |
           sudo apt-get update -y
-          sudo apt install -y libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
+          sudo apt install -y $KCSHOT_UBUNTU_DEPS
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -37,7 +40,7 @@ jobs:
     steps:
       - run: |
           sudo apt-get update -y
-          sudo apt install -y libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
+          sudo apt install -y $KCSHOT_UBUNTU_DEPS
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
       - name: test
