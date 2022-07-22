@@ -242,8 +242,7 @@ mod underlying {
 
         let settings_button = gtk4::Button::new();
         settings_button.set_child(Some(&make_label("Settings")));
-        let settings_window = build_settings_window();
-        settings_button.connect_clicked(move |_| settings_window.show());
+        settings_button.connect_clicked(move |_| build_settings_window().show());
         buttons.append(&settings_button);
 
         let screenshots_folder_button = gtk4::Button::new();
