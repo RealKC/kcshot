@@ -855,9 +855,9 @@ checksum = "7d6a8cd48d0dc604999b8beacfbfc2f4eb289a52af175029d4f79fb57b80c7d5"
 
 [[package]]
 name = "imgref-iter"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "174fa268034987731ce744439f1e699a9e7e74fe86f9f29b758081de26cf1d46"
+checksum = "9e28d3436c9ad82ce3c4d4a2761adb25b8eeb6a359c34a5a979e45290008e62e"
 dependencies = [
  "imgref",
 ]
@@ -1381,8 +1381,9 @@ dependencies = [
 
 [[package]]
 name = "stackblur-iter"
-version = "0.1.3"
-source = "git+https://github.com/LoganDark/stackblur-iter/?rev=53be4ee685f2bc1fbbb79b9ab02ee6679de85694#53be4ee685f2bc1fbbb79b9ab02ee6679de85694"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2be9f236f95e31c982e690b78df8170aedb203a97d2fcd9e011e1b6e9f85a2ac"
 dependencies = [
  "imgref",
  "imgref-iter",
