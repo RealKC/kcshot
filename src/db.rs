@@ -1,11 +1,12 @@
-use diesel::{migration::RunMigrationsError, prelude::*, SqliteConnection};
+use diesel::{prelude::*, SqliteConnection};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 
 use self::models::Screenshot;
 
 pub mod models;
 pub mod schema;
 
-diesel_migrations::embed_migrations!();
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 #[derive(thiserror::Error, Debug)]
 pub enum OpenHistoryError {
@@ -16,7 +17,7 @@ pub enum OpenHistoryError {
     #[error("Failed to open a connection: {0}")]
     Connection(#[from] ConnectionError),
     #[error("Failed to run migrations: {0}")]
-    Migration(#[from] RunMigrationsError),
+    Migration(#[from] Box<dyn std::error::Error + Send + Sync>),
     #[error("Paths are not UTF-8")]
     PathsAreNotUtf8,
 }
@@ -28,14 +29,14 @@ pub fn open() -> Result<SqliteConnection, OpenHistoryError> {
     let path = std::env::current_dir()?.join("history.db");
     let path = path.to_str().ok_or(OpenHistoryError::PathsAreNotUtf8)?;
 
-    let connection = SqliteConnection::establish(path)?;
-    embedded_migrations::run_with_output(&connection, &mut std::io::stderr())?;
+    let mut connection = SqliteConnection::establish(path)?;
+    connection.run_pending_migrations(MIGRATIONS)?;
 
     Ok(connection)
 }
 
 pub fn add_screenshot_to_history(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     path_: Option<String>,
     time_: String,
     url_: Option<String>,
@@ -49,7 +50,7 @@ pub fn add_screenshot_to_history(
 }
 
 pub fn fetch_screenshots(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     start_at: i64,
     count: i64,
 ) -> QueryResult<Vec<Screenshot>> {
@@ -62,7 +63,7 @@ pub fn fetch_screenshots(
         .load::<Screenshot>(conn)
 }
 
-pub fn number_of_history_itms(conn: &SqliteConnection) -> QueryResult<i64> {
+pub fn number_of_history_itms(conn: &mut SqliteConnection) -> QueryResult<i64> {
     use schema::screenshots::dsl::*;
 
     screenshots.count().get_result(conn)

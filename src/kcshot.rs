@@ -47,9 +47,13 @@ impl KCShot {
         .expect("Failed to create KCShot")
     }
 
-    pub fn conn(&self) -> &SqliteConnection {
+    pub fn with_conn<F, R>(&self, f: F) -> R
+    where
+        F: Fn(&mut SqliteConnection) -> R,
+    {
         let impl_ = self.imp();
-        impl_.database_connection.get().unwrap()
+        let mut conn = impl_.database_connection.borrow_mut();
+        f(conn.as_mut().unwrap())
     }
 
     pub fn screenshot_folder() -> PathBuf {
@@ -113,7 +117,7 @@ mod underlying {
     pub struct KCShot {
         pub(super) show_main_window: Cell<bool>,
         pub(super) take_screenshot: Cell<bool>,
-        pub(super) database_connection: OnceCell<SqliteConnection>,
+        pub(super) database_connection: RefCell<Option<SqliteConnection>>,
         history_model: RefCell<Option<HistoryModel>>,
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: Cell<bool>,
@@ -173,10 +177,13 @@ mod underlying {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            // We don't use `expect` here because diesel's SqliteConnection doesn't implement Debug
-            if self.database_connection.set(db::open().unwrap()).is_err() {
-                panic!("KCShot::constructed called multiple times")
-            }
+            match db::open() {
+                Ok(conn) => self.database_connection.replace(Some(conn)),
+                Err(why) => {
+                    tracing::error!("Failed to open history: {why}");
+                    panic!(); // FIXME: It'd be nicer if we just popped a dialog or something
+                }
+            };
 
             self.history_model.replace(Some(HistoryModel::new(obj)));
             let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);

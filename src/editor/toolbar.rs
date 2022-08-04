@@ -365,13 +365,13 @@ mod underlying {
                 editor.imp().with_image_mut(&format!("on_click of {tool:?} - immediate save"), |image| {
                     let app = editor.application().and_then(|app| app.downcast::<KCShot>().ok()).unwrap();
 
-                    EditorWindowImp::do_save_surface(
+                    app.with_conn(|conn| EditorWindowImp::do_save_surface(
                         &app.model_notifier(),
-                        app.conn(),
+                        conn,
                         editor.upcast_ref(),
                         image,
                         None
-                    );
+                    ));
                 });
             }
         }));

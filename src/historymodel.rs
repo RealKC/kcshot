@@ -78,7 +78,7 @@ mod underlying {
         }
 
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            let n_items = db::number_of_history_itms(self.app().conn());
+            let n_items = self.app().with_conn(db::number_of_history_itms);
             match n_items {
                 Ok(n_items) => {
                     assert!(
@@ -110,11 +110,9 @@ mod underlying {
                 || last_fetched_screenshot_index == 0
             {
                 const COUNT: i64 = 15;
-                let new_screenshots = db::fetch_screenshots(
-                    self.app().conn(),
-                    last_fetched_screenshot_index as i64,
-                    COUNT,
-                );
+                let new_screenshots = self.app().with_conn(|conn| {
+                    db::fetch_screenshots(conn, last_fetched_screenshot_index as i64, COUNT)
+                });
                 let new_screenshots = match new_screenshots {
                     Ok(n) => n,
                     Err(why) => {

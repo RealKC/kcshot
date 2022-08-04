@@ -100,7 +100,7 @@ impl EditorWindow {
 
     pub(super) fn do_save_surface(
         model_notifier: &ModelNotifier,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         window: &gtk4::Window,
         image: &Image,
         point: Option<Point>,
@@ -299,13 +299,13 @@ impl ObjectImpl for EditorWindow {
                     } else {
                         image.operation_stack.finish_current_operation();
 
-                        EditorWindow::do_save_surface(
+                        app.with_conn(|conn| EditorWindow::do_save_surface(
                             &app.model_notifier(),
-                            app.conn(),
+                            conn,
                             obj.upcast_ref(),
                             image,
                             Some(Point { x, y })
-                        );
+                        ));
                         false
                     }
                 });
@@ -364,13 +364,13 @@ impl ObjectImpl for EditorWindow {
                             .and_then(|app| app.downcast::<KCShot>().ok())
                             .expect("The EditorWindow's application should always be an instance of `KCShot`");
 
-                        Self::do_save_surface(
+                        app.with_conn(|conn| Self::do_save_surface(
                             &app.model_notifier(),
-                            app.conn(),
+                            conn,
                             obj.upcast_ref(),
                             image,
                             None
-                        );
+                        ));
                     } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
                         image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
                     }

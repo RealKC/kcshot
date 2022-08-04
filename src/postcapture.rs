@@ -25,7 +25,12 @@ pub trait PostCaptureAction {
     fn description(&self) -> String;
 
     /// Gets called when executing the post capture action.
-    fn handle(&self, model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf);
+    fn handle(
+        &self,
+        model_notifier: &ModelNotifier,
+        conn: &mut SqliteConnection,
+        pixbuf: &mut Pixbuf,
+    );
 }
 
 /// This struct represents the action of saving the pixbuf to disk.
@@ -44,7 +49,12 @@ impl PostCaptureAction for SaveToDisk {
         "Saves the screenshot to the disk".to_owned()
     }
 
-    fn handle(&self, model_notifier: &ModelNotifier, conn: &SqliteConnection, pixbuf: &mut Pixbuf) {
+    fn handle(
+        &self,
+        model_notifier: &ModelNotifier,
+        conn: &mut SqliteConnection,
+        pixbuf: &mut Pixbuf,
+    ) {
         let now = glib::DateTime::now_local()
             .unwrap()
             .format_iso8601()
@@ -100,7 +110,7 @@ impl PostCaptureAction for CopyToClipboard {
     fn handle(
         &self,
         _model_notifier: &ModelNotifier,
-        _conn: &SqliteConnection,
+        _conn: &mut SqliteConnection,
         pixbuf: &mut Pixbuf,
     ) {
         let display = match gdk::Display::default() {
@@ -119,7 +129,7 @@ impl PostCaptureAction for CopyToClipboard {
 /// Executes the post capture actions in the order they are defined in the settings.
 pub fn run_postcapture_actions(
     model_notifier: &ModelNotifier,
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     pixbuf: &mut Pixbuf,
 ) {
     for action in get_actions_from_settings() {
