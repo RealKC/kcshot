@@ -327,13 +327,14 @@ Application Options:
             let settings = Settings::open();
 
             if settings.saved_screenshots_path().is_empty() {
-                #[cfg(not(feature = "xdg-paths"))]
-                let default_folder = std::env::current_dir().unwrap().join("Screenshots");
-                #[cfg(feature = "xdg-paths")]
-                let default_folder = xdg::BaseDirectories::with_prefix("kcshot")
-                    .unwrap()
-                    .get_data_home()
-                    .join("Screenshots");
+                let default_folder = if cfg!(feature = "xdg-paths") {
+                    xdg::BaseDirectories::with_prefix("kcshot")
+                        .unwrap()
+                        .get_data_home()
+                        .join("Screenshots")
+                } else {
+                    std::env::current_dir().unwrap().join("Screenshots")
+                };
 
                 tracing::info!("'saved-screenshots-path' was empty, set it to {default_folder:?}");
                 settings.set_saved_screenshots_path(default_folder.to_str().unwrap());

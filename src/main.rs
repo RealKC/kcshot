@@ -46,15 +46,15 @@ fn main() -> ExitCode {
 
     let application = KCShot::new();
 
-    #[allow(clippy::let_and_return /*, reason = "false posititve, see https://github.com/rust-lang/rust-clippy/issues/9150" */)]
     let rc = ExitCode::from(application.run() as u8);
 
-    #[cfg(feature = "heaptrack")]
-    // SAFETY: At this point there should be no more active cairo objects. IF there are, that is to
-    //         be considered a bug, as it likely means we are leaking cairo objects in some manner.
-    //         I believe in that case _some_ kind of assertion will fire.
-    unsafe {
-        cairo::debug_reset_static_data();
+    if cfg!(feature = "heaptrack") {
+        // SAFETY: At this point there should be no more active cairo objects. IF there are, that is to
+        //         be considered a bug, as it likely means we are leaking cairo objects in some manner.
+        //         I believe in that case _some_ kind of assertion will fire.
+        unsafe {
+            cairo::debug_reset_static_data();
+        }
     }
 
     rc
