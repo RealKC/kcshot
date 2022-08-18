@@ -9,20 +9,22 @@ license = "EUPL-1.2"
 
 [dependencies]
 # UI-related dependencies
+gtk4 = "0.4.1"
+ksni = "0.2.0"
+
+# Screenshot editing & capturing
 ashpd = { version = "0.3.0", features = ["log", "feature_gtk4"] }
 cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
-pangocairo = "0.15.1"
-stackblur-iter = "0.2.0"
-gtk4 = "0.4.1"
 gdk4-x11 = "0.4.0"
+pangocairo = "0.15.1"
+pulldown-cmark = { version = "0.9.1", default-features = false }
+regex = "1.5.6"
+stackblur-iter = "0.2.0"
 xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
   "debug_atom_names",
   "shape",
   "xfixes",
 ] }
-ksni = "0.2.0"
-pulldown-cmark = { version = "0.9.1", default-features = false }
-regex = "1.5.6"
 
 # User settings, history
 diesel = { version = "2.0.0-rc.1", features = ["sqlite"] }
