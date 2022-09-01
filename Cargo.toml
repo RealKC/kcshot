@@ -27,8 +27,8 @@ xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
 ] }
 
 # User settings, history
-diesel = { version = "2.0.0-rc.1", features = ["sqlite"] }
-diesel_migrations = "2.0.0-rc.1"
+diesel = { version = "2.0.0", features = ["sqlite"] }
+diesel_migrations = "2.0.0"
 gsettings-macro = "0.1.9"
 xdg = "2.1"
 
