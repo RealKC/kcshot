@@ -47,10 +47,8 @@ pub struct Window {
 
 #[derive(Default, Clone, Copy, Debug)]
 struct WmFeatures {
-    /// Whether the WM supports retrieving the client list
-    supports_client_list: bool,
-    /// Whether the WM supports retrieving the extents of frames around windows
-    supports_frame_extents: bool,
+    /// Whether the WM supports retrieving the window list
+    supports_retrieving_windows: bool,
     // Whether we're running under Wayland as a wayland client or not
     is_wayland: bool,
 }

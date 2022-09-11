@@ -237,7 +237,7 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
 
     let wm_features = WmFeatures::get()?;
 
-    if !wm_features.supports_client_list {
+    if !wm_features.supports_retrieving_windows {
         return Err(Error::WmDoesNotSupportWindowList.into());
     }
 
@@ -321,11 +321,6 @@ fn get_window_outer_rect(
     content_rect: Rectangle,
     window: XWindow,
 ) -> Result<Rectangle> {
-    // If the WM doesn't support getting frame extents, don't bother doing any work
-    if !WmFeatures::get()?.supports_frame_extents {
-        return Ok(content_rect);
-    }
-
     let &AtomsOfInterest {
         frame_extents,
         window_state,
@@ -429,13 +424,18 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     // NOTE: This sets WmFeatures::is_wayland to false
     let mut wm_features = WmFeatures::default();
 
+    let mut wm_supports_retrieving_client_list = false;
+    let mut wm_supports_retrieving_window_rects = false;
     for atom in supported_ewmh_atoms.value::<x::Atom>() {
         if atom == wm_client_list {
-            wm_features.supports_client_list = true;
+            wm_supports_retrieving_client_list = true;
         } else if atom == frame_extents {
-            wm_features.supports_frame_extents = true;
+            wm_supports_retrieving_window_rects = true;
         }
     }
+
+    wm_features.supports_retrieving_windows =
+        wm_supports_retrieving_client_list && wm_supports_retrieving_window_rects;
 
     Ok(wm_features)
 }
