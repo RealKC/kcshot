@@ -228,9 +228,6 @@ impl AtomsOfInterest {
 
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub(super) fn get_windows() -> Result<Vec<Window>> {
-    let (connection, _) = xcb::Connection::connect(None).map_err(Error::from)?;
-    let setup = connection.get_setup();
-
     // Requires an WM that supports EWMH. Will gracefully fallback if not available
 
     let wm_features = WmFeatures::get()?;
@@ -238,6 +235,9 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
     if !wm_features.supports_retrieving_windows {
         return Err(Error::WmDoesNotSupportWindowList.into());
     }
+
+    let (connection, _) = xcb::Connection::connect(None).map_err(Error::from)?;
+    let setup = connection.get_setup();
 
     let &AtomsOfInterest { wm_client_list, .. } = AtomsOfInterest::get(&connection)?;
 
