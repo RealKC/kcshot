@@ -8,6 +8,9 @@ name: CI
 env:
   KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
 
+permissions:
+  contents: read
+
 jobs:
   rustfmt:
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
