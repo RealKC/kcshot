@@ -14,8 +14,6 @@ use crate::{editor::data::Rectangle, kcshot::Settings};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("WM does not support EWMH")]
-    WmDoesNotSupportEwmh,
     #[error("WM does not support _NET_CLIENT_LIST_STACKING")]
     WmDoesNotSupportWindowList,
     #[error("WM does not support _NET_FRAME_EXTENTS")]
@@ -399,8 +397,14 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
         ..
     } = AtomsOfInterest::get(&connection)?;
 
+    // NOTE: This sets WmFeatures::is_wayland to false
+    let mut wm_features = WmFeatures::default();
+
     if supported_ewmh_atoms.atom() == ATOM_NONE {
-        return Err(Error::WmDoesNotSupportEwmh.into());
+        tracing::info!(
+            "Your WM does not support EWMH, so kcshot won't be able to retrieve window rects"
+        );
+        return Ok(wm_features);
     }
 
     let root = connection
@@ -420,9 +424,6 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     let supported_ewmh_atoms = connection
         .wait_for_reply(supported_ewmh_atoms)
         .map_err(Error::from)?;
-
-    // NOTE: This sets WmFeatures::is_wayland to false
-    let mut wm_features = WmFeatures::default();
 
     let mut wm_supports_retrieving_client_list = false;
     let mut wm_supports_retrieving_window_rects = false;
