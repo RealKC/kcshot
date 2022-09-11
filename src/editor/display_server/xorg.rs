@@ -22,6 +22,19 @@ pub enum Error {
     WmDoesNotSupportFrameExtents,
     #[error("Failed to get root window")]
     FailedToGetRootWindow,
+    #[error("Failed to establish a connection to the X server: {0:?}")]
+    XcbConnection(#[from] xcb::ConnError),
+    #[error("Encountered an X protocol error: {0:?}")]
+    XcbProtocol(xcb::ProtocolError),
+}
+
+impl From<xcb::Error> for Error {
+    fn from(xerror: xcb::Error) -> Self {
+        match xerror {
+            xcb::Error::Connection(err) => Self::XcbConnection(err),
+            xcb::Error::Protocol(err) => Self::XcbProtocol(err),
+        }
+    }
 }
 
 pub(super) fn take_screenshot() -> Result<ImageSurface> {
@@ -29,7 +42,8 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
         None,
         &[],
         &[xcb::Extension::Shape, xcb::Extension::XFixes],
-    )?;
+    )
+    .map_err(Error::from)?;
     let setup = connection.get_setup();
 
     // We need to make the X server aware that we wish to use the XFIXES extension
@@ -42,7 +56,9 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
         let window = root_screen.root();
         let pointer_cookie = connection.send_request(&x::QueryPointer { window });
 
-        let pointer_reply = connection.wait_for_reply(pointer_cookie)?;
+        let pointer_reply = connection
+            .wait_for_reply(pointer_cookie)
+            .map_err(Error::from)?;
         if pointer_reply.same_screen() {
             let width = root_screen.width_in_pixels();
             let height = root_screen.height_in_pixels();
@@ -60,7 +76,8 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             let stride = CairoImageFormat::Rgb24.stride_for_width(width as u32)?;
 
             let mut screenshot = connection
-                .wait_for_reply(screenshot_cookie)?
+                .wait_for_reply(screenshot_cookie)
+                .map_err(Error::from)?
                 .data()
                 .to_vec();
 
@@ -191,7 +208,7 @@ impl AtomsOfInterest {
                 frame_extents,
                 window_state,
                 window_is_fullscreen,
-            } = Self::intern_all(connection)?;
+            } = Self::intern_all(connection).map_err(Error::from)?;
 
             if wm_client_list == ATOM_NONE {
                 return Err(Error::WmDoesNotSupportWindowList.into());
@@ -213,7 +230,7 @@ impl AtomsOfInterest {
 
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub(super) fn get_windows() -> Result<Vec<Window>> {
-    let (connection, _) = xcb::Connection::connect(None)?;
+    let (connection, _) = xcb::Connection::connect(None).map_err(Error::from)?;
     let setup = connection.get_setup();
 
     // Requires an WM that supports EWMH. Will gracefully fallback if not available
@@ -232,7 +249,9 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
             window: root_window,
         });
 
-        let pointer_reply = connection.wait_for_reply(pointer_cookie)?;
+        let pointer_reply = connection
+            .wait_for_reply(pointer_cookie)
+            .map_err(Error::from)?;
         if pointer_reply.same_screen() {
             let list = connection.send_request(&x::GetProperty {
                 delete: false,
@@ -242,13 +261,13 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
                 long_offset: 0,
                 long_length: 128, // If the user has more than 128 windows on their desktop, that's their problem really
             });
-            let list = connection.wait_for_reply(list)?;
+            let list = connection.wait_for_reply(list).map_err(Error::from)?;
 
             let mut windows = Vec::with_capacity(128);
 
             for window in list.value::<XWindow>().iter().copied() {
                 let attributes = connection.send_request(&x::GetWindowAttributes { window });
-                let attributes = connection.wait_for_reply(attributes)?;
+                let attributes = connection.wait_for_reply(attributes).map_err(Error::from)?;
                 if attributes.map_state() != MapState::Viewable {
                     continue;
                 }
@@ -256,7 +275,9 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
                 let window_extents = connection.send_request(&shape::QueryExtents {
                     destination_window: window,
                 });
-                let window_extents = connection.wait_for_reply(window_extents)?;
+                let window_extents = connection
+                    .wait_for_reply(window_extents)
+                    .map_err(Error::from)?;
 
                 let translated_window_coords = connection.send_request(&x::TranslateCoordinates {
                     src_window: window,
@@ -265,8 +286,9 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
                     src_y: window_extents.bounding_shape_extents_y(),
                 });
 
-                let translated_window_coords =
-                    connection.wait_for_reply(translated_window_coords)?;
+                let translated_window_coords = connection
+                    .wait_for_reply(translated_window_coords)
+                    .map_err(Error::from)?;
 
                 let content_rect = Rectangle {
                     x: translated_window_coords.dst_x() as f64,
@@ -329,8 +351,12 @@ fn get_window_outer_rect(
         long_length: 1024,
     });
 
-    let frame_extents = connection.wait_for_reply(frame_extents)?;
-    let window_states = connection.wait_for_reply(window_state)?;
+    let frame_extents = connection
+        .wait_for_reply(frame_extents)
+        .map_err(Error::from)?;
+    let window_states = connection
+        .wait_for_reply(window_state)
+        .map_err(Error::from)?;
 
     let mut fullscreen = false;
     if window_states.length() != 0 {
@@ -361,7 +387,7 @@ fn get_window_outer_rect(
 }
 
 pub(super) fn get_wm_features() -> Result<WmFeatures> {
-    let (connection, _) = xcb::Connection::connect(None)?;
+    let (connection, _) = xcb::Connection::connect(None).map_err(Error::from)?;
 
     //https://specifications.freedesktop.org/wm-spec/latest/ar01s03.html#idm46476783603760
     let supported_ewmh_atoms = connection.send_request(&x::InternAtom {
@@ -369,7 +395,9 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
         name: b"_NET_SUPPORTED",
     });
 
-    let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
+    let supported_ewmh_atoms = connection
+        .wait_for_reply(supported_ewmh_atoms)
+        .map_err(Error::from)?;
     let AtomsOfInterest {
         wm_client_list,
         frame_extents,
@@ -394,7 +422,9 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
         long_offset: 0,
         long_length: 50, // I think the spec defines less than this, but it's (hopefully) fine
     });
-    let supported_ewmh_atoms = connection.wait_for_reply(supported_ewmh_atoms)?;
+    let supported_ewmh_atoms = connection
+        .wait_for_reply(supported_ewmh_atoms)
+        .map_err(Error::from)?;
 
     // NOTE: This sets WmFeatures::is_wayland to false
     let mut wm_features = WmFeatures::default();

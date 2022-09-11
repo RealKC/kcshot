@@ -18,10 +18,6 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered an I/O error: {0}")]
     Io(#[from] io::Error),
-    #[error("Failed to establish a connection to the X server: {0:?}")]
-    XcbConnection(#[from] xcb::ConnError),
-    #[error("Encountered an X protocol error: {0:?}")]
-    XcbProtocol(xcb::ProtocolError),
     #[error("Failed to take screenshot. (No root screens? No cursor?)")]
     FailedToTakeScreenshot,
     #[error("Failed to get windows")]
@@ -37,15 +33,6 @@ impl From<cairo::IoError> for Error {
         match cerr {
             cairo::IoError::Cairo(cairo) => Self::Cairo(cairo),
             cairo::IoError::Io(io) => Self::Io(io),
-        }
-    }
-}
-
-impl From<xcb::Error> for Error {
-    fn from(xerror: xcb::Error) -> Self {
-        match xerror {
-            xcb::Error::Connection(err) => Self::XcbConnection(err),
-            xcb::Error::Protocol(err) => Self::XcbProtocol(err),
         }
     }
 }
