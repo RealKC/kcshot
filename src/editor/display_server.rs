@@ -54,7 +54,7 @@ struct WmFeatures {
 }
 
 impl WmFeatures {
-    /// Talks with the WM to get the featurs we're interested in
+    /// Talks with the WM to get the features we're interested in
     /// These get cached and as such calling it multiple times in succession should be cheap
     fn get() -> Result<&'static Self> {
         static FEATURES: OnceCell<WmFeatures> = OnceCell::new();
