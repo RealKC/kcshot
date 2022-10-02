@@ -23,7 +23,7 @@
 
         <key name="capture-mouse-cursor" type="b">
             <default>true</default>
-            <summary>Wether kcshot should include cursors as part of the screenshot</summary>
+            <summary>Whether kcshot should include cursors as part of the screenshot</summary>
         </key>
 
         <!-- For storing colours across editing sessions, note that these numbers are 0xRRGGBBAA -->

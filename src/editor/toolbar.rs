@@ -255,7 +255,7 @@ mod underlying {
                 cairo.set_line_width(4.0);
                 log_if_err!(cairo.stroke());
 
-                // The exterior countour of the square
+                // The exterior contour of the square
                 cairo.set_source_colour(Colour::BLACK);
                 cairo.rectangle(1.0, 1.0, 18.0, 18.0);
                 cairo.set_line_width(1.0);
