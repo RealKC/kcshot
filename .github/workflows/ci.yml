@@ -56,7 +56,7 @@ jobs:
             target/
           key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-lint
       - name: clippy
-        run: cargo clippy
+        run: cargo clippy -- -D warnings
   test:
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
