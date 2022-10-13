@@ -55,8 +55,6 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-lint
-      - name: compile
-        run: cargo build
       - name: clippy
         run: cargo clippy
   test:
