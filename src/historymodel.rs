@@ -130,7 +130,7 @@ mod underlying {
                 .borrow()
                 .get(position as usize)
                 .cloned()
-                .map(|o| o.upcast())
+                .map(Cast::upcast)
         }
     }
 
