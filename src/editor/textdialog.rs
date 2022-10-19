@@ -14,7 +14,7 @@ glib::wrapper! {
 
 impl TextInput {
     pub fn new(editor: &super::EditorWindow) -> Self {
-        glib::Object::new(&[("editor", editor)]).unwrap()
+        glib::Object::new(&[("editor", editor)])
     }
 
     fn text(&self) -> String {
@@ -114,15 +114,15 @@ mod underlying {
     }
 
     impl ObjectImpl for TextInput {
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
+        fn constructed(&self) {
+            self.parent_constructed();
 
             let content = self
                 .content
                 .get_or_init(|| gtk4::Box::new(gtk4::Orientation::Vertical, 2));
 
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 2);
-            let font_button = place_format_buttons(content, obj);
+            let font_button = place_format_buttons(content, &self.instance());
             self.font_button.set(font_button).unwrap();
             self.input.set(make_text_view(&hbox)).unwrap();
             content.append(&hbox);
@@ -130,10 +130,10 @@ mod underlying {
             let info_label = make_info_label();
             content.append(&info_label);
 
-            obj.append(content);
+            self.instance().append(content);
         }
 
-        fn dispose(&self, _obj: &Self::Type) {
+        fn dispose(&self) {
             if let Some(content) = self.content.get() {
                 content.unparent();
             }
@@ -154,13 +154,7 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn set_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &glib::ParamSpec,
-        ) {
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
                 "editor" => self.editor.set(value.get().unwrap()).unwrap(),
                 property => tracing::error!("Unknown property: {property}"),

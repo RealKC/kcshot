@@ -33,8 +33,7 @@ impl EditorWindow {
                 "editing-starts-with-cropping",
                 &editing_starts_with_cropping,
             ),
-        ])
-        .expect("Failed to make an EditorWindow");
+        ]);
 
         let settings = Settings::open();
 

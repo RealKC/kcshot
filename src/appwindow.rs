@@ -4,13 +4,13 @@ use crate::{historymodel::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
-        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
+        @implements gtk4::Native;
 }
 
 impl AppWindow {
     pub fn new(app: &KCShot, history_model: &HistoryModel) -> Self {
         glib::Object::new(&[("application", app), ("history-model", history_model)])
-            .expect("Failed to make an AppWindow")
     }
 }
 
@@ -22,7 +22,7 @@ mod underlying {
         prelude::*,
         subclass::{
             application_window::ApplicationWindowImpl,
-            prelude::{ObjectImpl, ObjectSubclass, WidgetImpl, WindowImpl},
+            prelude::{ObjectImpl, ObjectSubclass, ObjectSubclassExt, WidgetImpl, WindowImpl},
         },
     };
     use once_cell::sync::{Lazy, OnceCell};
@@ -47,7 +47,8 @@ mod underlying {
     }
 
     impl ObjectImpl for AppWindow {
-        fn constructed(&self, obj: &Self::Type) {
+        fn constructed(&self) {
+            let obj = self.instance();
             self.settings
                 .set(Settings::open())
                 .expect("self.settings should only be set once");
@@ -153,9 +154,9 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn property(&self, obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> glib::Value {
+        fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
             match pspec.name() {
-                "application" => obj.application().to_value(),
+                "application" => self.instance().application().to_value(),
                 name => {
                     tracing::error!("Unknown property: {name}");
                     panic!()
@@ -164,17 +165,11 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn set_property(
-            &self,
-            obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &ParamSpec,
-        ) {
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
             match pspec.name() {
                 "application" => {
                     let application = value.get::<KCShot>().ok();
-                    obj.set_application(application.as_ref());
+                    self.instance().set_application(application.as_ref());
                 }
                 "history-model" => {
                     let history_model = value.get::<super::HistoryModel>().unwrap();

@@ -23,7 +23,6 @@ impl RowData {
             ("time", &time.to_value()),
             ("url", &url.to_value()),
         ])
-        .unwrap()
     }
 
     pub fn path(&self) -> Option<String> {
@@ -84,7 +83,7 @@ mod underlying {
             PROPERTIES.as_ref()
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "path" => self.path.borrow().to_value(),
                 "time" => self.time.borrow().to_value(),
@@ -93,13 +92,7 @@ mod underlying {
             }
         }
 
-        fn set_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &glib::ParamSpec,
-        ) {
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
                 "path" => {
                     let path = value.get::<Option<String>>().unwrap();

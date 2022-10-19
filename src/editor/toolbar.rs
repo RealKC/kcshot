@@ -13,8 +13,7 @@ impl ToolbarWidget {
                 "editing-started-with-cropping",
                 &editing_started_with_cropping,
             ),
-        ])
-        .expect("Failed to make a ToolbarWidget");
+        ]);
 
         // We want to start as hidden if editing started with cropping
         obj.set_visible(!editing_started_with_cropping);
@@ -58,7 +57,7 @@ mod underlying {
     }
 
     impl ObjectImpl for ToolbarWidget {
-        fn constructed(&self, obj: &Self::Type) {
+        fn constructed(&self) {
             let editor = self
                 .parent_editor
                 .upgrade()
@@ -72,14 +71,14 @@ mod underlying {
             }));
             line_width_spinner.set_visible(false);
 
-            let box_ = obj.upcast_ref();
+            let box_: gtk4::Box = self.instance().to_owned().upcast();
             let group_source_tool = if self.editing_started_with_cropping.get() {
                 Tool::Save
             } else {
                 Tool::CropAndSave
             };
             let (group_source, _) =
-                make_tool_button(group_source_tool, box_, &editor, None, None, None, None);
+                make_tool_button(group_source_tool, &box_, &editor, None, None, None, None);
             group_source.set_active(!should_start_saving_immediately(group_source_tool));
 
             let primary_colour_button = Self::make_primary_colour_chooser_button(editor.clone());
@@ -89,16 +88,16 @@ mod underlying {
 
             #[rustfmt::skip]
             let mut buttons = vec![
-                make_tool_button(Tool::Pencil, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Line, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Arrow, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Rectangle, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Highlight, box_, &editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::Ellipse, box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Pixelate, box_, &editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::Blur, box_, &editor, Some(&group_source), None, None, None),
-                make_tool_button(Tool::AutoincrementBubble, box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Text, box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pencil, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Line, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Arrow, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Rectangle, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Highlight, &box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Ellipse, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pixelate, &box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::Blur, &box_, &editor, Some(&group_source), None, None, None),
+                make_tool_button(Tool::AutoincrementBubble, &box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Text, &box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
             ];
 
             if self.editing_started_with_cropping.get() {
@@ -109,9 +108,9 @@ mod underlying {
                 .set(buttons.iter().map(|(button, _)| button.clone()).collect())
                 .expect("construct should only be called once");
 
-            obj.append(&primary_colour_button);
-            obj.append(&secondary_colour_button);
-            obj.append(&line_width_spinner);
+            box_.append(&primary_colour_button);
+            box_.append(&secondary_colour_button);
+            box_.append(&line_width_spinner);
 
             buttons.insert(0, (group_source, group_source_tool));
 
@@ -134,7 +133,7 @@ mod underlying {
             editor.add_controller(&key_event_handler);
         }
 
-        fn dispose(&self, _: &Self::Type) {
+        fn dispose(&self) {
             if let Some(buttons) = self.buttons.get() {
                 for button in buttons {
                     button.unparent();
@@ -166,13 +165,7 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn set_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &ParamSpec,
-        ) {
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
             match pspec.name() {
                 "parent-editor" => {
                     let parent_editor = value.get::<editor::EditorWindow>().unwrap();
