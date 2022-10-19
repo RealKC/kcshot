@@ -199,8 +199,10 @@ impl ObjectSubclass for EditorWindow {
 }
 
 impl ObjectImpl for EditorWindow {
-    fn constructed(&self, obj: &Self::Type) {
-        self.parent_constructed(obj);
+    fn constructed(&self) {
+        self.parent_constructed();
+        let obj = self.instance();
+
         let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
         let image =
             super::display_server::take_screenshot(&app).expect("Couldn't take a screenshot");
@@ -221,7 +223,7 @@ impl ObjectImpl for EditorWindow {
 
         overlay.set_child(Some(&drawing_area));
 
-        let toolbar = toolbar::ToolbarWidget::new(obj, self.editing_started_with_cropping.get());
+        let toolbar = toolbar::ToolbarWidget::new(&obj, self.editing_started_with_cropping.get());
         overlay.add_overlay(&toolbar);
 
         overlay.connect_get_child_position(move |_this, widget| {
@@ -427,7 +429,7 @@ impl ObjectImpl for EditorWindow {
         }));
     }
 
-    fn dispose(&self, _: &Self::Type) {
+    fn dispose(&self) {
         if let Some(overlay) = self.overlay.get() {
             overlay.unparent();
         }
@@ -459,9 +461,9 @@ impl ObjectImpl for EditorWindow {
     }
 
     #[tracing::instrument]
-    fn property(&self, obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> glib::Value {
+    fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
         match pspec.name() {
-            "application" => obj.application().to_value(),
+            "application" => self.instance().application().to_value(),
             name => {
                 tracing::error!("Unknown property: {name}");
                 panic!()
@@ -470,11 +472,11 @@ impl ObjectImpl for EditorWindow {
     }
 
     #[tracing::instrument]
-    fn set_property(&self, obj: &Self::Type, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
+    fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
         match pspec.name() {
             "application" => {
                 let application = value.get::<KCShot>().ok();
-                obj.set_application(application.as_ref());
+                self.instance().set_application(application.as_ref());
             }
             "editing-starts-with-cropping" => {
                 let editing_starts_with_cropping = value.get::<bool>();

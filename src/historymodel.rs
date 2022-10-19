@@ -16,7 +16,7 @@ glib::wrapper! {
 
 impl HistoryModel {
     pub fn new(application: &KCShot) -> Self {
-        glib::Object::new(&[("application", application)]).unwrap()
+        glib::Object::new(&[("application", application)])
     }
 
     /// Inserts a screenshot to the internally maintained list of screenshots.
@@ -73,11 +73,11 @@ mod underlying {
     }
 
     impl ListModelImpl for ListModel {
-        fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
+        fn item_type(&self) -> glib::Type {
             RowData::static_type()
         }
 
-        fn n_items(&self, _list_model: &Self::Type) -> u32 {
+        fn n_items(&self) -> u32 {
             let n_items = self.app().with_conn(db::number_of_history_itms);
             match n_items {
                 Ok(n_items) => {
@@ -96,7 +96,7 @@ mod underlying {
         }
 
         #[tracing::instrument(skip(self))]
-        fn item(&self, _: &Self::Type, position: u32) -> Option<Object> {
+        fn item(&self, position: u32) -> Option<Object> {
             let last_fetched_screenshot_index = {
                 let len = self.screenshots.borrow().len();
                 if len > 0 {
@@ -150,7 +150,7 @@ mod underlying {
         }
 
         #[tracing::instrument(skip(self))]
-        fn property(&self, _: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
+        fn property(&self, _id: usize, pspec: &ParamSpec) -> Value {
             match pspec.name() {
                 "application" => self.app.borrow().to_value(),
                 name => {
@@ -161,7 +161,7 @@ mod underlying {
         }
 
         #[tracing::instrument(skip(self))]
-        fn set_property(&self, _: &Self::Type, _id: usize, value: &Value, pspec: &ParamSpec) {
+        fn set_property(&self, _id: usize, value: &Value, pspec: &ParamSpec) {
             match pspec.name() {
                 "application" => {
                     let application = value.get::<KCShot>().ok();

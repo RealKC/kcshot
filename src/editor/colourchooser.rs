@@ -41,7 +41,7 @@ impl ColourChooserWidget {
 
 impl Default for ColourChooserWidget {
     fn default() -> Self {
-        glib::Object::new(&[]).unwrap()
+        glib::Object::new(&[])
     }
 }
 
@@ -114,7 +114,7 @@ mod underlying {
     }
 
     impl ObjectImpl for ColourChooserWidget {
-        fn constructed(&self, obj: &Self::Type) {
+        fn constructed(&self) {
             let vbox = self
                 .vbox
                 .get_or_init(|| gtk4::Box::new(gtk4::Orientation::Vertical, 2));
@@ -130,12 +130,12 @@ mod underlying {
 
             vbox.append(&hbox);
 
-            let alpha_button = self.make_alpha_button(obj, colour_wheel);
+            let alpha_button = self.make_alpha_button(&self.instance(), colour_wheel);
             vbox.append(&alpha_button);
 
-            obj.append(vbox);
+            self.instance().append(vbox);
         }
-        fn dispose(&self, _obj: &Self::Type) {
+        fn dispose(&self) {
             if let Some(vbox) = self.vbox.get() {
                 vbox.unparent();
             }
@@ -158,7 +158,7 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
+        fn property(&self, _id: usize, pspec: &ParamSpec) -> Value {
             match pspec.name() {
                 "alpha" => self.alpha.get().to_value(),
                 property => {
@@ -169,7 +169,7 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn set_property(&self, obj: &Self::Type, _id: usize, value: &Value, pspec: &ParamSpec) {
+        fn set_property(&self, _id: usize, value: &Value, pspec: &ParamSpec) {
             match pspec.name() {
                 "alpha" => match value.get::<i32>() {
                     Ok(value) => {
@@ -181,7 +181,7 @@ mod underlying {
                             colour_button.set_rgba(&rgba);
                         }
 
-                        obj.notify("alpha");
+                        self.instance().notify("alpha");
                     }
                     Err(why) => tracing::error!("'alpha' not an i32: {why}"),
                 },
@@ -231,17 +231,16 @@ mod underlying {
             colour_wheel
                 .bind_property("rgba", colour_button, "rgba")
                 .flags(flags)
-                .transform_to(|binding, value| {
+                .transform_to(|binding, mut rgba: gdk::RGBA| {
                     let target = binding
                         .target()
                         .unwrap()
                         .downcast::<gtk4::ColorButton>()
                         .unwrap();
 
-                    let mut rgba = value.get::<gdk::RGBA>().unwrap();
                     rgba.set_alpha(target.rgba().alpha());
 
-                    Some(rgba.to_value())
+                    Some(rgba)
                 })
                 .build();
             colour_button.set_size_request(50, 50);
@@ -348,9 +347,7 @@ mod underlying {
         let entry = gtk4::Entry::new();
         colour_wheel
             .bind_property("rgba", &entry, "buffer")
-            .transform_to(|_, rgba| {
-                let rgba = rgba.get::<gdk::RGBA>().unwrap();
-
+            .transform_to(|_, rgba: gdk::RGBA| {
                 let convert = |c: f32| (c * 255.0) as u8;
 
                 let r = convert(rgba.red());

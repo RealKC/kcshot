@@ -25,11 +25,21 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
 }
 
 pub(crate) fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
-    let window_identifier = app.window_identifier();
     let ctx = glib::MainContext::default();
+    let app_ = app.clone();
     let uri = ctx
-        .block_on(async { ashpd::desktop::screenshot::take(window_identifier, false, false).await })
-        .map_err(Error::Ashpd)?;
+        .block_on(async {
+            let identifier = ashpd::WindowIdentifier::from_native(&app_.main_window()).await;
+
+            ashpd::desktop::screenshot::ScreenshotRequest::default()
+                .identifier(identifier)
+                .interactive(false)
+                .modal(false)
+                .build()
+                .await
+        })
+        .map_err(Error::Ashpd)?
+        .to_string();
 
     let file = gio::File::for_uri(&uri);
     let read = file

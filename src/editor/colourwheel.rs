@@ -25,7 +25,7 @@ glib::wrapper! {
 
 impl Default for ColourWheel {
     fn default() -> Self {
-        glib::Object::new(&[]).unwrap()
+        glib::Object::new(&[])
     }
 }
 
@@ -43,7 +43,7 @@ impl ColourWheel {
         let height = self.size();
 
         if let Some(texture) = imp.ring_texture.get() {
-            texture.snapshot(snapshot.upcast_ref(), width as f64, height as f64);
+            texture.snapshot(snapshot, width as f64, height as f64);
         } else {
             let mut bytes: Vec<u8> = vec![];
             let center_x = width / 2;
@@ -85,7 +85,7 @@ impl ColourWheel {
             let stride = (width * 4) as usize;
             let texture = gdk::MemoryTexture::new(width, height, format, &gbytes, stride);
 
-            texture.snapshot(snapshot.upcast_ref(), width as f64, height as f64);
+            texture.snapshot(snapshot, width as f64, height as f64);
 
             imp.ring_texture.set(texture).unwrap();
         }
@@ -197,7 +197,7 @@ impl ColourWheel {
         let stride = (width * 4) as usize;
         let texture = gdk::MemoryTexture::new(width, height, format, &gbytes, stride);
 
-        texture.snapshot(snapshot.upcast_ref(), width as f64, height as f64);
+        texture.snapshot(snapshot, width as f64, height as f64);
     }
 
     fn size(&self) -> i32 {
@@ -402,7 +402,7 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "h" => self.hsv.get().as_int().0.to_value(),
                 "s" => self.hsv.get().as_int().1.to_value(),
@@ -419,13 +419,9 @@ mod underlying {
         }
 
         #[tracing::instrument]
-        fn set_property(
-            &self,
-            obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &glib::ParamSpec,
-        ) {
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+            let obj = self.instance();
+
             match pspec.name() {
                 "h" => {
                     let (_, s, v) = self.hsv.get().as_int();
@@ -482,11 +478,13 @@ mod underlying {
                 property => tracing::error!("Unknown property: {property}"),
             };
         }
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
+        fn constructed(&self) {
+            self.parent_constructed();
+
             let click = gtk4::GestureClick::new();
             click.set_button(0);
 
+            let obj = self.instance();
             click.connect_pressed(glib::clone!(@weak obj => move |_, _, x, y| {
                 let (x, y) = (x as f32, y as f32);
                 if obj.is_in_ring(x , y) {
@@ -557,8 +555,10 @@ mod underlying {
         }
     }
     impl WidgetImpl for ColourWheel {
-        fn snapshot(&self, widget: &Self::Type, snapshot: &gtk4::Snapshot) {
-            self.parent_snapshot(widget, snapshot);
+        fn snapshot(&self, snapshot: &gtk4::Snapshot) {
+            self.parent_snapshot(snapshot);
+
+            let widget = self.instance();
 
             widget.snapshot_triangle(snapshot);
             widget.snapshot_triangle_indicator(snapshot);

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use diesel::SqliteConnection;
-use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk4::{gio, glib, subclass::prelude::*};
 
 use crate::{
     appwindow,
@@ -44,7 +44,6 @@ impl KCShot {
             ("application-id", &"kc.kcshot"),
             ("flags", &gio::ApplicationFlags::HANDLES_COMMAND_LINE),
         ])
-        .expect("Failed to create KCShot")
     }
 
     pub fn with_conn<F, R>(&self, f: F) -> R
@@ -77,17 +76,6 @@ impl KCShot {
             .window
             .get_or_init(|| appwindow::AppWindow::new(self, &self.history_model()))
             .clone()
-    }
-
-    pub fn window_identifier(&self) -> &ashpd::WindowIdentifier {
-        let window = self.main_window();
-        self.imp().window_identifier.get_or_init(move || {
-            let ctx = glib::MainContext::default();
-
-            ctx.block_on(async {
-                ashpd::WindowIdentifier::from_native(&window.native().unwrap()).await
-            })
-        })
     }
 }
 
@@ -122,9 +110,6 @@ mod underlying {
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: Cell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
-        /// We store the identifier on the application instance as calling WindowIdentifier::from_native
-        /// more than once is invalid on Wayland, see https://github.com/bilelmoussaoui/ashpd/issues/20
-        pub(super) window_identifier: OnceCell<ashpd::WindowIdentifier>,
     }
 
     impl KCShot {
@@ -147,7 +132,6 @@ mod underlying {
                 model_notifier: Default::default(),
                 systray_initialised: Cell::new(false),
                 window: Default::default(),
-                window_identifier: Default::default(),
             }
         }
     }
@@ -174,8 +158,8 @@ mod underlying {
     }
 
     impl ObjectImpl for KCShot {
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
+        fn constructed(&self) {
+            self.parent_constructed();
 
             match db::open() {
                 Ok(conn) => self.database_connection.replace(Some(conn)),
@@ -185,7 +169,8 @@ mod underlying {
                 }
             };
 
-            self.history_model.replace(Some(HistoryModel::new(obj)));
+            self.history_model
+                .replace(Some(HistoryModel::new(&self.instance())));
             let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
 
             self.model_notifier
@@ -223,8 +208,8 @@ mod underlying {
     const NO_WINDOW_FLAGS: &[&str] = &["-n", "--no-window"];
 
     impl ApplicationImpl for KCShot {
-        fn activate(&self, application: &Self::Type) {
-            self.parent_activate(application);
+        fn activate(&self) {
+            self.parent_activate();
 
             let take_screenshot = self.take_screenshot.get();
             let show_main_window = self.show_main_window.get();
@@ -232,7 +217,7 @@ mod underlying {
             // We initialise the systray here because I believe that with other backends it might not be valid
             // to do it in startup (through we only support one systray backend for now...)
             if !self.systray_initialised.get() {
-                systray::init(application);
+                systray::init(&self.instance());
                 self.systray_initialised.set(true);
             }
 
@@ -241,20 +226,16 @@ mod underlying {
 
                 let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
 
-                EditorWindow::show(application.upcast_ref(), editing_starts_with_cropping);
+                EditorWindow::show(self.instance().upcast_ref(), editing_starts_with_cropping);
             } else if show_main_window {
                 self.show_main_window.set(false);
 
-                application.main_window().present();
+                self.instance().main_window().present();
             }
         }
 
         // This is called in the primary instance
-        fn command_line(
-            &self,
-            app: &Self::Type,
-            command_line: &gio::ApplicationCommandLine,
-        ) -> i32 {
+        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> i32 {
             let mut show_main_window = true;
             for argument in command_line.arguments() {
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
@@ -267,17 +248,13 @@ mod underlying {
             }
             self.show_main_window.set(show_main_window);
 
-            app.activate();
+            self.instance().activate();
 
             -1
         }
 
         // This is called in remote instances
-        fn local_command_line(
-            &self,
-            _: &Self::Type,
-            arguments: &mut gio::subclass::ArgumentList,
-        ) -> Option<i32> {
+        fn local_command_line(&self, arguments: &mut gio::subclass::ArgumentList) -> Option<i32> {
             let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".to_string());
             let usage = format!(
                 r#"Usage:
@@ -312,13 +289,13 @@ Application Options:
             None
         }
 
-        fn startup(&self, application: &Self::Type) {
-            self.parent_startup(application);
+        fn startup(&self) {
+            self.parent_startup();
 
             // This hold has no matching release intentionally so that the application keeps running
             // in the background even when no top-level windows are spawned. (This is the case when
             // we get started with `--no-window`)
-            application.hold();
+            std::mem::forget(self.instance().hold());
 
             if let Err(why) = gio::resources_register_include!("compiled.gresource") {
                 tracing::error!("Failed loading resources: {why}");

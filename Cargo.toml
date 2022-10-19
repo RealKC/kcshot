@@ -9,14 +9,18 @@ license = "EUPL-1.2"
 
 [dependencies]
 # UI-related dependencies
-gtk4 = "0.4.1"
+gtk4 = "0.5.0"
 ksni = "0.2.0"
 
 # Screenshot editing & capturing
-ashpd = { version = "0.3.0", features = ["log", "feature_gtk4"] }
-cairo-rs = { version = "0.15.1", features = ["png", "xcb"] }
-gdk4-x11 = "0.4.0"
-pangocairo = "0.15.1"
+ashpd = { version = "0.4.0-alpha.1", default-features = false, features = [
+  "gtk4",
+  "tokio",
+  "tracing",
+] }
+cairo-rs = { version = "0.16.0", features = ["png", "xcb"] }
+gdk4-x11 = "0.5.0"
+pangocairo = "0.16.0"
 pulldown-cmark = { version = "0.9.1", default-features = false }
 regex = "1.5.6"
 stackblur-iter = "0.2.0"
@@ -42,7 +46,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror = "1.0.30"
 
 [build-dependencies]
-glib-build-tools = { git = "https://github.com/gtk-rs/gtk-rs-core", package = "glib-build-tools" }
+glib-build-tools = "0.16.0"
 
 [features]
 xdg-paths = []
