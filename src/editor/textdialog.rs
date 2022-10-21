@@ -83,6 +83,7 @@ pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
         };
         editor.imp().with_image_mut("text dialog response", |image| {
             image.operation_stack.set_text(text);
+            image.operation_stack.finish_current_operation();
         });
     }));
 
