@@ -79,6 +79,7 @@ impl EditorWindow {
     /// Returns the primary colour of the editor
     ///
     /// The primary colour is the one used for filling in shapes
+    #[track_caller]
     fn primary_colour(&self) -> Colour {
         self.imp()
             .with_image("get primary_colour", |image| {
@@ -102,6 +103,7 @@ impl EditorWindow {
     ///
     /// The secondary colour is used for lines, the text colour in case of bubbles and as the
     /// default colour for text and the pencil
+    #[track_caller]
     fn secondary_colour(&self) -> Colour {
         self.imp()
             .with_image("get secondary_colour", |image| {
