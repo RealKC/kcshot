@@ -64,10 +64,11 @@ impl Image {
 #[derive(Default)]
 pub struct EditorWindow {
     pub(super) image: RefCell<Option<Image>>,
-    pub(super) is_picking_colour: Cell<bool>,
     overlay: OnceCell<gtk4::Overlay>,
     editing_started_with_cropping: Cell<bool>,
 
+    /// This field is part of the "pick a colour from the screen" mechanism, we send the colour under
+    /// the mouse cursor to the colour chooser dialog currently open
     pub(super) colour_tx: Cell<Option<glib::Sender<Colour>>>,
 }
 
@@ -75,7 +76,6 @@ impl std::fmt::Debug for EditorWindow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EditorWindow")
             .field("image", &self.image)
-            .field("is_picking_colour", &self.is_picking_colour)
             .field("overlay", &self.overlay)
             .field(
                 "editing_started_with_cropping",
@@ -254,21 +254,21 @@ impl ObjectImpl for EditorWindow {
         click_event_handler.set_button(0);
         click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
             if this.current_button() == BUTTON_PRIMARY {
-                let is_picking_colour = obj.imp().is_picking_colour.get();
-
-                if is_picking_colour {
+                if let Some(colour_tx) = obj.imp().colour_tx.take() {
+                    // if colour_tx is non-None it means there is a colour dialog open, and the user
+                    // is trying to pick a colour at the moment!
                     obj.imp().with_image("colour picker", |image| {
                         let colour = image.get_colour_at(x, y);
-                        if let Some(colour_tx) = obj.imp().colour_tx.take() {
                             if let Err(why) = colour_tx.send(colour) {
                                 tracing::error!("Failed to send colour through colour_tx: {why}");
                             }
-                        } else {
-                            tracing::error!("A colour has been picked but we don't have a colour_tx?!");
-                        }
-                        obj.imp().is_picking_colour.set(false);
                     });
                 } else {
+                    assert!(
+                        obj.imp().colour_tx.take().is_none(),
+                        "There should be no colour_tx on the EditorWindow when we're not picking a colour"
+                    );
+                    
                     obj.imp().with_image_mut("primary button pressed", |image| {
                         image.operation_stack.start_operation_at(Point { x, y });
                     });

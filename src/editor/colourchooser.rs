@@ -80,6 +80,15 @@ impl Dialog {
             } else if response == PICKER_RESPONSE_ID {
                 this.hide();
 
+                // This branch is part of the mechanism that handles picking a colour from the image.
+                // The actual retrieving a colour part is implemented directly in the editor's click
+                // event handler, which checks the `is_picking_a_colour` field on the impl struct of
+                // EditorWindow.
+                // Once the colour is picked, the receive end of the channel will receive the colour
+                // of the pixel the user clicked on, set the colour_chooser's colour to that, and show
+                // the dialog again, as such eventually one of the other two branches of this `if` will
+                // be reached.
+
                 let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
                 editor.start_picking_a_colour(colour_tx);
@@ -121,6 +130,7 @@ pub fn dialog(editor: &EditorWindow) -> Dialog {
     cancel_button.set_margin_bottom(10);
     cancel_button.set_margin_end(5);
 
+    // Part of the "pick a colour from the image" mechanism, see big comment in `Dialog::connect_response`
     let colour_picker = gtk4::Button::new();
     colour_picker.set_child(Some(&gtk4::Image::from_resource(
         "/kc/kcshot/editor/tool-colourpicker.png",
