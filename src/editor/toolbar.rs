@@ -88,9 +88,9 @@ mod underlying {
 
             #[rustfmt::skip]
             let mut buttons = vec![
-                make_tool_button(Tool::Pencil, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Line, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Arrow, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
+                make_tool_button(Tool::Pencil, &box_, &editor, Some(&group_source), Some(&line_width_spinner), None, Some(&secondary_colour_button)),
+                make_tool_button(Tool::Line, &box_, &editor, Some(&group_source), Some(&line_width_spinner), None, Some(&secondary_colour_button)),
+                make_tool_button(Tool::Arrow, &box_, &editor, Some(&group_source), Some(&line_width_spinner), None, Some(&secondary_colour_button)),
                 make_tool_button(Tool::Rectangle, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
                 make_tool_button(Tool::Highlight, &box_, &editor, Some(&group_source), None, None, None),
                 make_tool_button(Tool::Ellipse, &box_, &editor, Some(&group_source), Some(&line_width_spinner), Some(&primary_colour_button), Some(&secondary_colour_button)),
