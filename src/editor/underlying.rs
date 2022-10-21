@@ -276,7 +276,7 @@ impl ObjectImpl for EditorWindow {
                         obj.imp().colour_tx.take().is_none(),
                         "There should be no colour_tx on the EditorWindow when we're not picking a colour"
                     );
-                    
+
                     obj.imp().with_image_mut("primary button pressed", |image| {
                         image.operation_stack.start_operation_at(Point { x, y });
                     });
