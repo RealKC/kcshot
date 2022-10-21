@@ -162,10 +162,10 @@ impl ksni::Tray for Tray {
 
     fn tool_tip(&self) -> ksni::ToolTip {
         ksni::ToolTip {
-            icon_name: "".into(),
+            icon_name: String::new(),
             icon_pixmap: vec![],
             title: "kcshot".into(),
-            description: "".into(),
+            description: String::new(),
         }
     }
 }

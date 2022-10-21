@@ -63,12 +63,11 @@ impl WmFeatures {
     }
 
     fn get_impl() -> Result<WmFeatures> {
-        let wayland_display = env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "".into());
-        let xdg_session_type = env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| "".into());
+        let wayland_display = env::var("WAYLAND_DISPLAY").unwrap_or_default();
+        let xdg_session_type = env::var("XDG_SESSION_TYPE").unwrap_or_default();
         // For checking that Wayland features work even when kcshot is used under X (but on desktops providing
         // the necessary portals)
-        let force_wayland_emulation =
-            env::var("KCSHOT_FORCE_USE_PORTALS").unwrap_or_else(|_| "".into());
+        let force_wayland_emulation = env::var("KCSHOT_FORCE_USE_PORTALS").unwrap_or_default();
 
         let is_wayland = wayland_display.to_lowercase().contains("wayland")
             || xdg_session_type == "wayland"
