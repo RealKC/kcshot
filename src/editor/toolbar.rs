@@ -29,7 +29,7 @@ mod underlying {
         glib::{self, clone, ParamSpec, WeakRef},
         prelude::*,
         subclass::prelude::*,
-        Inhibit, ResponseType,
+        Inhibit,
     };
     use once_cell::sync::{Lazy, OnceCell};
 
@@ -261,40 +261,18 @@ mod underlying {
             button.set_visible(false);
 
             button.connect_clicked(move |_this| {
-                let (dialog, colour_chooser) = colourchooser::dialog(editor.upcast_ref());
+                let dialog = colourchooser::dialog(&editor);
 
-                dialog.connect_response(clone!(
-                    @weak editor,
-                    @weak button_drawing_area,
-                    @weak colour_chooser
-                => move |this, response| {
-                    if response == ResponseType::Ok {
+                dialog.connect_response(
+                    clone!(@weak button_drawing_area => move |editor, colour| {
                         if IS_PRIMARY {
-                             editor.set_primary_colour(colour_chooser.colour());
+                            editor.set_primary_colour(colour);
                         } else {
-                             editor.set_secondary_colour(colour_chooser.colour());
+                            editor.set_secondary_colour(colour);
                         }
                         button_drawing_area.queue_draw();
-                        this.close();
-                    } else if response == ResponseType::Other(colourchooser::PICKER_RESPONSE_ID) {
-                        this.hide();
-
-                        let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-
-                        editor.start_picking_a_colour(colour_tx);
-
-                        colour_rx.attach(None, glib::clone!(
-                            @weak this,
-                            @weak editor
-                        => @default-return Continue(false), move |colour| {
-                            colour_chooser.set_colour(colour);
-                            this.show();
-                            Continue(false)
-                        }));
-                    } else {
-                        this.close();
-                    }
-                }));
+                    }),
+                );
 
                 dialog.show();
             });

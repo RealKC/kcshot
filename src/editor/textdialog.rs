@@ -90,7 +90,7 @@ pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
 }
 
 mod underlying {
-    use gtk4::{glib, prelude::*, subclass::prelude::*, ResponseType};
+    use gtk4::{glib, prelude::*, subclass::prelude::*};
     use once_cell::sync::{Lazy, OnceCell};
 
     use super::parse;
@@ -276,41 +276,19 @@ mod underlying {
         button.set_child(Some(&drawing_area));
         button.set_size_request(SIZEI, SIZEI);
 
-        button.connect_clicked(glib::clone!(@weak text_input => @default-panic, move |_this| {
-            let editor = text_input.imp().editor.get().unwrap();
-            let (dialog, colour_chooser) = colourchooser::dialog(editor.upcast_ref());
+        button.connect_clicked(
+            glib::clone!(@weak text_input => @default-panic, move |_this| {
+                let editor = text_input.imp().editor.get().unwrap();
+                let dialog = colourchooser::dialog(editor);
 
-            dialog.connect_response(glib::clone!(
-                @weak editor,
-                @weak drawing_area,
-                @weak colour_chooser
-            => move |this, response| {
-                if response == ResponseType::Ok {
-                    editor.set_secondary_colour(colour_chooser.colour());
+                dialog.connect_response(glib::clone!(@weak drawing_area => move |editor, colour| {
+                    editor.set_secondary_colour(colour);
                     drawing_area.queue_draw();
-                    this.close();
-                } else if response == ResponseType::Other(colourchooser::PICKER_RESPONSE_ID) {
-                    this.hide();
+                }));
 
-                    let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-
-                    editor.start_picking_a_colour(colour_tx);
-
-                    colour_rx.attach(None, glib::clone!(
-                        @weak this,
-                        @weak editor
-                    => @default-return Continue(false), move |colour| {
-                        colour_chooser.set_colour(colour);
-                        this.show();
-                        Continue(false)
-                    }));
-                } else {
-                    this.close();
-                }
-            }));
-
-            dialog.show();
-        }));
+                dialog.show();
+            }),
+        );
 
         button
     }

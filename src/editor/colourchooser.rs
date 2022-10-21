@@ -8,6 +8,8 @@ use gtk4::{
 
 use crate::editor::Colour;
 
+use super::EditorWindow;
+
 glib::wrapper! {
     pub struct ColourChooserWidget(ObjectSubclass<underlying::ColourChooserWidget>)
         @extends gtk4::Widget, gtk4::Box;
@@ -45,10 +47,62 @@ impl Default for ColourChooserWidget {
     }
 }
 
-/// The Response ID used by the colour picker when a colour was picked from the image being edited
-pub const PICKER_RESPONSE_ID: u16 = 123;
+// NOTE: This struct doesn't need to participate in the gtk widget tree because its fields already do
+// and it only wraps some functions of its fields.
+pub struct Dialog {
+    editor: glib::WeakRef<EditorWindow>,
+    dialog: gtk4::Dialog,
+    colour_chooser: ColourChooserWidget,
+}
 
-pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
+impl Dialog {
+    pub fn show(&self) {
+        self.dialog.show();
+    }
+
+    pub fn connect_response<F>(&self, func: F)
+    where
+        F: Fn(&EditorWindow, Colour) + 'static,
+    {
+        let editor = match self.editor.upgrade() {
+            Some(editor) => editor,
+            None => {
+                tracing::warn!("Failed to upgrade self.editor in `Dialog::connect_response`");
+                return;
+            }
+        };
+
+        self.dialog.connect_response(glib::clone!(
+            @weak self.colour_chooser as colour_chooser,
+        => move |this, response| {
+            if response == ResponseType::Ok {
+                func(&editor, colour_chooser.colour());
+                this.close();
+            } else if response == PICKER_RESPONSE_ID {
+                this.hide();
+
+                let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+
+                editor.start_picking_a_colour(colour_tx);
+
+                colour_rx.attach(None, glib::clone!(
+                    @weak this
+                => @default-return Continue(false), move |colour| {
+                    colour_chooser.set_colour(colour);
+                    this.show();
+                    Continue(false)
+                }));
+            } else {
+                this.close();
+            }
+        }));
+    }
+}
+
+/// The Response ID used by the colour picker when a colour was picked from the image being edited
+const PICKER_RESPONSE_ID: ResponseType = ResponseType::Other(123);
+
+pub fn dialog(editor: &EditorWindow) -> Dialog {
     let colour_chooser = ColourChooserWidget::default();
     colour_chooser.set_margin_bottom(10);
     colour_chooser.set_margin_top(10);
@@ -57,7 +111,7 @@ pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
 
     let dialog = gtk4::Dialog::with_buttons(
         Some("kcshot - Pick a colour"),
-        Some(parent),
+        Some(editor),
         gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
         &[],
     );
@@ -75,7 +129,7 @@ pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
     colour_picker.set_margin_bottom(10);
     colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
     colour_picker.set_halign(gtk4::Align::Start);
-    dialog.add_action_widget(&colour_picker, ResponseType::Other(PICKER_RESPONSE_ID));
+    dialog.add_action_widget(&colour_picker, PICKER_RESPONSE_ID);
 
     let ok_button = dialog.add_button("OK", ResponseType::Ok);
     ok_button.add_css_class("suggested-action");
@@ -85,7 +139,11 @@ pub fn dialog(parent: &gtk4::Window) -> (gtk4::Dialog, ColourChooserWidget) {
 
     dialog.content_area().append(&colour_chooser);
 
-    (dialog, colour_chooser)
+    Dialog {
+        editor: editor.downgrade(),
+        dialog,
+        colour_chooser,
+    }
 }
 
 mod underlying {
