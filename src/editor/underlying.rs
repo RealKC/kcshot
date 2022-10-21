@@ -136,7 +136,7 @@ impl EditorWindow {
 
     pub(super) fn with_image<F, T>(&self, ctx: &str, func: F) -> Option<T>
     where
-        F: Fn(&Image) -> T,
+        F: FnOnce(&Image) -> T,
     {
         let _ctx = ContextLogger::new(ctx, "with_image");
 
@@ -164,7 +164,7 @@ impl EditorWindow {
 
     pub(super) fn with_image_mut<F, T>(&self, ctx: &str, func: F) -> Option<T>
     where
-        F: Fn(&mut Image) -> T,
+        F: FnOnce(&mut Image) -> T,
     {
         let _ctx = ContextLogger::new(ctx, "with_image_mut");
 
