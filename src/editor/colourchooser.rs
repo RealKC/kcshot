@@ -6,9 +6,8 @@ use gtk4::{
     ResponseType,
 };
 
-use crate::editor::Colour;
-
 use super::EditorWindow;
+use crate::editor::Colour;
 
 glib::wrapper! {
     pub struct ColourChooserWidget(ObjectSubclass<underlying::ColourChooserWidget>)
