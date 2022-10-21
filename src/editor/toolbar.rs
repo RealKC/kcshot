@@ -97,7 +97,7 @@ mod underlying {
                 make_tool_button(Tool::Pixelate, &box_, &editor, Some(&group_source), None, None, None),
                 make_tool_button(Tool::Blur, &box_, &editor, Some(&group_source), None, None, None),
                 make_tool_button(Tool::AutoincrementBubble, &box_, &editor, Some(&group_source), None, Some(&primary_colour_button), Some(&secondary_colour_button)),
-                make_tool_button(Tool::Text, &box_, &editor, Some(&group_source), None, None, Some(&secondary_colour_button)),
+                make_tool_button(Tool::Text, &box_, &editor, Some(&group_source), None, None, None),
             ];
 
             if self.editing_started_with_cropping.get() {
