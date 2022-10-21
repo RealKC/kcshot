@@ -40,7 +40,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, Object, ParamSpec, ParamSpecObject, StaticType, ToValue, Value},
+        glib::{self, Object, ParamSpec, StaticType, ToValue, Value},
         prelude::*,
         subclass::prelude::*,
     };
@@ -137,13 +137,8 @@ mod underlying {
     impl ObjectImpl for ListModel {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                vec![ParamSpecObject::new(
-                    "application",
-                    "Application",
-                    "Application",
-                    KCShot::static_type(),
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                )]
+                use crate::properties::*;
+                vec![construct_only_rw_object_property::<KCShot>("application")]
             });
 
             PROPERTIES.as_ref()

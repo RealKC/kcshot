@@ -143,15 +143,12 @@ mod underlying {
 
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecInt::new(
-                    "alpha",
-                    "alpha",
-                    "alpha",
-                    0,
-                    256,
-                    255,
-                    glib::ParamFlags::READWRITE,
-                )]
+                vec![glib::ParamSpecInt::builder("alpha")
+                    .minimum(0)
+                    .maximum(256)
+                    .default_value(255)
+                    .readwrite()
+                    .build()]
             });
 
             PROPERTIES.as_ref()

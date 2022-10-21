@@ -26,7 +26,7 @@ mod underlying {
     use std::cell::Cell;
 
     use gtk4::{
-        glib::{self, clone, ParamSpec, ParamSpecBoolean, ParamSpecObject, WeakRef},
+        glib::{self, clone, ParamSpec, WeakRef},
         prelude::*,
         subclass::prelude::*,
         Inhibit, ResponseType,
@@ -143,21 +143,14 @@ mod underlying {
 
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                use crate::properties::*;
                 vec![
-                    ParamSpecObject::new(
-                        "parent-editor",
-                        "ParentEditor",
-                        "Parent Editor",
-                        editor::EditorWindow::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                    ParamSpecBoolean::new(
-                        "editing-started-with-cropping",
-                        "EditingStartedWithCropping",
-                        "Editing started with cropping",
-                        false,
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
+                    construct_only_wo_object_property::<editor::EditorWindow>("parent-editor"),
+                    glib::ParamSpecBoolean::builder("editing-started-with-cropping")
+                        .default_value(false)
+                        .write_only()
+                        .construct_only()
+                        .build(),
                 ]
             });
 

@@ -35,7 +35,7 @@ impl RowData {
 mod underlying {
     use std::cell::RefCell;
 
-    use gtk4::glib::{self, subclass::prelude::*, ToValue};
+    use gtk4::glib::{self, subclass::prelude::*, ParamSpecBuilderExt, ToValue};
     use once_cell::sync::Lazy;
 
     #[derive(Default, Debug)]
@@ -56,27 +56,18 @@ mod underlying {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpecString::new(
-                        "path",
-                        "Path",
-                        "Path",
-                        None,
-                        glib::ParamFlags::READWRITE,
-                    ),
-                    glib::ParamSpecString::new(
-                        "time",
-                        "Time",
-                        "Time",
-                        Some(""),
-                        glib::ParamFlags::READWRITE,
-                    ),
-                    glib::ParamSpecString::new(
-                        "url",
-                        "URL",
-                        "URL",
-                        None,
-                        glib::ParamFlags::READWRITE,
-                    ),
+                    glib::ParamSpecString::builder("path")
+                        .default_value(None)
+                        .readwrite()
+                        .build(),
+                    glib::ParamSpecString::builder("time")
+                        .default_value(Some(""))
+                        .readwrite()
+                        .build(),
+                    glib::ParamSpecString::builder("url")
+                        .default_value(None)
+                        .readwrite()
+                        .build(),
                 ]
             });
 

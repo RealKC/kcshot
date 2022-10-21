@@ -18,7 +18,7 @@ mod underlying {
     use std::process::Command;
 
     use gtk4::{
-        glib::{self, clone, ParamSpec, ParamSpecObject},
+        glib::{self, clone, ParamSpec},
         prelude::*,
         subclass::{
             application_window::ApplicationWindowImpl,
@@ -132,21 +132,10 @@ mod underlying {
 
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                use crate::properties::*;
                 vec![
-                    ParamSpecObject::new(
-                        "application",
-                        "Application",
-                        "Application",
-                        KCShot::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                    ParamSpecObject::new(
-                        "history-model",
-                        "History Model",
-                        "History Model",
-                        super::HistoryModel::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
+                    construct_only_rw_object_property::<KCShot>("application"),
+                    construct_only_wo_object_property::<super::HistoryModel>("history-model"),
                 ]
             });
 

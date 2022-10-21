@@ -141,13 +141,8 @@ mod underlying {
 
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::new(
-                    "editor",
-                    "editor",
-                    "editor",
-                    EditorWindow::static_type(),
-                    glib::ParamFlags::CONSTRUCT_ONLY | glib::ParamFlags::WRITABLE,
-                )]
+                use crate::properties::*;
+                vec![construct_only_wo_object_property::<EditorWindow>("editor")]
             });
 
             PROPERTIES.as_ref()

@@ -1,11 +1,11 @@
 use std::cell::{Cell, RefCell};
 
-use cairo::{glib::ParamSpecBoolean, Context};
+use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, ParamSpec, ParamSpecObject},
+    glib::{self, clone, ParamSpec},
     prelude::*,
     subclass::prelude::*,
     Allocation,
@@ -439,21 +439,14 @@ impl ObjectImpl for EditorWindow {
 
     fn properties() -> &'static [ParamSpec] {
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            use crate::properties::*;
             vec![
-                ParamSpecObject::new(
-                    "application",
-                    "Application",
-                    "Application",
-                    KCShot::static_type(),
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                ),
-                ParamSpecBoolean::new(
-                    "editing-starts-with-cropping",
-                    "Editing starts with cropping",
-                    "Editing starts with cropping",
-                    false,
-                    glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
-                ),
+                construct_only_rw_object_property::<KCShot>("application"),
+                glib::ParamSpecBoolean::builder("editing-starts-with-cropping")
+                    .default_value(false)
+                    .write_only()
+                    .construct_only()
+                    .build(),
             ]
         });
 
