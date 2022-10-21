@@ -74,12 +74,14 @@ pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
             return;
         }
 
+        // NOTE: We create the `Text` outside the `with_image_mut` closure because `TextInput::colour`
+        //       calls `with_image`, which will fail inside `with_image_mut`
+        let text = Text {
+            string: text_input.text(),
+            font_description: text_input.font_description(),
+            colour: text_input.colour(),
+        };
         editor.imp().with_image_mut("text dialog response", |image| {
-            let text = Text {
-                string: text_input.text(),
-                font_description: text_input.font_description(),
-                colour: text_input.colour(),
-            };
             image.operation_stack.set_text(text);
         });
     }));
