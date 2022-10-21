@@ -292,6 +292,9 @@ impl ObjectImpl for EditorWindow {
         click_event_handler.connect_released(
             clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
                 let should_queue_draw = obj.imp().with_image_mut("mouse button released event", |image| {
+                    // NOTE: image.operation_stack.finish_current_operation MUST be called in all
+                    //       branches of this if-chain, in order for tools to take part in the undo
+                    //       stack! For the Text tool, this happens in pop_text_dialog_and_get_text.
                     if image.operation_stack.current_tool() == Tool::Text {
                         super::textdialog::pop_text_dialog_and_get_text(&obj);
                         true
