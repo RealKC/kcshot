@@ -22,15 +22,15 @@ use self::kcshot::KCShot;
 mod appwindow;
 mod db;
 mod editor;
-mod properties;
 mod historymodel;
 mod kcshot;
 mod postcapture;
+mod properties;
 mod systray;
 
 fn main() -> ExitCode {
     let collector = tracing_subscriber::registry()
-        .with(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
+        .with(EnvFilter::from_default_env())
         .with(fmt::Layer::new().with_writer(io::stderr));
 
     match make_file_writer() {
