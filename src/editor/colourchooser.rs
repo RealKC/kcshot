@@ -424,7 +424,7 @@ mod underlying {
 
                 Some(buffer.to_value())
             })
-            .flags(glib::BindingFlags::SYNC_CREATE)
+            .sync_create()
             .build();
         entry.set_hexpand(false);
         entry.set_halign(gtk4::Align::End);
