@@ -125,7 +125,7 @@ mod underlying {
                 .get_or_init(|| gtk4::Box::new(gtk4::Orientation::Vertical, 2));
 
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 2);
-            let font_button = place_format_buttons(content, &self.instance());
+            let font_button = place_format_buttons(content, &self.obj());
             self.font_button.set(font_button).unwrap();
             self.input.set(make_text_view(&hbox)).unwrap();
             content.append(&hbox);
@@ -133,7 +133,7 @@ mod underlying {
             let info_label = make_info_label();
             content.append(&info_label);
 
-            self.instance().append(content);
+            self.obj().append(content);
         }
 
         fn dispose(&self) {

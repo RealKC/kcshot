@@ -420,7 +420,7 @@ mod underlying {
 
         #[tracing::instrument]
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.instance();
+            let obj = self.obj();
 
             match pspec.name() {
                 "h" => {
@@ -484,7 +484,7 @@ mod underlying {
             let click = gtk4::GestureClick::new();
             click.set_button(0);
 
-            let obj = self.instance();
+            let obj = self.obj();
             click.connect_pressed(glib::clone!(@weak obj => move |_, _, x, y| {
                 let (x, y) = (x as f32, y as f32);
                 if obj.is_in_ring(x , y) {
@@ -558,7 +558,7 @@ mod underlying {
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             self.parent_snapshot(snapshot);
 
-            let widget = self.instance();
+            let widget = self.obj();
 
             widget.snapshot_triangle(snapshot);
             widget.snapshot_triangle_indicator(snapshot);

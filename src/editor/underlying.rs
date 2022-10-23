@@ -209,7 +209,7 @@ impl ObjectSubclass for EditorWindow {
 impl ObjectImpl for EditorWindow {
     fn constructed(&self) {
         self.parent_constructed();
-        let obj = self.instance();
+        let obj = self.obj();
 
         let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
         let image =
@@ -467,7 +467,7 @@ impl ObjectImpl for EditorWindow {
     #[tracing::instrument]
     fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
         match pspec.name() {
-            "application" => self.instance().application().to_value(),
+            "application" => self.obj().application().to_value(),
             name => {
                 tracing::error!("Unknown property: {name}");
                 panic!()
@@ -480,7 +480,7 @@ impl ObjectImpl for EditorWindow {
         match pspec.name() {
             "application" => {
                 let application = value.get::<KCShot>().ok();
-                self.instance().set_application(application.as_ref());
+                self.obj().set_application(application.as_ref());
             }
             "editing-starts-with-cropping" => {
                 let editing_starts_with_cropping = value.get::<bool>();

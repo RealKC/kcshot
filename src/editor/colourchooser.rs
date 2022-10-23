@@ -197,10 +197,10 @@ mod underlying {
 
             vbox.append(&hbox);
 
-            let alpha_button = self.make_alpha_button(&self.instance(), colour_wheel);
+            let alpha_button = self.make_alpha_button(&self.obj(), colour_wheel);
             vbox.append(&alpha_button);
 
-            self.instance().append(vbox);
+            self.obj().append(vbox);
         }
         fn dispose(&self) {
             if let Some(vbox) = self.vbox.get() {
@@ -245,7 +245,7 @@ mod underlying {
                             colour_button.set_rgba(&rgba);
                         }
 
-                        self.instance().notify("alpha");
+                        self.obj().notify("alpha");
                     }
                     Err(why) => tracing::error!("'alpha' not an i32: {why}"),
                 },

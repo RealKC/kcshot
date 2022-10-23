@@ -71,7 +71,7 @@ mod underlying {
             }));
             line_width_spinner.set_visible(false);
 
-            let box_: gtk4::Box = self.instance().to_owned().upcast();
+            let box_: gtk4::Box = self.obj().to_owned().upcast();
             let group_source_tool = if self.editing_started_with_cropping.get() {
                 Tool::Save
             } else {

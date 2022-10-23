@@ -51,7 +51,7 @@ mod underlying {
 
     impl ObjectImpl for AppWindow {
         fn constructed(&self) {
-            let obj = self.instance();
+            let obj = self.obj();
             self.settings
                 .set(Settings::open())
                 .expect("self.settings should only be set once");
@@ -148,7 +148,7 @@ mod underlying {
         #[tracing::instrument]
         fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
             match pspec.name() {
-                "application" => self.instance().application().to_value(),
+                "application" => self.obj().application().to_value(),
                 name => {
                     tracing::error!("Unknown property: {name}");
                     panic!()
@@ -161,7 +161,7 @@ mod underlying {
             match pspec.name() {
                 "application" => {
                     let application = value.get::<KCShot>().ok();
-                    self.instance().set_application(application.as_ref());
+                    self.obj().set_application(application.as_ref());
                 }
                 "history-model" => {
                     let history_model = value.get::<super::HistoryModel>().unwrap();

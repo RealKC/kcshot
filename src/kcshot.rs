@@ -170,7 +170,7 @@ mod underlying {
             };
 
             self.history_model
-                .replace(Some(HistoryModel::new(&self.instance())));
+                .replace(Some(HistoryModel::new(&self.obj())));
             let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
 
             self.model_notifier
@@ -217,7 +217,7 @@ mod underlying {
             // We initialise the systray here because I believe that with other backends it might not be valid
             // to do it in startup (through we only support one systray backend for now...)
             if !self.systray_initialised.get() {
-                systray::init(&self.instance());
+                systray::init(&self.obj());
                 self.systray_initialised.set(true);
             }
 
@@ -226,11 +226,11 @@ mod underlying {
 
                 let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
 
-                EditorWindow::show(self.instance().upcast_ref(), editing_starts_with_cropping);
+                EditorWindow::show(self.obj().upcast_ref(), editing_starts_with_cropping);
             } else if show_main_window {
                 self.show_main_window.set(false);
 
-                self.instance().main_window().present();
+                self.obj().main_window().present();
             }
         }
 
@@ -248,7 +248,7 @@ mod underlying {
             }
             self.show_main_window.set(show_main_window);
 
-            self.instance().activate();
+            self.obj().activate();
 
             -1
         }
@@ -295,7 +295,7 @@ Application Options:
             // This hold has no matching release intentionally so that the application keeps running
             // in the background even when no top-level windows are spawned. (This is the case when
             // we get started with `--no-window`)
-            std::mem::forget(self.instance().hold());
+            std::mem::forget(self.obj().hold());
 
             if let Err(why) = gio::resources_register_include!("compiled.gresource") {
                 tracing::error!("Failed loading resources: {why}");
