@@ -7,13 +7,13 @@ glib::wrapper! {
 
 impl ToolbarWidget {
     pub fn new(parent_editor: &super::EditorWindow, editing_started_with_cropping: bool) -> Self {
-        let obj = glib::Object::new::<Self>(&[
-            ("parent-editor", parent_editor),
-            (
+        let obj = glib::Object::builder::<Self>()
+            .property("parent-editor", parent_editor)
+            .property(
                 "editing-started-with-cropping",
-                &editing_started_with_cropping,
-            ),
-        ]);
+                editing_started_with_cropping,
+            )
+            .build();
 
         // We want to start as hidden if editing started with cropping
         obj.set_visible(!editing_started_with_cropping);

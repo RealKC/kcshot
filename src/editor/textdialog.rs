@@ -14,7 +14,7 @@ glib::wrapper! {
 
 impl TextInput {
     pub fn new(editor: &super::EditorWindow) -> Self {
-        glib::Object::new(&[("editor", editor)])
+        glib::Object::builder().property("editor", editor).build()
     }
 
     fn text(&self) -> String {

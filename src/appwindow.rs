@@ -10,7 +10,10 @@ glib::wrapper! {
 
 impl AppWindow {
     pub fn new(app: &KCShot, history_model: &HistoryModel) -> Self {
-        glib::Object::new(&[("application", app), ("history-model", history_model)])
+        glib::Object::builder()
+            .property("application", app)
+            .property("history-model", history_model)
+            .build()
     }
 }
 

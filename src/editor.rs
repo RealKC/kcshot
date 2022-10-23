@@ -27,13 +27,10 @@ glib::wrapper! {
 
 impl EditorWindow {
     pub fn new(app: &gtk4::Application, editing_starts_with_cropping: bool) -> Self {
-        let editor = glib::Object::new::<Self>(&[
-            ("application", app),
-            (
-                "editing-starts-with-cropping",
-                &editing_starts_with_cropping,
-            ),
-        ]);
+        let editor = glib::Object::builder::<Self>()
+            .property("application", app)
+            .property("editing-starts-with-cropping", editing_starts_with_cropping)
+            .build();
 
         let settings = Settings::open();
 

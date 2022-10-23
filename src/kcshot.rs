@@ -40,10 +40,10 @@ impl Default for KCShot {
 
 impl KCShot {
     pub fn new() -> Self {
-        glib::Object::new(&[
-            ("application-id", &"kc.kcshot"),
-            ("flags", &gio::ApplicationFlags::HANDLES_COMMAND_LINE),
-        ])
+        glib::Object::builder()
+            .property("application-id", "kc.kcshot")
+            .property("flags", gio::ApplicationFlags::HANDLES_COMMAND_LINE)
+            .build()
     }
 
     pub fn with_conn<F, R>(&self, f: F) -> R

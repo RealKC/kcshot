@@ -1,7 +1,4 @@
-use gtk4::{
-    glib::{self, ToValue},
-    subclass::prelude::*,
-};
+use gtk4::{glib, subclass::prelude::*};
 
 use crate::db::models::Screenshot;
 
@@ -18,11 +15,11 @@ impl RowData {
     }
 
     pub fn new_from_components(path: Option<String>, time: String, url: Option<String>) -> Self {
-        glib::Object::new(&[
-            ("path", &path.to_value()),
-            ("time", &time.to_value()),
-            ("url", &url.to_value()),
-        ])
+        glib::Object::builder()
+            .property("path", path)
+            .property("time", time)
+            .property("url", url)
+            .build()
     }
 
     pub fn path(&self) -> Option<String> {

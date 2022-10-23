@@ -16,7 +16,9 @@ glib::wrapper! {
 
 impl HistoryModel {
     pub fn new(application: &KCShot) -> Self {
-        glib::Object::new(&[("application", application)])
+        glib::Object::builder()
+            .property("application", application)
+            .build()
     }
 
     /// Inserts a screenshot to the internally maintained list of screenshots.
