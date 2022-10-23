@@ -11,6 +11,15 @@ env:
 permissions:
   contents: read
 
+# Given that this job can get quite expensive at times, we ensure that for a given PR/branch,
+# we cancel previous jobs on new pushes.
+# See:
+#  - this Stackoverflow post: https://stackoverflow.com/a/72408109
+#  - GitHub docs on the matter: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   rustfmt:
     if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
