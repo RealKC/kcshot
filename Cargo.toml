@@ -49,6 +49,7 @@ thiserror = "1.0.30"
 glib-build-tools = "0.16.0"
 
 [features]
+default = ["xdg-paths"]
 xdg-paths = []
 # Only specify this when trying to diagnose memory leaks, it shouldn't be used for normal usage
 heaptrack = []
