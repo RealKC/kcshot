@@ -156,6 +156,9 @@ fn overlay_cursor(
                 screenshot[pixel_idx + 0] = r as u8;
                 screenshot[pixel_idx + 1] = g as u8;
                 screenshot[pixel_idx + 2] = b as u8;
+            } else if a == 0 {
+                // Ignore transparent pixels, as we don't need to do any blending to them
+                continue;
             } else {
                 let blend =
                     |target, source, alpha| target + (source * (255 - alpha) + 255 / 2) / 255;
