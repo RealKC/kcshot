@@ -107,17 +107,7 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                 }
             }
 
-            // We don't just use an XcbSurface for multiple reasons:
-            //  * it requires ugly FFI-ish code (casting between rust-xcb and cairo-rs pointer types)
-            //  * back when I first started on kcshot, I did it using C++ and cairomm's XlibSurface
-            //    which would change its contents when you switched tags, I assume that cairo-rs's
-            //    XcbSurface behaves similarly
-            //  * Surface does not (on this release) support being written to a png, so we need
-            //    an ImageSurface anyway
-            //  * we sometimes draw the cursor over the screenshot
-
             let stride = CairoImageFormat::Rgb24.stride_for_width(screenshot_bounds.w as u32)?;
-
             let screenshot = ImageSurface::create_for_data(
                 screenshot,
                 CairoImageFormat::Rgb24,
