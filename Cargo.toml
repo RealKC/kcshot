@@ -28,6 +28,7 @@ xcb = { git = "https://github.com/rust-x-bindings/rust-xcb", features = [
   "debug_atom_names",
   "shape",
   "xfixes",
+  "randr",
 ] }
 
 # User settings, history

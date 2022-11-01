@@ -10,7 +10,10 @@ use xcb::{
 };
 
 use super::{Result, Window, WmFeatures};
-use crate::{editor::data::Rectangle, kcshot::Settings};
+use crate::{
+    editor::data::{Point, Rectangle},
+    kcshot::Settings,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -58,20 +61,27 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             .wait_for_reply(pointer_cookie)
             .map_err(Error::from)?;
         if pointer_reply.same_screen() {
-            let width = root_screen.width_in_pixels();
-            let height = root_screen.height_in_pixels();
+            // Just because the cursor is on the same screen(monitor) as the root window, it doesn't
+            // mean the root window spans a single monitor, in fact it can span multiple.
+            // So we get the monitor that's under the cursor here.
+            let screenshot_bounds = retrieve_bounds_of_monitor_under_cursor(
+                &connection,
+                Point {
+                    x: pointer_reply.root_x() as _,
+                    y: pointer_reply.root_y() as _,
+                },
+                window,
+            )?;
 
             let screenshot_cookie = connection.send_request(&x::GetImage {
                 format: XImageFormat::ZPixmap,
                 drawable: x::Drawable::Window(window),
-                x: 0,
-                y: 0,
-                width,
-                height,
+                x: screenshot_bounds.x as _,
+                y: screenshot_bounds.y as _,
+                width: screenshot_bounds.w as _,
+                height: screenshot_bounds.h as _,
                 plane_mask: u32::MAX,
             });
-
-            let stride = CairoImageFormat::Rgb24.stride_for_width(width as u32)?;
 
             let mut screenshot = connection
                 .wait_for_reply(screenshot_cookie)
@@ -86,7 +96,12 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                 let cursor = connection.wait_for_reply(cursor_cookie);
                 match cursor {
                     Ok(cursor) => {
-                        overlay_cursor(cursor, &mut screenshot, width as usize, height as usize);
+                        overlay_cursor(
+                            cursor,
+                            &mut screenshot,
+                            screenshot_bounds.w as usize,
+                            screenshot_bounds.h as usize,
+                        );
                     }
                     Err(why) => tracing::info!("Unable to fetch cursor data: {why:?}"),
                 }
@@ -101,11 +116,13 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
             //    an ImageSurface anyway
             //  * we sometimes draw the cursor over the screenshot
 
+            let stride = CairoImageFormat::Rgb24.stride_for_width(screenshot_bounds.w as u32)?;
+
             let screenshot = ImageSurface::create_for_data(
                 screenshot,
                 CairoImageFormat::Rgb24,
-                width as i32,
-                height as i32,
+                screenshot_bounds.w as i32,
+                screenshot_bounds.h as i32,
                 stride,
             )?;
 
@@ -114,6 +131,36 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
     }
 
     Err(super::Error::FailedToTakeScreenshot)
+}
+
+fn retrieve_bounds_of_monitor_under_cursor(
+    connection: &xcb::Connection,
+    cursor_position: Point,
+    window: XWindow,
+) -> Result<Rectangle> {
+    let get_monitors = connection.send_request(&xcb::randr::GetMonitors {
+        window,
+        get_active: true,
+    });
+    let monitors = connection
+        .wait_for_reply(get_monitors)
+        .map_err(Error::from)?;
+
+    for monitor in monitors.monitors() {
+        let monitor_rect = Rectangle {
+            x: monitor.x() as _,
+            y: monitor.y() as _,
+            w: monitor.width() as _,
+            h: monitor.height() as _,
+        };
+
+        if monitor_rect.contains(cursor_position) {
+            return Ok(monitor_rect);
+        }
+    }
+
+    tracing::error!("Failed to find any monitors. (How?!)");
+    unreachable!()
 }
 
 fn overlay_cursor(
