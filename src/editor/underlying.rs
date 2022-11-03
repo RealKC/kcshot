@@ -10,13 +10,13 @@ use gtk4::{
     subclass::prelude::*,
     Allocation,
 };
+use kcshot_data::geometry::{Point, Rectangle};
 use once_cell::sync::{Lazy, OnceCell};
 use tracing::error;
 
 use super::{toolbar, utils::ContextLogger, Colour};
 use crate::{
     editor::{
-        data::{Point, Rectangle},
         display_server,
         operations::{OperationStack, SelectionMode, Tool},
         utils,

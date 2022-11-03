@@ -5,12 +5,10 @@ use gtk4::{
     glib::{self, Continue, MainContext, Sender},
     prelude::*,
 };
+use kcshot_data::settings::Settings;
 
 use super::Initialised;
-use crate::{
-    editor::EditorWindow,
-    kcshot::{KCShot, Settings},
-};
+use crate::{editor::EditorWindow, kcshot::KCShot};
 
 /// Attempts to create a systray icon using the [KDE/freedesktop StatusNotifierItem spec][`kde_sni`].
 /// This is done by using the [ksni][`ksni`] crate.

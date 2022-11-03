@@ -1,10 +1,10 @@
 use std::{env, io};
 
 use cairo::{self, Error as CairoError, ImageSurface};
+use kcshot_data::geometry::Rectangle;
 use once_cell::sync::OnceCell;
 use tracing::error;
 
-use super::data::Rectangle;
 use crate::kcshot::KCShot;
 
 mod wayland;

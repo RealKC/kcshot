@@ -28,13 +28,10 @@ mod underlying {
             prelude::{ObjectImpl, ObjectSubclass, ObjectSubclassExt, WidgetImpl, WindowImpl},
         },
     };
+    use kcshot_data::settings::Settings;
     use once_cell::sync::{Lazy, OnceCell};
 
-    use crate::{
-        editor::EditorWindow,
-        historymodel::RowData,
-        kcshot::{KCShot, Settings},
-    };
+    use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
 
     #[derive(Default, Debug)]
     pub struct AppWindow {

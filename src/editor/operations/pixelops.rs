@@ -3,11 +3,12 @@ use gtk4::{
     gdk::prelude::GdkCairoContextExt,
     gdk_pixbuf::{Colorspace, Pixbuf},
 };
+use kcshot_data::geometry::Rectangle;
 use rand::{prelude::StdRng, Rng, SeedableRng};
 use stackblur_iter::{blur_argb as stackblur, imgref::ImgRefMut};
 
 use super::Error;
-use crate::editor::{data::Rectangle, utils};
+use crate::editor::utils;
 
 /// How big will pixelate boxes be, in this case, we will group the rectangle into 4x4 boxes, which we will set all of its pixels to the same value
 const PIXELATE_SIZE: u64 = 4;

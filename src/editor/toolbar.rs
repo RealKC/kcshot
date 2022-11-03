@@ -31,12 +31,13 @@ mod underlying {
         subclass::prelude::*,
         Inhibit,
     };
+    use kcshot_data::colour::Colour;
     use once_cell::sync::{Lazy, OnceCell};
 
     use crate::{
         editor::{
-            self, colourchooser, data::Colour, operations::Tool,
-            underlying::EditorWindow as EditorWindowImp, utils::CairoExt,
+            self, colourchooser, operations::Tool, underlying::EditorWindow as EditorWindowImp,
+            utils::CairoExt,
         },
         kcshot::KCShot,
         log_if_err,

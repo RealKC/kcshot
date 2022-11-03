@@ -1,9 +1,14 @@
 use cairo::{Context, ImageSurface};
+use kcshot_data::{
+    colour::Colour,
+    geometry::{Point, Rectangle},
+    Text,
+};
 use tracing::{error, warn};
 
-use super::{Colour, Operation, Point, Rectangle, Tool};
+use super::{Operation, Tool};
 use crate::{
-    editor::{data::Text, display_server::Window, operations::shapes, utils::CairoExt},
+    editor::{display_server::Window, operations::shapes, utils::CairoExt},
     log_if_err,
 };
 

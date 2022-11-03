@@ -2,8 +2,7 @@ use std::f32::consts::PI;
 
 use graphene::{Point3D, Rect, Triangle};
 use gtk4::{gdk, glib, graphene, gsk, prelude::*, subclass::prelude::*};
-
-use super::data::Hsv;
+use kcshot_data::colour::Hsv;
 
 // Code adapted from Trinket https://gitlab.gnome.org/msandova/trinket/-/blob/8af25267188adde3f7a79cd481ea69d865dd0767/src/color_wheel.rs
 // The code is licensed under LGPL-3.0-or-later to Maximiliano Sandoval, a full copy of the license

@@ -7,9 +7,18 @@ license = "EUPL-1.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-# UI-related dependencies
+[workspace]
+members = ["kcshot-data"]
+
+[workspace.dependencies]
 gtk4 = "0.5.0"
+
+
+[dependencies]
+kcshot-data = { path = "./kcshot-data" }
+
+# UI-related dependencies
+gtk4.workspace = true
 ksni = "0.2.0"
 
 # Screenshot editing & capturing
@@ -34,7 +43,6 @@ xcb = { version = "1.2.0", features = [
 # User settings, history
 diesel = { version = "2.0.0", features = ["sqlite"] }
 diesel_migrations = "2.0.0"
-gsettings-macro = "0.1.9"
 xdg = "2.1"
 
 # Miscellaneous

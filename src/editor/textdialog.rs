@@ -2,8 +2,7 @@ use gtk4::{
     glib, glib::clone, pango, prelude::*, subclass::prelude::ObjectSubclassIsExt, DialogFlags,
     ResponseType,
 };
-
-use super::data::{Colour, Text};
+use kcshot_data::{colour::Colour, Text};
 
 mod parse;
 

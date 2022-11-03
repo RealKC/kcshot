@@ -1,7 +1,6 @@
 use cairo::Context;
 use gtk4::gdk::{self, gdk_pixbuf::Pixbuf};
-
-use super::data::{Colour, Rectangle};
+use kcshot_data::{colour::Colour, geometry::Rectangle};
 
 #[macro_export]
 macro_rules! log_if_err {

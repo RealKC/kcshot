@@ -1,9 +1,10 @@
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::pango::FontDescription;
+use kcshot_data::{colour::Colour, geometry::*, Text};
 use rand::Rng;
 
 pub use self::stack::*;
-use super::{data::*, utils::CairoExt};
+use super::utils::CairoExt;
 
 mod pixelops;
 mod shapes;

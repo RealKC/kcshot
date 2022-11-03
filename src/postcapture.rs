@@ -6,11 +6,11 @@ use gtk4::{
     gdk_pixbuf::Pixbuf,
     glib,
 };
+use kcshot_data::settings::Settings;
 
 use crate::{
     db,
     historymodel::{ModelNotifier, RowData},
-    kcshot::Settings,
 };
 
 /// Trait for the post capture actions.

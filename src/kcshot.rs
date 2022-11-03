@@ -2,31 +2,12 @@ use std::path::PathBuf;
 
 use diesel::SqliteConnection;
 use gtk4::{gio, glib, subclass::prelude::*};
+use kcshot_data::settings::Settings;
 
 use crate::{
     appwindow,
-    editor::Colour,
     historymodel::{HistoryModel, ModelNotifier},
 };
-
-#[gsettings_macro::gen_settings(file = "./resources/kc.kcshot.gschema.xml", id = "kc.kcshot")]
-#[gen_settings_define(
-    key_name = "last-used-primary-colour",
-    arg_type = "Colour",
-    ret_type = "Colour"
-)]
-#[gen_settings_define(
-    key_name = "last-used-secondary-colour",
-    arg_type = "Colour",
-    ret_type = "Colour"
-)]
-pub struct Settings;
-
-impl Settings {
-    pub fn open() -> Self {
-        Self::default()
-    }
-}
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;

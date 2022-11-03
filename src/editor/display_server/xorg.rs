@@ -1,4 +1,8 @@
 use cairo::{self, Format as CairoImageFormat, ImageSurface};
+use kcshot_data::{
+    geometry::{Point, Rectangle},
+    settings::Settings,
+};
 use once_cell::sync::OnceCell;
 use xcb::{
     shape,
@@ -10,10 +14,6 @@ use xcb::{
 };
 
 use super::{Result, Window, WmFeatures};
-use crate::{
-    editor::data::{Point, Rectangle},
-    kcshot::Settings,
-};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

@@ -885,6 +885,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kcshot-data"
+version = "0.1.0"
+dependencies = [
+ "gsettings-macro",
+ "gtk4",
+]
+
+[[package]]
 name = "kcshot-rs"
 version = "0.1.0"
 dependencies = [
@@ -894,8 +902,8 @@ dependencies = [
  "diesel_migrations",
  "gdk4-x11",
  "glib-build-tools",
- "gsettings-macro",
  "gtk4",
+ "kcshot-data",
  "ksni",
  "once_cell",
  "pangocairo",

@@ -4,14 +4,12 @@ use gtk4::{
     subclass::prelude::ObjectSubclassIsExt,
     traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
+use kcshot_data::{colour::Colour, settings::Settings};
 
-pub use self::data::Colour;
 use self::operations::Tool;
-use crate::kcshot::Settings;
 
 mod colourchooser;
 mod colourwheel;
-mod data;
 mod display_server;
 mod operations;
 mod textdialog;
