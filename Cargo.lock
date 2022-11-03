@@ -1929,8 +1929,9 @@ checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
 
 [[package]]
 name = "xcb"
-version = "1.1.1"
-source = "git+https://github.com/rust-x-bindings/rust-xcb#fb472842d2ef41b3a688abc0f16329cc2ccdb4f9"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0faeb4d7e2d54fff4a0584f61297e86b106914af2029778de7b427f72564d6c5"
 dependencies = [
  "bitflags",
  "libc",
