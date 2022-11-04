@@ -208,6 +208,15 @@ mod underlying {
                 self.systray_initialised.set(true);
             }
 
+            if !take_screenshot && !show_main_window {
+                // HACK: Ensure the main window gets created on the xorg/wayland so it's fine to
+                //       create a WindowIdentifier from the main window.
+                //       (This code path should only be reached when -n is passed to the first
+                //       instance of kcshot.)
+                self.obj().main_window().present();
+                self.obj().main_window().hide();
+            }
+
             if take_screenshot {
                 self.take_screenshot.set(false);
 
