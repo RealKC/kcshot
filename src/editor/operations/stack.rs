@@ -4,11 +4,12 @@ use kcshot_data::{
     geometry::{Point, Rectangle},
     Text,
 };
+use kcshot_screenshot::Window;
 use tracing::{error, warn};
 
 use super::{Operation, Tool};
 use crate::{
-    editor::{display_server::Window, operations::shapes, utils::CairoExt},
+    editor::{operations::shapes, utils::CairoExt},
     log_if_err,
 };
 

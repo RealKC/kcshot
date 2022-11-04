@@ -5,7 +5,6 @@ use gtk4::{
 };
 
 use super::{Result, Window, WmFeatures};
-use crate::kcshot::KCShot;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -24,15 +23,12 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     Ok(wm_features)
 }
 
-pub(crate) fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
+pub(super) fn take_screenshot(wid: ashpd::WindowIdentifier) -> Result<ImageSurface> {
     let ctx = glib::MainContext::default();
-    let app_ = app.clone();
     let uri = ctx
         .block_on(async {
-            let identifier = ashpd::WindowIdentifier::from_native(&app_.main_window()).await;
-
             ashpd::desktop::screenshot::ScreenshotRequest::default()
-                .identifier(identifier)
+                .identifier(wid)
                 .interactive(false)
                 .modal(false)
                 .build()
@@ -64,7 +60,7 @@ pub(crate) fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
     Ok(screenshot?)
 }
 
-pub(crate) fn get_windows() -> Result<Vec<Window>> {
+pub(super) fn get_windows() -> Result<Vec<Window>> {
     // FIXME: Look into ways we could do this
     Ok(vec![])
 }

@@ -1,0 +1,30 @@
+[package]
+name = "kcshot-screenshot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+kcshot-data = { path = "../kcshot-data" }
+
+# Actually taking the screeenshot
+ashpd = { version = "0.4.0-alpha.1", default-features = false, features = [
+    "gtk4",
+    "tokio",
+    "tracing",
+] }
+xcb = { version = "1.2.0", features = [
+    "debug_atom_names",
+    "shape",
+    "xfixes",
+    "randr",
+] }
+
+cairo.workspace = true
+gtk4.workspace = true
+once_cell.workspace = true
+
+# Error and logging
+thiserror = "1.0.30"
+tracing.workspace = true

@@ -8,11 +8,13 @@ license = "EUPL-1.2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["kcshot-data"]
+members = ["kcshot-data", "kcshot-screenshot"]
 
 [workspace.dependencies]
+cairo = { package = "cairo-rs", version = "0.16.0", features = ["png", "xcb"] }
 gtk4 = "0.5.0"
-
+once_cell = "1.2.0"
+tracing = "0.1.23"
 
 [dependencies]
 kcshot-data = { path = "./kcshot-data" }
@@ -22,23 +24,13 @@ gtk4.workspace = true
 ksni = "0.2.0"
 
 # Screenshot editing & capturing
-ashpd = { version = "0.4.0-alpha.1", default-features = false, features = [
-  "gtk4",
-  "tokio",
-  "tracing",
-] }
-cairo-rs = { version = "0.16.0", features = ["png", "xcb"] }
+kcshot-screenshot = { path = "./kcshot-screenshot" }
+cairo.workspace = true
 gdk4-x11 = "0.5.0"
 pangocairo = "0.16.0"
 pulldown-cmark = { version = "0.9.1", default-features = false }
 regex = "1.5.6"
 stackblur-iter = "0.2.0"
-xcb = { version = "1.2.0", features = [
-  "debug_atom_names",
-  "shape",
-  "xfixes",
-  "randr",
-] }
 
 # User settings, history
 diesel = { version = "2.0.0", features = ["sqlite"] }
@@ -46,11 +38,11 @@ diesel_migrations = "2.0.0"
 xdg = "2.1"
 
 # Miscellaneous
-once_cell = "1.2.0"
+once_cell.workspace = true
 rand = "0.8.4"
 
 # Logging and error reporting
-tracing = "0.1.23"
+tracing.workspace = true
 tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror = "1.0.30"
 
@@ -62,8 +54,3 @@ default = ["xdg-paths"]
 xdg-paths = []
 # Only specify this when trying to diagnose memory leaks, it shouldn't be used for normal usage
 heaptrack = []
-
-[package.metadata.cargo-machete]
-ignored = [
-  "cairo-rs", # The crate exported by this package is called cairo
-]

@@ -17,7 +17,6 @@ use tracing::error;
 use super::{toolbar, utils::ContextLogger, Colour};
 use crate::{
     editor::{
-        display_server,
         operations::{OperationStack, SelectionMode, Tool},
         utils,
     },
@@ -212,9 +211,9 @@ impl ObjectImpl for EditorWindow {
         let obj = self.obj();
 
         let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
-        let image =
-            super::display_server::take_screenshot(&app).expect("Couldn't take a screenshot");
-        let windows = display_server::get_windows().unwrap_or_else(|why| {
+        let image = kcshot_screenshot::take_screenshot(app.main_window_identifier())
+            .expect("Couldn't take a screenshot");
+        let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
             tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]
         });

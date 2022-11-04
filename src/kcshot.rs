@@ -58,6 +58,12 @@ impl KCShot {
             .get_or_init(|| appwindow::AppWindow::new(self, &self.history_model()))
             .clone()
     }
+
+    pub fn main_window_identifier(&self) -> kcshot_screenshot::WindowIdentifier {
+        glib::MainContext::default().block_on(kcshot_screenshot::WindowIdentifier::from_native(
+            &self.main_window(),
+        ))
+    }
 }
 
 mod underlying {

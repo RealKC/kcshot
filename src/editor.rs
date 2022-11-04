@@ -10,7 +10,6 @@ use self::operations::Tool;
 
 mod colourchooser;
 mod colourwheel;
-mod display_server;
 mod operations;
 mod textdialog;
 mod toolbar;

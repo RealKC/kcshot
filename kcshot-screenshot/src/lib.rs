@@ -5,10 +5,10 @@ use kcshot_data::geometry::Rectangle;
 use once_cell::sync::OnceCell;
 use tracing::error;
 
-use crate::kcshot::KCShot;
-
 mod wayland;
 mod xorg;
+
+pub use ashpd::WindowIdentifier;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -81,9 +81,9 @@ impl WmFeatures {
     }
 }
 
-pub fn take_screenshot(app: &KCShot) -> Result<ImageSurface> {
+pub fn take_screenshot(window_identifier: WindowIdentifier) -> Result<ImageSurface> {
     if WmFeatures::get()?.is_wayland {
-        wayland::take_screenshot(app)
+        wayland::take_screenshot(window_identifier)
     } else {
         xorg::take_screenshot()
     }
