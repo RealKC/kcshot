@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=kcshot
+GenericName=Screenshot tool
+Exec=kcshot
+Icon=kcshot
+Terminal=false
+Type=Application
+Categories=Utility
+StartupNotify=false
