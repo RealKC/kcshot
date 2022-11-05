@@ -29,7 +29,7 @@ package() {
 
     install -Dm755 target/release/kcshot-rs "$pkgdir/usr/bin/kcshot"
 
-    install -Dm644 resources/logo/kcshot_logo_dark.svg "$pkgdir/usr/share/icons/hicolor/scalable/kcshot.svg"
+    install -Dm644 resources/logo/kcshot_logo_dark.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/kcshot.svg"
     install -Dm644 resources/kc.kcshot.gschema.xml "$pkgdir/usr/share/glib-2.0/schemas/kc.kcshot.gschema.xml"
 
     install -Dm644 LICENSE.txt "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
