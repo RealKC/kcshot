@@ -32,7 +32,7 @@ mod underlying {
         Inhibit,
     };
     use kcshot_data::colour::Colour;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use crate::{
         editor::{

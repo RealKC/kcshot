@@ -29,7 +29,7 @@ mod underlying {
         },
     };
     use kcshot_data::settings::Settings;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
 

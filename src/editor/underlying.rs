@@ -11,7 +11,7 @@ use gtk4::{
     Allocation,
 };
 use kcshot_data::geometry::{Point, Rectangle};
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::{sync::Lazy, unsync::OnceCell};
 use tracing::error;
 
 use super::{toolbar, utils::ContextLogger, Colour};

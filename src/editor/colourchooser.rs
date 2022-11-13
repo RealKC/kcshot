@@ -161,7 +161,7 @@ mod underlying {
     use cairo::glib::{ParamSpec, Value};
     use gtk4::{gdk, gdk::prelude::*, glib, pango, prelude::*, subclass::prelude::*};
     use kcshot_data::colour::Hsv;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use crate::editor::colourwheel::ColourWheel;
 

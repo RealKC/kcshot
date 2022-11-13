@@ -91,7 +91,7 @@ pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
 
 mod underlying {
     use gtk4::{glib, prelude::*, subclass::prelude::*};
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::parse;
     use crate::{

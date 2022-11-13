@@ -303,7 +303,7 @@ impl ColourWheel {
 mod underlying {
     use std::cell::Cell;
 
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 
