@@ -33,10 +33,19 @@ mod underlying {
 
     use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
 
-    #[derive(Default, Debug)]
+    #[derive(Debug)]
     pub struct AppWindow {
         history_model: OnceCell<super::HistoryModel>,
         settings: OnceCell<Settings>,
+    }
+
+    impl Default for AppWindow {
+        fn default() -> Self {
+            Self {
+                history_model: OnceCell::default(),
+                settings: OnceCell::with_value(Settings::open()),
+            }
+        }
     }
 
     #[glib::object_subclass]
@@ -49,9 +58,6 @@ mod underlying {
     impl ObjectImpl for AppWindow {
         fn constructed(&self) {
             let obj = self.obj();
-            self.settings
-                .set(Settings::open())
-                .expect("self.settings should only be set once");
             let settings = self.settings.get().unwrap();
 
             let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
