@@ -73,11 +73,8 @@ impl PostCaptureAction for SaveToDisk {
 
         write!(path, "screenshot_{now}.png").expect("Writing to a string shouldn't fail");
 
-        let res = pixbuf.savev(&path, "png", &[]);
-
-        match res {
-            Ok(_) => {}
-            Err(why) => tracing::error!("Failed to save screenshot to file: {why}"),
+        if let Err(why) = pixbuf.savev(&path, "png", &[]) {
+            tracing::error!("Failed to save screenshot to file: {why}");
         }
 
         if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
