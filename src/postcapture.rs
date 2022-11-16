@@ -110,12 +110,9 @@ impl PostCaptureAction for CopyToClipboard {
         _conn: &mut SqliteConnection,
         pixbuf: &mut Pixbuf,
     ) {
-        let display = match gdk::Display::default() {
-            Some(display) => display,
-            None => {
-                tracing::error!("Failed to fetch gdk::Display, bailing...");
-                return;
-            }
+        let Some(display) = gdk::Display::default() else {
+            tracing::error!("Failed to fetch gdk::Display, bailing...");
+            return;
         };
         let clipboard = display.clipboard();
 

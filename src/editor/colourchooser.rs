@@ -63,12 +63,9 @@ impl Dialog {
     where
         F: Fn(&EditorWindow, Colour) + 'static,
     {
-        let editor = match self.editor.upgrade() {
-            Some(editor) => editor,
-            None => {
-                tracing::warn!("Failed to upgrade self.editor in `Dialog::connect_response`");
-                return;
-            }
+        let Some(editor) = self.editor.upgrade() else {
+            tracing::warn!("Failed to upgrade self.editor in `Dialog::connect_response`");
+            return;
         };
 
         self.dialog.connect_response(glib::clone!(

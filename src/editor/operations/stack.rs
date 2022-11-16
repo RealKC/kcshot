@@ -145,9 +145,8 @@ impl OperationStack {
     }
 
     pub fn update_current_operation_end_coordinate(&mut self, new_width: f64, new_height: f64) {
-        let current_operation = match self.current_operation.as_mut() {
-            Some(curr) => curr,
-            None => return,
+        let Some(current_operation) = self.current_operation.as_mut() else {
+            return;
         };
 
         match current_operation {
