@@ -330,7 +330,7 @@ impl Operation {
                 font_description,
             } => {
                 cairo.save()?;
-                draw_text_at(cairo, *top_left, text, *colour, font_description)?;
+                draw_text_at(cairo, *top_left, text, *colour, font_description);
                 cairo.restore()?;
             }
             Operation::DrawArrow {
@@ -378,7 +378,7 @@ impl Operation {
                     num_str.as_str(),
                     *text_colour,
                     font_description,
-                )?;
+                );
             }
             Operation::Pencil {
                 start,
@@ -434,7 +434,7 @@ fn draw_text_at(
     text: &str,
     colour: Colour,
     font_description: &FontDescription,
-) -> Result<(), Error> {
+) {
     let layout = pangocairo::create_layout(cairo);
 
     layout.set_markup(text);
@@ -443,7 +443,6 @@ fn draw_text_at(
     cairo.set_source_colour(colour);
     pangocairo::update_layout(cairo, &layout);
     pangocairo::show_layout(cairo, &layout);
-    Ok(())
 }
 
 fn draw_text_centred_at(
@@ -452,7 +451,7 @@ fn draw_text_centred_at(
     text: &str,
     colour: Colour,
     font_description: &FontDescription,
-) -> Result<(), Error> {
+) {
     let layout = pangocairo::create_layout(cairo);
 
     layout.set_markup(text);
@@ -466,5 +465,4 @@ fn draw_text_centred_at(
     cairo.set_source_colour(colour);
     pangocairo::update_layout(cairo, &layout);
     pangocairo::show_layout(cairo, &layout);
-    Ok(())
 }

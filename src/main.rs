@@ -6,6 +6,7 @@
 #![warn(clippy::items_after_statements)]
 #![warn(clippy::useless_conversion)]
 #![warn(clippy::dbg_macro)]
+#![warn(clippy::unnecessary_wraps)]
 
 #[macro_use]
 extern crate diesel;
