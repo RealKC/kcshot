@@ -123,7 +123,7 @@ pub fn draw_arrow(
     line_width: f64,
 ) -> Result<(), Error> {
     let angle = get_line_angle(start, end);
-    let length = (end.to_owned() - start.to_owned()).dist();
+    let length = (end - start).dist();
     let arrow_length = length * ARROWHEAD_LENGTH_RATIO;
 
     cairo.move_to(start.x, start.y);
