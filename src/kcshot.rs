@@ -60,6 +60,14 @@ impl KCShot {
     }
 
     pub fn main_window_identifier(&self) -> kcshot_screenshot::WindowIdentifier {
+        // HACK: Ensure the main window gets created on the xorg/wayland so it's fine to
+        //       create a WindowIdentifier from the main window.
+        //       (This code path should only be reached when -n or -s is passed to the
+        //       first instance of kcshot.)
+        use gtk4::prelude::{GtkWindowExt, WidgetExt};
+        self.main_window().present();
+        self.main_window().hide();
+
         glib::MainContext::default().block_on(kcshot_screenshot::WindowIdentifier::from_native(
             &self.main_window(),
         ))
@@ -206,15 +214,6 @@ mod underlying {
             if !self.systray_initialised.get() {
                 systray::init(&self.obj());
                 self.systray_initialised.set(true);
-            }
-
-            if !take_screenshot && !show_main_window {
-                // HACK: Ensure the main window gets created on the xorg/wayland so it's fine to
-                //       create a WindowIdentifier from the main window.
-                //       (This code path should only be reached when -n is passed to the first
-                //       instance of kcshot.)
-                self.obj().main_window().present();
-                self.obj().main_window().hide();
             }
 
             if take_screenshot {
