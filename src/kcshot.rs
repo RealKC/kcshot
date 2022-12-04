@@ -60,13 +60,18 @@ impl KCShot {
     }
 
     pub fn main_window_identifier(&self) -> kcshot_screenshot::WindowIdentifier {
-        // HACK: Ensure the main window gets created on the xorg/wayland so it's fine to
-        //       create a WindowIdentifier from the main window.
-        //       (This code path should only be reached when -n or -s is passed to the
-        //       first instance of kcshot.)
-        use gtk4::prelude::{GtkWindowExt, WidgetExt};
-        self.main_window().present();
-        self.main_window().hide();
+        if !self.imp().native_main_window_initialised.get() {
+            // HACK: Ensure the main window gets created on the xorg/wayland so it's fine to
+            //       create a WindowIdentifier from the main window.
+            //       (This code path should only be reached when -n or -s is passed to the
+            //       first instance of kcshot.)
+            use gtk4::prelude::{GtkWindowExt, WidgetExt};
+            self.main_window().present();
+            self.main_window().hide();
+
+            // We don't need to do this dance multiple times, so guard against that.
+            self.imp().native_main_window_initialised.set(true);
+        }
 
         glib::MainContext::default().block_on(kcshot_screenshot::WindowIdentifier::from_native(
             &self.main_window(),
@@ -105,6 +110,8 @@ mod underlying {
         model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: Cell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
+        /// See comments inside of [`super::KCShot::main_window_identifier`]
+        pub(super) native_main_window_initialised: Cell<bool>,
     }
 
     impl KCShot {
@@ -127,6 +134,7 @@ mod underlying {
                 model_notifier: Default::default(),
                 systray_initialised: Cell::new(false),
                 window: Default::default(),
+                native_main_window_initialised: Cell::new(false),
             }
         }
     }
@@ -141,6 +149,10 @@ mod underlying {
                 .field("model_notifier", &self.model_notifier)
                 .field("systray_initialised", &self.systray_initialised)
                 .field("window", &self.window)
+                .field(
+                    "native_main_window_intiialised",
+                    &self.native_main_window_initialised,
+                )
                 .finish()
         }
     }
@@ -225,6 +237,8 @@ mod underlying {
             } else if show_main_window {
                 self.show_main_window.set(false);
 
+                // See comments in super::KCShot::main_window_identifier
+                self.native_main_window_initialised.set(true);
                 self.obj().main_window().present();
             }
         }
