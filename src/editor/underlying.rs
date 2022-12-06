@@ -5,7 +5,7 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, CastNone, ParamSpec},
+    glib::{self, clone, ParamSpec},
     prelude::*,
     subclass::prelude::*,
     Allocation,
@@ -210,8 +210,7 @@ impl ObjectImpl for EditorWindow {
         self.parent_constructed();
         let obj = self.obj();
 
-        let app = obj.application().and_downcast::<KCShot>().unwrap();
-        let image = kcshot_screenshot::take_screenshot(app.main_window_identifier())
+        let image = kcshot_screenshot::take_screenshot(KCShot::the().main_window_identifier())
             .expect("Couldn't take a screenshot");
         let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
             tracing::info!("Got while trying to retrieve windows: {why}");
@@ -297,7 +296,7 @@ impl ObjectImpl for EditorWindow {
         drawing_area.add_controller(&motion_event_handler);
 
         click_event_handler.connect_released(
-            clone!(@weak obj, @weak drawing_area, @weak app => move |_this, _n_clicks, x, y| {
+            clone!(@weak obj, @weak drawing_area => move |_this, _n_clicks, x, y| {
                 let should_queue_draw = obj.imp().with_image_mut("mouse button released event", |image| {
                     // NOTE: image.operation_stack.finish_current_operation MUST be called in all
                     //       branches of this if-chain, in order for tools to take part in the undo
@@ -311,8 +310,8 @@ impl ObjectImpl for EditorWindow {
                     } else {
                         image.operation_stack.finish_current_operation();
 
-                        app.with_conn(|conn| EditorWindow::do_save_surface(
-                            &app.model_notifier(),
+                        KCShot::the().with_conn(|conn| EditorWindow::do_save_surface(
+                            &KCShot::the().model_notifier(),
                             conn,
                             obj.upcast_ref(),
                             image,
@@ -371,13 +370,8 @@ impl ObjectImpl for EditorWindow {
                             return;
                         }
 
-                        let app = obj
-                            .application()
-                            .and_downcast::<KCShot>()
-                            .expect("The EditorWindow's application should always be an instance of `KCShot`");
-
-                        app.with_conn(|conn| Self::do_save_surface(
-                            &app.model_notifier(),
+                        KCShot::the().with_conn(|conn| Self::do_save_surface(
+                            &KCShot::the().model_notifier(),
                             conn,
                             obj.upcast_ref(),
                             image,
@@ -426,8 +420,8 @@ impl ObjectImpl for EditorWindow {
 
         // FIXME: Figure out how/if we make this work across keyboard layouts that don't have Z and Y
         // in the same place QWERTY does.
-        app.set_accels_for_action("win.undo", &["<Ctrl>Z"]);
-        app.set_accels_for_action("win.redo", &["<Ctrl>Y"]);
+        KCShot::the().set_accels_for_action("win.undo", &["<Ctrl>Z"]);
+        KCShot::the().set_accels_for_action("win.redo", &["<Ctrl>Y"]);
 
         self.image.replace(Some(Image {
             surface: image,
@@ -449,9 +443,7 @@ impl ObjectImpl for EditorWindow {
 
     fn properties() -> &'static [ParamSpec] {
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            use crate::properties::*;
             vec![
-                construct_only_rw_object_property::<KCShot>("application"),
                 glib::ParamSpecBoolean::builder("editing-starts-with-cropping")
                     .default_value(false)
                     .write_only()
@@ -464,23 +456,8 @@ impl ObjectImpl for EditorWindow {
     }
 
     #[tracing::instrument]
-    fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
-        match pspec.name() {
-            "application" => self.obj().application().to_value(),
-            name => {
-                tracing::error!("Unknown property: {name}");
-                panic!()
-            }
-        }
-    }
-
-    #[tracing::instrument]
     fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
         match pspec.name() {
-            "application" => {
-                let application = value.get::<KCShot>().ok();
-                self.obj().set_application(application.as_ref());
-            }
             "editing-starts-with-cropping" => {
                 let editing_starts_with_cropping = value.get::<bool>();
                 match editing_starts_with_cropping {

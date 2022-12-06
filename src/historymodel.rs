@@ -5,7 +5,6 @@ use gtk4::{
 };
 
 pub use self::rowdata::RowData;
-use crate::kcshot::KCShot;
 
 mod rowdata;
 
@@ -15,12 +14,6 @@ glib::wrapper! {
 }
 
 impl HistoryModel {
-    pub fn new(application: &KCShot) -> Self {
-        glib::Object::builder()
-            .property("application", application)
-            .build()
-    }
-
     /// Inserts a screenshot to the internally maintained list of screenshots.
     ///
     /// # Note
@@ -28,6 +21,12 @@ impl HistoryModel {
     /// yourself properly.
     pub fn insert_screenshot(&self, screenshot: RowData) {
         self.imp().screenshots.borrow_mut().insert(0, screenshot);
+    }
+}
+
+impl Default for HistoryModel {
+    fn default() -> Self {
+        glib::Object::new(&[])
     }
 }
 
@@ -42,28 +41,17 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, Object, ParamSpec, StaticType, ToValue, Value},
+        glib::{self, Object, StaticType},
         prelude::*,
         subclass::prelude::*,
     };
-    use once_cell::sync::Lazy;
 
     use super::rowdata::RowData;
     use crate::{db, kcshot::KCShot};
 
     #[derive(Default)]
     pub struct ListModel {
-        pub(super) app: RefCell<Option<KCShot>>,
         pub(super) screenshots: Rc<RefCell<Vec<RowData>>>,
-    }
-
-    impl ListModel {
-        fn app(&self) -> KCShot {
-            self.app
-                .borrow()
-                .clone()
-                .expect("ListModel::app must be set for it to work properly")
-        }
     }
 
     #[glib::object_subclass]
@@ -80,7 +68,7 @@ mod underlying {
         }
 
         fn n_items(&self) -> u32 {
-            let n_items = self.app().with_conn(db::number_of_history_itms);
+            let n_items = KCShot::the().with_conn(db::number_of_history_itms);
             match n_items {
                 Ok(n_items) => {
                     assert!(
@@ -112,7 +100,7 @@ mod underlying {
                 || last_fetched_screenshot_index == 0
             {
                 const COUNT: i64 = 15;
-                let new_screenshots = self.app().with_conn(|conn| {
+                let new_screenshots = KCShot::the().with_conn(|conn| {
                     db::fetch_screenshots(conn, last_fetched_screenshot_index as i64, COUNT)
                 });
                 let new_screenshots = match new_screenshots {
@@ -136,36 +124,5 @@ mod underlying {
         }
     }
 
-    impl ObjectImpl for ListModel {
-        fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                use crate::properties::*;
-                vec![construct_only_rw_object_property::<KCShot>("application")]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        #[tracing::instrument(skip(self))]
-        fn property(&self, _id: usize, pspec: &ParamSpec) -> Value {
-            match pspec.name() {
-                "application" => self.app.borrow().to_value(),
-                name => {
-                    tracing::error!("Unknown property: {name}");
-                    panic!()
-                }
-            }
-        }
-
-        #[tracing::instrument(skip(self))]
-        fn set_property(&self, _id: usize, value: &Value, pspec: &ParamSpec) {
-            match pspec.name() {
-                "application" => {
-                    let application = value.get::<KCShot>().ok();
-                    self.app.replace(application);
-                }
-                name => tracing::warn!("Unknown property: {name}"),
-            }
-        }
-    }
+    impl ObjectImpl for ListModel {}
 }

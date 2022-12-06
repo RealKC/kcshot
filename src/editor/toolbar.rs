@@ -328,10 +328,8 @@ mod underlying {
 
             if should_start_saving_immediately(tool) {
                 editor.imp().with_image_mut(&format!("on_click of {tool:?} - immediate save"), |image| {
-                    let app = editor.application().and_downcast::<KCShot>().unwrap();
-
-                    app.with_conn(|conn| EditorWindowImp::do_save_surface(
-                        &app.model_notifier(),
+                    KCShot::the().with_conn(|conn| EditorWindowImp::do_save_surface(
+                        &KCShot::the().model_notifier(),
                         conn,
                         editor.upcast_ref(),
                         image,

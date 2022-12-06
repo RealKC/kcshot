@@ -27,6 +27,15 @@ impl KCShot {
             .build()
     }
 
+    #[track_caller]
+    pub fn the() -> Self {
+        use glib::CastNone;
+
+        gio::Application::default()
+            .and_downcast()
+            .expect("The global application should be of type `KCShot`")
+    }
+
     pub fn with_conn<F, R>(&self, f: F) -> R
     where
         F: Fn(&mut SqliteConnection) -> R,
@@ -176,8 +185,7 @@ mod underlying {
                 }
             };
 
-            self.history_model
-                .replace(Some(HistoryModel::new(&self.obj())));
+            self.history_model.replace(Some(HistoryModel::default()));
             let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
 
             self.model_notifier

@@ -66,7 +66,7 @@ mod underlying {
 
             let list_model = self.history_model.get().unwrap();
 
-            let button_list = build_button_pane(&obj.application().unwrap(), list_model, settings);
+            let button_list = build_button_pane(KCShot::the().upcast_ref(), list_model, settings);
             let left_frame = gtk4::Frame::new(None);
             left_frame.set_child(Some(&button_list));
             hbox.append(&left_frame);
@@ -139,33 +139,17 @@ mod underlying {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 use crate::properties::*;
-                vec![
-                    construct_only_rw_object_property::<KCShot>("application"),
-                    construct_only_wo_object_property::<super::HistoryModel>("history-model"),
-                ]
+                vec![construct_only_wo_object_property::<super::HistoryModel>(
+                    "history-model",
+                )]
             });
 
             PROPERTIES.as_ref()
         }
 
         #[tracing::instrument]
-        fn property(&self, _id: usize, pspec: &ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "application" => self.obj().application().to_value(),
-                name => {
-                    tracing::error!("Unknown property: {name}");
-                    panic!()
-                }
-            }
-        }
-
-        #[tracing::instrument]
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
             match pspec.name() {
-                "application" => {
-                    let application = value.get::<KCShot>().ok();
-                    self.obj().set_application(application.as_ref());
-                }
                 "history-model" => {
                     let history_model = value.get::<super::HistoryModel>().unwrap();
                     self.history_model
