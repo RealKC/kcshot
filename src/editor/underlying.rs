@@ -5,7 +5,7 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, ParamSpec},
+    glib::{self, clone, CastNone, ParamSpec},
     prelude::*,
     subclass::prelude::*,
     Allocation,
@@ -210,7 +210,7 @@ impl ObjectImpl for EditorWindow {
         self.parent_constructed();
         let obj = self.obj();
 
-        let app = obj.application().unwrap().downcast::<KCShot>().unwrap();
+        let app = obj.application().and_downcast::<KCShot>().unwrap();
         let image = kcshot_screenshot::take_screenshot(app.main_window_identifier())
             .expect("Couldn't take a screenshot");
         let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
@@ -373,7 +373,7 @@ impl ObjectImpl for EditorWindow {
 
                         let app = obj
                             .application()
-                            .and_then(|app| app.downcast::<KCShot>().ok())
+                            .and_downcast::<KCShot>()
                             .expect("The EditorWindow's application should always be an instance of `KCShot`");
 
                         app.with_conn(|conn| Self::do_save_surface(

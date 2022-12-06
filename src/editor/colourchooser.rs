@@ -296,8 +296,7 @@ mod underlying {
                 .transform_to(|binding, mut rgba: gdk::RGBA| {
                     let target = binding
                         .target()
-                        .unwrap()
-                        .downcast::<gtk4::ColorButton>()
+                        .and_downcast::<gtk4::ColorButton>()
                         .unwrap();
 
                     rgba.set_alpha(target.rgba().alpha());

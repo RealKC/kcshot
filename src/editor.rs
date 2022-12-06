@@ -1,6 +1,6 @@
 use gtk4::{
     gio,
-    glib::{self, Cast},
+    glib::{self, CastNone},
     subclass::prelude::ObjectSubclassIsExt,
     traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
@@ -49,10 +49,9 @@ impl EditorWindow {
         let surface = window
             .native()
             .map(|native| native.surface())
-            .expect("An EditorWindow should have a gdk::Surface")
-            .downcast::<gdk4_x11::X11Surface>();
+            .and_downcast::<gdk4_x11::X11Surface>();
 
-        if let Ok(surface) = surface {
+        if let Some(surface) = surface {
             surface.set_skip_taskbar_hint(true);
             surface.set_skip_pager_hint(true);
         }

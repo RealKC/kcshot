@@ -194,15 +194,13 @@ mod underlying {
         factory.connect_bind(|_this, list_item| {
             let object = list_item
                 .item()
-                .expect("The item has to exist")
-                .downcast::<RowData>()
-                .unwrap();
+                .and_downcast::<RowData>()
+                .expect("The item has to exist and be a RowData");
 
             let picture = list_item
                 .child()
-                .expect("The child has to exist")
-                .downcast::<gtk4::Picture>()
-                .expect("The child has to be a gtk4::Picture");
+                .and_downcast::<gtk4::Picture>()
+                .expect("The child has to exist and it should be a gtk4::Picture");
 
             if let Some(path) = object.path() {
                 picture.set_filename(Some(&path));
