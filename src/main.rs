@@ -1,13 +1,3 @@
-#![warn(unused_qualifications)]
-#![warn(clippy::match_same_arms)]
-#![warn(clippy::trivially_copy_pass_by_ref)]
-#![warn(clippy::semicolon_if_nothing_returned)]
-#![warn(clippy::redundant_closure_for_method_calls)]
-#![warn(clippy::items_after_statements)]
-#![warn(clippy::useless_conversion)]
-#![warn(clippy::dbg_macro)]
-#![warn(clippy::unnecessary_wraps)]
-
 #[macro_use]
 extern crate diesel;
 #[macro_use]
