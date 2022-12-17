@@ -30,7 +30,6 @@ concurrency:
 
 jobs:
   rustfmt:
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -51,7 +50,6 @@ jobs:
       - run: cargo +nightly fmt --all -- --check
 
   build:
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
     steps:
       - run: |
@@ -76,7 +74,6 @@ jobs:
       - name: cranky
         run: cargo cranky -- -D warnings
   test:
-    if: "!startsWith(github.event.head_commit.message, '[SKIP CI]')"
     runs-on: ubuntu-22.04
     steps:
       - run: |
