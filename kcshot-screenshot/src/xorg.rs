@@ -96,12 +96,7 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
                 let cursor = connection.wait_for_reply(cursor_cookie);
                 match cursor {
                     Ok(cursor) => {
-                        overlay_cursor(
-                            cursor,
-                            &mut screenshot,
-                            screenshot_bounds.w as usize,
-                            screenshot_bounds.h as usize,
-                        );
+                        overlay_cursor(cursor, &mut screenshot, screenshot_bounds);
                     }
                     Err(why) => tracing::info!("Unable to fetch cursor data: {why:?}"),
                 }
@@ -153,17 +148,12 @@ fn retrieve_bounds_of_monitor_under_cursor(
     unreachable!()
 }
 
-fn overlay_cursor(
-    cursor: xfixes::GetCursorImageReply,
-    screenshot: &mut [u8],
-    width: usize,
-    height: usize,
-) {
+fn overlay_cursor(cursor: xfixes::GetCursorImageReply, screenshot: &mut [u8], bounds: Rectangle) {
     // These computations give us the coords of the top left corner of the mouse cursor
     // We use saturating arithmetic because cursor.{x,y}() may be smaller than cursor.{x,y}hot() when
     // the cursor is close to the left and top edges of the screen
-    let cx = (cursor.x() as usize).saturating_sub(cursor.xhot() as usize);
-    let cy = (cursor.y() as usize).saturating_sub(cursor.yhot() as usize);
+    let cx = (cursor.x() as usize).saturating_sub(cursor.xhot() as usize) - bounds.x as usize;
+    let cy = (cursor.y() as usize).saturating_sub(cursor.yhot() as usize) - bounds.y as usize;
 
     let w = cursor.width() as usize;
     let h = cursor.height() as usize;
@@ -173,8 +163,8 @@ fn overlay_cursor(
     // We use these variables to ensure that we don't attempt do out of bounds or wrapping
     // writes, which would either crash the application or draw the cursor on the other side
     // of the screen
-    let w_draw = usize::min(w, width - cx);
-    let h_draw = usize::min(h, height - cy);
+    let w_draw = usize::min(w, bounds.w as usize - cx);
+    let h_draw = usize::min(h, bounds.h as usize - cy);
 
     for x in 0..w_draw {
         #[allow(clippy::identity_op /*, reason = "Identity ops add a symmetry that makes the code nicer and easier to read." */)]
@@ -185,7 +175,7 @@ fn overlay_cursor(
             let a = cursor[y * w + x] >> 24 & 0xff;
 
             // We multiply by 4 because the screenshot is stored in RGB-Unused byte format
-            let pixel_idx = 4 * width * (cy + y) + 4 * (cx + x);
+            let pixel_idx = 4 * bounds.w as usize * (cy + y) + 4 * (cx + x);
 
             // Cursor data is RGBA, but screenshot data is RGB-Unused byte, so we do manual
             // blending to paste the cursor _over_ the image
