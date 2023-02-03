@@ -210,8 +210,11 @@ impl ObjectImpl for EditorWindow {
         self.parent_constructed();
         let obj = self.obj();
 
-        let image = kcshot_screenshot::take_screenshot(KCShot::the().main_window_identifier())
-            .expect("Couldn't take a screenshot");
+        let image = kcshot_screenshot::take_screenshot(
+            KCShot::the().main_window_identifier(),
+            KCShot::the().tokio_rt(),
+        )
+        .expect("Couldn't take a screenshot");
         let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
             tracing::info!("Got while trying to retrieve windows: {why}");
             vec![]

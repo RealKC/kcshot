@@ -25,9 +25,12 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     Ok(wm_features)
 }
 
-pub(super) fn take_screenshot(wid: ashpd::WindowIdentifier) -> Result<ImageSurface> {
-    let ctx = glib::MainContext::default();
-    let uri = ctx
+pub(super) fn take_screenshot(
+    wid: ashpd::WindowIdentifier,
+    tokio: Option<&tokio::runtime::Handle>,
+) -> Result<ImageSurface> {
+    let uri = tokio
+        .expect("kcshot is attempting to use portals but there is no tokio runtime running")
         .block_on(async {
             ashpd::desktop::screenshot::ScreenshotRequest::default()
                 .identifier(wid)
