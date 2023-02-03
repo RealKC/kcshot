@@ -8,8 +8,6 @@ use tracing::error;
 mod wayland;
 mod xorg;
 
-pub use ashpd::WindowIdentifier;
-
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
@@ -81,12 +79,9 @@ impl WmFeatures {
     }
 }
 
-pub fn take_screenshot(
-    window_identifier: WindowIdentifier,
-    tokio: Option<&tokio::runtime::Handle>,
-) -> Result<ImageSurface> {
+pub fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<ImageSurface> {
     if WmFeatures::get()?.is_wayland {
-        wayland::take_screenshot(window_identifier, tokio)
+        wayland::take_screenshot(tokio)
     } else {
         xorg::take_screenshot()
     }
