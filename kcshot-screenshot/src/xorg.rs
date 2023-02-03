@@ -14,6 +14,7 @@ use xcb::{
 };
 
 use super::{Result, Window, WmFeatures};
+use crate::DisplayServerKind;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -262,7 +263,7 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
 
     let wm_features = WmFeatures::get()?;
 
-    if !wm_features.supports_retrieving_windows {
+    if !wm_features.can_retrieve_windows() {
         return Err(Error::WmDoesNotSupportWindowList.into());
     }
 
@@ -428,7 +429,12 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
     } = AtomsOfInterest::get(&connection)?;
 
     // NOTE: This sets WmFeatures::is_wayland to false
-    let mut wm_features = WmFeatures::default();
+    let mut wm_features = WmFeatures {
+        display_server_kind: DisplayServerKind::X11 {
+            can_retrieve_windows: false,
+        },
+        should_use_portals: false,
+    };
 
     if supported_ewmh_atoms.atom() == ATOM_NONE {
         tracing::info!(
@@ -465,8 +471,10 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
         }
     }
 
-    wm_features.supports_retrieving_windows =
-        wm_supports_retrieving_client_list && wm_supports_retrieving_window_rects;
+    wm_features.display_server_kind = DisplayServerKind::X11 {
+        can_retrieve_windows: wm_supports_retrieving_client_list
+            && wm_supports_retrieving_window_rects,
+    };
 
     Ok(wm_features)
 }

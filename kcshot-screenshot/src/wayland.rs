@@ -6,6 +6,8 @@ use gtk4::{
     prelude::{FileExt, InputStreamExtManual},
 };
 
+use crate::DisplayServerKind;
+
 use super::{Result, Window, WmFeatures};
 
 #[derive(thiserror::Error, Debug)]
@@ -18,8 +20,8 @@ pub enum Error {
 
 pub(super) fn get_wm_features() -> Result<WmFeatures> {
     let wm_features = WmFeatures {
-        is_wayland: true,
-        ..Default::default()
+        display_server_kind: DisplayServerKind::GenericWayland,
+        should_use_portals: false,
     };
 
     Ok(wm_features)
