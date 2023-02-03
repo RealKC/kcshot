@@ -43,10 +43,11 @@ pub struct Window {
     pub content_rect: Rectangle,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum DisplayServerKind {
     X11 { can_retrieve_windows: bool },
     GenericWayland,
+    Hyprland,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -84,11 +85,12 @@ impl WmFeatures {
     }
 
     fn can_retrieve_windows(self) -> bool {
+        use DisplayServerKind::*;
         matches!(
             self.display_server_kind,
-            DisplayServerKind::X11 {
+            X11 {
                 can_retrieve_windows: true,
-            }
+            } | Hyprland
         )
     }
 
@@ -125,6 +127,6 @@ pub fn will_make_use_of_desktop_portals() -> bool {
 
     matches!(
         wm_features.display_server_kind,
-        DisplayServerKind::GenericWayland,
+        DisplayServerKind::GenericWayland | DisplayServerKind::Hyprland,
     )
 }
