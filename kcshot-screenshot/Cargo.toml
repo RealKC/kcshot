@@ -24,6 +24,7 @@ xcb = { version = "1.2.0", features = [
 cairo.workspace = true
 gtk4.workspace = true
 once_cell.workspace = true
+tokio.workspace = true
 
 # Error and logging
 thiserror = "1.0.30"

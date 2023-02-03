@@ -86,6 +86,13 @@ impl KCShot {
             &self.main_window(),
         ))
     }
+
+    pub fn tokio_rt(&self) -> Option<&tokio::runtime::Handle> {
+        self.imp()
+            .tokio_rt
+            .as_ref()
+            .map(tokio::runtime::Runtime::handle)
+    }
 }
 
 mod underlying {
@@ -121,6 +128,7 @@ mod underlying {
         pub(super) window: OnceCell<appwindow::AppWindow>,
         /// See comments inside of [`super::KCShot::main_window_identifier`]
         pub(super) native_main_window_initialised: Cell<bool>,
+        pub(super) tokio_rt: Option<tokio::runtime::Runtime>,
     }
 
     impl KCShot {
@@ -144,6 +152,14 @@ mod underlying {
                 systray_initialised: Cell::new(false),
                 window: Default::default(),
                 native_main_window_initialised: Cell::new(false),
+                tokio_rt: kcshot_screenshot::will_make_use_of_desktop_portals().then(|| {
+                    tokio::runtime::Builder::new_multi_thread()
+                        .enable_all()
+                        .worker_threads(1)
+                        .max_blocking_threads(1)
+                        .build()
+                        .unwrap()
+                }),
             }
         }
     }
@@ -162,6 +178,7 @@ mod underlying {
                     "native_main_window_intiialised",
                     &self.native_main_window_initialised,
                 )
+                .field("tokio_rt", &self.tokio_rt)
                 .finish()
         }
     }

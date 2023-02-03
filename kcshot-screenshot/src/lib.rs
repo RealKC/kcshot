@@ -81,9 +81,12 @@ impl WmFeatures {
     }
 }
 
-pub fn take_screenshot(window_identifier: WindowIdentifier) -> Result<ImageSurface> {
+pub fn take_screenshot(
+    window_identifier: WindowIdentifier,
+    tokio: Option<&tokio::runtime::Handle>,
+) -> Result<ImageSurface> {
     if WmFeatures::get()?.is_wayland {
-        wayland::take_screenshot(window_identifier)
+        wayland::take_screenshot(window_identifier, tokio)
     } else {
         xorg::take_screenshot()
     }
@@ -96,4 +99,8 @@ pub fn get_windows() -> Result<Vec<Window>> {
     } else {
         xorg::get_windows()
     }
+}
+
+pub fn will_make_use_of_desktop_portals() -> bool {
+    WmFeatures::get().map(|wm| wm.is_wayland).unwrap_or(false)
 }
