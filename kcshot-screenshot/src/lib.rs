@@ -43,12 +43,16 @@ pub struct Window {
     pub content_rect: Rectangle,
 }
 
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+enum DisplayServerKind {
+    X11 { can_retrieve_windows: bool },
+    GenericWayland,
+}
+
+#[derive(Clone, Copy, Debug)]
 struct WmFeatures {
-    /// Whether the WM supports retrieving the window list
-    supports_retrieving_windows: bool,
-    // Whether we're running under Wayland as a wayland client or not
-    is_wayland: bool,
+    display_server_kind: DisplayServerKind,
+    should_use_portals: bool,
 }
 
 impl WmFeatures {
@@ -63,24 +67,38 @@ impl WmFeatures {
     fn get_impl() -> Result<WmFeatures> {
         let wayland_display = env::var("WAYLAND_DISPLAY").unwrap_or_default();
         let xdg_session_type = env::var("XDG_SESSION_TYPE").unwrap_or_default();
-        // For checking that Wayland features work even when kcshot is used under X (but on desktops providing
-        // the necessary portals)
-        let force_wayland_emulation = env::var("KCSHOT_FORCE_USE_PORTALS").unwrap_or_default();
+        let force_use_portals = env::var("KCSHOT_FORCE_USE_PORTALS").unwrap_or_default();
 
         let is_wayland = wayland_display.to_lowercase().contains("wayland")
-            || xdg_session_type == "wayland"
-            || force_wayland_emulation == "1";
+            || xdg_session_type.eq_ignore_ascii_case("wayland");
 
-        if is_wayland {
+        let mut wm_features = if is_wayland {
             wayland::get_wm_features()
         } else {
             xorg::get_wm_features()
-        }
+        }?;
+
+        wm_features.should_use_portals = force_use_portals == "1";
+
+        Ok(wm_features)
+    }
+
+    fn can_retrieve_windows(self) -> bool {
+        matches!(
+            self.display_server_kind,
+            DisplayServerKind::X11 {
+                can_retrieve_windows: true,
+            }
+        )
+    }
+
+    fn is_wayland(self) -> bool {
+        !matches!(self.display_server_kind, DisplayServerKind::X11 { .. })
     }
 }
 
 pub fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<ImageSurface> {
-    if WmFeatures::get()?.is_wayland {
+    if WmFeatures::get()?.is_wayland() {
         wayland::take_screenshot(tokio)
     } else {
         xorg::take_screenshot()
@@ -89,7 +107,7 @@ pub fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<ImageSu
 
 /// Obtains a list of all windows from the display server, the list is in stacking order.
 pub fn get_windows() -> Result<Vec<Window>> {
-    if WmFeatures::get()?.is_wayland {
+    if WmFeatures::get()?.is_wayland() {
         wayland::get_windows()
     } else {
         xorg::get_windows()
@@ -97,5 +115,16 @@ pub fn get_windows() -> Result<Vec<Window>> {
 }
 
 pub fn will_make_use_of_desktop_portals() -> bool {
-    WmFeatures::get().map(|wm| wm.is_wayland).unwrap_or(false)
+    let Ok(wm_features) = WmFeatures::get() else {
+        return false;
+    };
+
+    if wm_features.should_use_portals {
+        return true;
+    }
+
+    matches!(
+        wm_features.display_server_kind,
+        DisplayServerKind::GenericWayland,
+    )
 }
