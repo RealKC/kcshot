@@ -76,7 +76,7 @@ mod underlying {
                 "path" => self.path.borrow().to_value(),
                 "time" => self.time.borrow().to_value(),
                 "url" => self.url.borrow().to_value(),
-                name => panic!("Tried to get property {} which does not exist", name),
+                name => panic!("Tried to get property {name} which does not exist"),
             }
         }
 

@@ -264,7 +264,7 @@ mod underlying {
             let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".to_string());
             let usage = format!(
                 r#"Usage:
-  {} [OPTION...]
+  {prog_name} [OPTION...]
 
 Help Options:
   -h, --help           Show help options
@@ -272,12 +272,11 @@ Help Options:
 Application Options:
   -n, --no-window      Don't show any windows
   -s, --screenshot     Take a screenshot (mutually exclusive with -n)
-"#,
-                prog_name
+"#
             );
 
             if arguments.contains(&"-h".into()) || arguments.contains(&"--help".into()) {
-                eprintln!("{}", usage);
+                eprintln!("{usage}");
                 return Some(0);
             }
 
