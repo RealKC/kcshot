@@ -5,13 +5,13 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, ParamSpec},
+    glib::{self, clone, ParamSpec, Properties},
     prelude::*,
     subclass::prelude::*,
     Allocation,
 };
 use kcshot_data::geometry::{Point, Rectangle};
-use once_cell::{sync::Lazy, unsync::OnceCell};
+use once_cell::unsync::OnceCell;
 use tracing::error;
 
 use super::{toolbar, utils::ContextLogger, Colour};
@@ -68,11 +68,14 @@ impl Image {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Properties)]
+#[properties(wrapper_type = super::EditorWindow)]
 pub struct EditorWindow {
+    #[property(name = "editing-starts-with-cropping", construct_only, set)]
+    editing_started_with_cropping: Cell<bool>,
+
     pub(super) image: RefCell<Option<Image>>,
     overlay: OnceCell<gtk4::Overlay>,
-    editing_started_with_cropping: Cell<bool>,
 
     /// This field is part of the "pick a colour from the screen" mechanism, we send the colour under
     /// the mouse cursor to the colour chooser dialog currently open
@@ -442,35 +445,12 @@ impl ObjectImpl for EditorWindow {
     }
 
     fn properties() -> &'static [ParamSpec] {
-        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![
-                glib::ParamSpecBoolean::builder("editing-starts-with-cropping")
-                    .default_value(false)
-                    .write_only()
-                    .construct_only()
-                    .build(),
-            ]
-        });
-
-        PROPERTIES.as_ref()
+        Self::derived_properties()
     }
 
     #[tracing::instrument]
-    fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
-        match pspec.name() {
-            "editing-starts-with-cropping" => {
-                let editing_starts_with_cropping = value.get::<bool>();
-                match editing_starts_with_cropping {
-                    Ok(b) => {
-                        self.editing_started_with_cropping.set(b);
-                    }
-                    Err(why) => {
-                        tracing::error!("set_property called for editing-starts-with-cropping but with the wrong type: {why}");
-                    }
-                }
-            }
-            name => tracing::warn!("Unknown property: {name}"),
-        }
+    fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        Self::derived_set_property(self, id, value, pspec);
     }
 }
 

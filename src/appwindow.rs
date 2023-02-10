@@ -18,31 +18,31 @@ impl AppWindow {
 }
 
 mod underlying {
-    use std::process::Command;
+    use std::{cell::RefCell, process::Command};
 
     use gtk4::{
-        glib::{self, clone, ParamSpec},
+        glib::{self, clone, ParamSpec, Properties},
         prelude::*,
-        subclass::{
-            application_window::ApplicationWindowImpl,
-            prelude::{ObjectImpl, ObjectSubclass, ObjectSubclassExt, WidgetImpl, WindowImpl},
-        },
+        subclass::{application_window::ApplicationWindowImpl, prelude::*},
     };
     use kcshot_data::settings::Settings;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::unsync::OnceCell;
 
     use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
 
-    #[derive(Debug)]
+    #[derive(Debug, Properties)]
+    #[properties(wrapper_type = super::AppWindow)]
     pub struct AppWindow {
-        history_model: OnceCell<super::HistoryModel>,
+        #[property(get, set, construct_only)]
+        history_model: RefCell<super::HistoryModel>,
+
         settings: OnceCell<Settings>,
     }
 
     impl Default for AppWindow {
         fn default() -> Self {
             Self {
-                history_model: OnceCell::default(),
+                history_model: Default::default(),
                 settings: OnceCell::with_value(Settings::open()),
             }
         }
@@ -64,16 +64,16 @@ mod underlying {
 
             obj.set_hide_on_close(true);
 
-            let list_model = self.history_model.get().unwrap();
+            let list_model = obj.history_model();
 
-            let button_list = build_button_pane(KCShot::the().upcast_ref(), list_model, settings);
+            let button_list = build_button_pane(KCShot::the().upcast_ref(), &list_model, settings);
             let left_frame = gtk4::Frame::new(None);
             left_frame.set_child(Some(&button_list));
             hbox.append(&left_frame);
 
             let factory = build_item_factory();
 
-            let selection_model = gtk4::SingleSelection::new(Some(list_model.clone()));
+            let selection_model = gtk4::SingleSelection::new(Some(list_model));
 
             let stack = gtk4::Stack::new();
 
@@ -137,27 +137,15 @@ mod underlying {
         }
 
         fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                use crate::properties::*;
-                vec![construct_only_wo_object_property::<super::HistoryModel>(
-                    "history-model",
-                )]
-            });
-
-            PROPERTIES.as_ref()
+            Self::derived_properties()
         }
 
-        #[tracing::instrument]
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            match pspec.name() {
-                "history-model" => {
-                    let history_model = value.get::<super::HistoryModel>().unwrap();
-                    self.history_model
-                        .set(history_model)
-                        .expect("history-model should only be set once");
-                }
-                name => tracing::warn!("Unknown property: {name}"),
-            }
+        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+            Self::derived_set_property(self, id, value, pspec);
+        }
+
+        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
+            Self::derived_property(self, id, pspec)
         }
     }
 

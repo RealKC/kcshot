@@ -103,6 +103,7 @@ mod underlying {
     pub struct TextInput {
         content: OnceCell<gtk4::Box>,
 
+        // FIXME: This should be a WeakRef I think.
         pub(super) editor: OnceCell<EditorWindow>,
         pub(super) font_button: OnceCell<gtk4::FontButton>,
         pub(super) input: OnceCell<gtk4::TextView>,
