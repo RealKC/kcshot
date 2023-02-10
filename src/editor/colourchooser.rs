@@ -155,8 +155,14 @@ pub fn dialog(editor: &EditorWindow) -> Dialog {
 mod underlying {
     use std::cell::Cell;
 
-    use cairo::glib::{ParamSpec, Value};
-    use gtk4::{gdk, gdk::prelude::*, glib, pango, prelude::*, subclass::prelude::*};
+    use gtk4::{
+        gdk,
+        gdk::prelude::*,
+        glib::{self, ParamSpec, Value},
+        pango,
+        prelude::*,
+        subclass::prelude::*,
+    };
     use kcshot_data::colour::Hsv;
     use once_cell::{sync::Lazy, unsync::OnceCell};
 
