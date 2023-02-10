@@ -3,9 +3,9 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use std::{env, fs, io, path, process::ExitCode};
+use std::{env, fs, io, path};
 
-use gtk4::prelude::*;
+use gtk4::{glib, prelude::*};
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 
 use self::kcshot::KCShot;
@@ -19,7 +19,7 @@ mod postcapture;
 mod properties;
 mod systray;
 
-fn main() -> ExitCode {
+fn main() -> glib::ExitCode {
     let collector = tracing_subscriber::registry()
         .with(EnvFilter::from_default_env())
         .with(fmt::Layer::new().with_writer(io::stderr));
@@ -39,7 +39,7 @@ fn main() -> ExitCode {
 
     let application = KCShot::new();
 
-    let rc = ExitCode::from(application.run() as u8);
+    let rc = application.run();
 
     if cfg!(feature = "heaptrack") {
         // SAFETY: At this point there should be no more active cairo objects. IF there are, that is to

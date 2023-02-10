@@ -74,6 +74,12 @@ impl FromVariant for Colour {
     }
 }
 
+impl From<Colour> for glib::Variant {
+    fn from(value: Colour) -> Self {
+        value.serialise_to_u32().to_variant()
+    }
+}
+
 impl ToVariant for Colour {
     fn to_variant(&self) -> glib::Variant {
         self.serialise_to_u32().to_variant()
