@@ -80,12 +80,6 @@ impl From<Colour> for glib::Variant {
     }
 }
 
-impl ToVariant for Colour {
-    fn to_variant(&self) -> glib::Variant {
-        self.serialise_to_u32().to_variant()
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct Hsv {
     pub h: f32,
