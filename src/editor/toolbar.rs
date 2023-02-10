@@ -43,6 +43,7 @@ mod underlying {
         log_if_err,
     };
 
+    // FIXME: Make use of `derive(Properties)` when `WeakRef` becomes usable with it.
     #[derive(Debug, Default)]
     pub struct ToolbarWidget {
         parent_editor: WeakRef<editor::EditorWindow>,
