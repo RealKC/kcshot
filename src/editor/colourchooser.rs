@@ -42,7 +42,7 @@ impl ColourChooserWidget {
 
 impl Default for ColourChooserWidget {
     fn default() -> Self {
-        glib::Object::new(&[])
+        glib::Object::new()
     }
 }
 

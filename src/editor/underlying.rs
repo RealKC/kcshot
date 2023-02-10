@@ -293,7 +293,7 @@ impl ObjectImpl for EditorWindow {
                 });
             }),
         );
-        drawing_area.add_controller(&motion_event_handler);
+        drawing_area.add_controller(motion_event_handler);
 
         click_event_handler.connect_released(
             clone!(@weak obj, @weak drawing_area => move |_this, _n_clicks, x, y| {
@@ -327,7 +327,7 @@ impl ObjectImpl for EditorWindow {
             }),
         );
 
-        drawing_area.add_controller(&click_event_handler);
+        drawing_area.add_controller(click_event_handler);
 
         let drag_controller = gtk4::GestureDrag::new();
         drag_controller.connect_drag_update(
@@ -354,7 +354,7 @@ impl ObjectImpl for EditorWindow {
                 });
             }),
         );
-        drawing_area.add_controller(&drag_controller);
+        drawing_area.add_controller(drag_controller);
 
         let key_event_controller = gtk4::EventControllerKey::new();
         key_event_controller.connect_key_pressed(
@@ -398,7 +398,7 @@ impl ObjectImpl for EditorWindow {
                 });
             }),
         );
-        obj.add_controller(&key_event_controller);
+        obj.add_controller(key_event_controller);
 
         let undo_action = gio::SimpleAction::new("undo", None);
         undo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {

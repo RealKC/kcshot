@@ -62,6 +62,9 @@ pub(super) fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<
                 .await
         })
         .map_err(Error::Ashpd)?
+        .response()
+        .map_err(Error::Ashpd)?
+        .uri()
         .to_string();
 
     let file = gio::File::for_uri(&uri);

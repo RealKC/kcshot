@@ -131,7 +131,7 @@ mod underlying {
                 }),
             );
 
-            editor.add_controller(&key_event_handler);
+            editor.add_controller(key_event_handler);
         }
 
         fn dispose(&self) {

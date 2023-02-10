@@ -24,7 +24,7 @@ glib::wrapper! {
 
 impl Default for ColourWheel {
     fn default() -> Self {
-        glib::Object::new(&[])
+        glib::Object::new()
     }
 }
 
@@ -502,7 +502,7 @@ mod underlying {
                 }
             }));
 
-            obj.add_controller(&click);
+            obj.add_controller(click);
 
             let drag = gtk4::GestureDrag::new();
 
@@ -550,7 +550,7 @@ mod underlying {
                 }
             }));
 
-            obj.add_controller(&drag);
+            obj.add_controller(drag);
         }
     }
     impl WidgetImpl for ColourWheel {

@@ -73,7 +73,7 @@ mod underlying {
 
             let factory = build_item_factory();
 
-            let selection_model = gtk4::SingleSelection::new(Some(list_model));
+            let selection_model = gtk4::SingleSelection::new(Some(list_model.clone()));
 
             let stack = gtk4::Stack::new();
 
@@ -83,7 +83,7 @@ mod underlying {
             emoji.add_css_class("kc-label-emoji");
             let css_provider = gtk4::CssProvider::new();
             css_provider.load_from_data(
-                b"
+                "
 .kc-label-emoji {
     font-size: 15em;
 }
@@ -103,7 +103,7 @@ mod underlying {
                 .add_provider(&css_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
             message.append(&note);
 
-            let image_grid = gtk4::GridView::new(Some(&selection_model), Some(&factory));
+            let image_grid = gtk4::GridView::new(Some(selection_model), Some(factory));
             image_grid.set_min_columns(3);
             let history_view = gtk4::ScrolledWindow::new();
             history_view.set_child(Some(&image_grid));

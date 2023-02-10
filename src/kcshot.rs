@@ -241,7 +241,7 @@ mod underlying {
         }
 
         // This is called in the primary instance
-        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> i32 {
+        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
             let mut show_main_window = true;
             for argument in command_line.arguments() {
                 if NO_WINDOW_FLAGS_OS.contains(&argument) {
@@ -256,12 +256,15 @@ mod underlying {
 
             self.obj().activate();
 
-            -1
+            glib::ExitCode::from(-1)
         }
 
         // This is called in remote instances
-        fn local_command_line(&self, arguments: &mut gio::subclass::ArgumentList) -> Option<i32> {
-            let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".to_string());
+        fn local_command_line(
+            &self,
+            arguments: &mut gio::subclass::ArgumentList,
+        ) -> Option<glib::ExitCode> {
+            let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".into());
             let usage = format!(
                 r#"Usage:
   {prog_name} [OPTION...]
@@ -277,7 +280,7 @@ Application Options:
 
             if arguments.contains(&"-h".into()) || arguments.contains(&"--help".into()) {
                 eprintln!("{usage}");
-                return Some(0);
+                return Some(glib::ExitCode::SUCCESS);
             }
 
             let take_screenshot = arguments.iter().any(|os| SCREENSHOT_FLAGS_OS.contains(os));
@@ -288,7 +291,7 @@ Application Options:
                     "{}: {} and {} are mutually exclusive\n{}",
                     prog_name, SCREENSHOT_FLAGS[LONG], NO_WINDOW_FLAGS[LONG], usage
                 );
-                return Some(1);
+                return Some(glib::ExitCode::FAILURE);
             }
 
             None

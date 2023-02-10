@@ -26,7 +26,7 @@ impl HistoryModel {
 
 impl Default for HistoryModel {
     fn default() -> Self {
-        glib::Object::new(&[])
+        glib::Object::new()
     }
 }
 
