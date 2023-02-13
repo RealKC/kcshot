@@ -27,10 +27,12 @@ impl TextInput {
         parse::markdown2pango(&markdown)
     }
 
+    #[track_caller]
     fn colour(&self) -> Colour {
-        self.imp().editor.get().unwrap().secondary_colour()
+        self.editor().unwrap().secondary_colour()
     }
 
+    #[track_caller]
     fn font_description(&self) -> pango::FontDescription {
         self.imp()
             .font_button
@@ -90,8 +92,12 @@ pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
 }
 
 mod underlying {
-    use gtk4::{glib, prelude::*, subclass::prelude::*};
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use gtk4::{
+        glib::{self, Properties, WeakRef},
+        prelude::*,
+        subclass::prelude::*,
+    };
+    use once_cell::unsync::OnceCell;
 
     use super::parse;
     use crate::{
@@ -99,14 +105,15 @@ mod underlying {
         log_if_err,
     };
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, Properties)]
+    #[properties(wrapper_type = super::TextInput)]
     pub struct TextInput {
-        content: OnceCell<gtk4::Box>,
+        #[property(get, set, construct_only)]
+        editor: WeakRef<EditorWindow>,
 
-        // FIXME: This should be a WeakRef I think.
-        pub(super) editor: OnceCell<EditorWindow>,
         pub(super) font_button: OnceCell<gtk4::FontButton>,
         pub(super) input: OnceCell<gtk4::TextView>,
+        content: OnceCell<gtk4::Box>,
     }
 
     #[glib::object_subclass]
@@ -140,23 +147,26 @@ mod underlying {
             if let Some(content) = self.content.get() {
                 content.unparent();
             }
+
+            if let Some(input) = self.input.get() {
+                input.unparent();
+            }
+
+            if let Some(font_button) = self.font_button.get() {
+                font_button.unparent();
+            }
         }
 
         fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                use crate::properties::*;
-                vec![construct_only_wo_object_property::<EditorWindow>("editor")]
-            });
-
-            PROPERTIES.as_ref()
+            Self::derived_properties()
         }
 
-        #[tracing::instrument]
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "editor" => self.editor.set(value.get().unwrap()).unwrap(),
-                property => tracing::error!("Unknown property: {property}"),
-            }
+        fn set_property(&self, id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+            Self::derived_set_property(self, id, value, pspec);
+        }
+
+        fn property(&self, id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            Self::derived_property(self, id, pspec)
         }
     }
 
@@ -238,7 +248,7 @@ mod underlying {
             glib::clone!(@weak text_input => move |_this, cairo, _w, _h| {
                 cairo.set_operator(cairo::Operator::Over);
 
-                let editor = text_input.imp().editor.get().unwrap();
+                let editor = text_input.editor().unwrap();
 
                 let secondary_colour = editor.secondary_colour();
                 if secondary_colour.alpha != 0 {
@@ -279,8 +289,8 @@ mod underlying {
 
         button.connect_clicked(
             glib::clone!(@weak text_input => @default-panic, move |_this| {
-                let editor = text_input.imp().editor.get().unwrap();
-                let dialog = colourchooser::dialog(editor);
+                let editor = text_input.editor().unwrap();
+                let dialog = colourchooser::dialog(&editor);
 
                 dialog.connect_response(glib::clone!(@weak drawing_area => move |editor, colour| {
                     editor.set_secondary_colour(colour);
