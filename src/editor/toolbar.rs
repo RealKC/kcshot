@@ -26,13 +26,13 @@ mod underlying {
     use std::cell::Cell;
 
     use gtk4::{
-        glib::{self, clone, ParamSpec, WeakRef},
+        glib::{self, clone, ParamSpec, Properties, WeakRef},
         prelude::*,
         subclass::prelude::*,
         Inhibit,
     };
     use kcshot_data::colour::Colour;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::unsync::OnceCell;
 
     use crate::{
         editor::{
@@ -43,12 +43,15 @@ mod underlying {
         log_if_err,
     };
 
-    // FIXME: Make use of `derive(Properties)` when `WeakRef` becomes usable with it.
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, Properties)]
+    #[properties(wrapper_type = super::ToolbarWidget)]
     pub struct ToolbarWidget {
+        #[property(get, set, construct_only)]
         parent_editor: WeakRef<editor::EditorWindow>,
-        buttons: OnceCell<Vec<gtk4::ToggleButton>>,
+        #[property(set, construct_only)]
         editing_started_with_cropping: Cell<bool>,
+
+        buttons: OnceCell<Vec<gtk4::ToggleButton>>,
     }
 
     #[glib::object_subclass]
@@ -144,37 +147,15 @@ mod underlying {
         }
 
         fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-                use crate::properties::*;
-                vec![
-                    construct_only_wo_object_property::<editor::EditorWindow>("parent-editor"),
-                    glib::ParamSpecBoolean::builder("editing-started-with-cropping")
-                        .default_value(false)
-                        .write_only()
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
+            Self::derived_properties()
         }
 
-        #[tracing::instrument]
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            match pspec.name() {
-                "parent-editor" => {
-                    let parent_editor = value.get::<editor::EditorWindow>().unwrap();
-                    self.parent_editor.set(Some(&parent_editor));
-                }
-                "editing-started-with-cropping" => {
-                    let editing_started_with_cropping = value.get::<bool>();
-                    match editing_started_with_cropping {
-                        Ok(b) => self.editing_started_with_cropping.set(b),
-                        Err(why) => tracing::error!("set_property called for editing-started-with-cropping but with the wrong type: {why}")
-                    }
-                }
-                name => tracing::warn!("Unknown property: {name}"),
-            }
+        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+            Self::derived_set_property(self, id, value, pspec);
+        }
+
+        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
+            Self::derived_property(self, id, pspec)
         }
     }
     impl WidgetImpl for ToolbarWidget {}
