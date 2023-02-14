@@ -951,15 +951,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
-name = "kcshot-data"
-version = "0.1.0"
-dependencies = [
- "gsettings-macro",
- "gtk4",
-]
-
-[[package]]
-name = "kcshot-rs"
+name = "kcshot"
 version = "0.1.0"
 dependencies = [
  "cairo-rs",
@@ -982,6 +974,14 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "xdg",
+]
+
+[[package]]
+name = "kcshot-data"
+version = "0.1.0"
+dependencies = [
+ "gsettings-macro",
+ "gtk4",
 ]
 
 [[package]]
