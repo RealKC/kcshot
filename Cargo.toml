@@ -1,5 +1,5 @@
 [package]
-name = "kcshot-rs"
+name = "kcshot"
 version = "0.1.0"
 authors = ["Mițca Dumitru <dumitru0mitca@gmail.com>"]
 edition = "2021"
