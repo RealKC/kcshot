@@ -49,7 +49,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror = "1.0.30"
 
 [build-dependencies]
-glib-build-tools = "0.16.0"
+glib-build-tools = "0.17.0"
 
 [features]
 default = ["xdg-paths"]
