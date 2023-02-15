@@ -1,0 +1,77 @@
+using Gtk 4.0;
+
+template KCShotTextInput : Gtk.Box {
+    orientation: vertical;
+    spacing: 2;
+
+    // Button area
+    Gtk.Box {
+        orientation: horizontal;
+        spacing: 4;
+        margin-start: 10;
+        margin-end: 10;
+
+        Gtk.FontButton font_button {
+            margin-bottom: 5;
+        }
+
+        Gtk.Button colour_button {
+            margin-bottom: 5;
+            width-request: 25;
+            height-request: 25;
+
+            clicked => on_colour_button_clicked() swapped;
+
+            child: Gtk.DrawingArea colour_button_drawing_area {
+                accessible-role: img;
+                width-request: 25;
+                height-request: 25;
+            };
+        }
+    }
+
+    // Text input area
+    Gtk.Box {
+        orientation: horizontal;
+        spacing: 2;
+
+        Gtk.Box {
+            orientation: vertical;
+            spacing: 2;
+
+            Gtk.Label { label: "Input"; }
+            Gtk.TextView input_view {
+                margin-top: 7;
+                margin-start: 10;
+                margin-bottom: 5;
+                width-request: 250;
+                height-request: 250;
+                wrap-mode: word;
+
+                buffer: Gtk.TextBuffer {
+                    changed => on_input_textbuffer_changed() swapped;
+                };
+            }
+        }
+
+        Gtk.Box {
+            orientation: vertical;
+            spacing: 2;
+
+            Gtk.Label { label: "Preview"; }
+            Gtk.TextView preview {
+                margin-top: 7;
+                margin-end: 10;
+                margin-bottom: 5;
+                width-request: 250;
+                height-request: 250;
+                wrap-mode: word;
+            }
+        }
+    }
+
+    Gtk.Label {
+        label: "You can use CommonMark Markdown or <a href=\"https://docs.gtk.org/Pango/pango_markup.html\" title=\"Pango markup\">Pango markup</a> to format your text.";
+        use-markup: true;
+    }
+}
