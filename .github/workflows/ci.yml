@@ -14,7 +14,7 @@ on:
 name: CI
 
 env:
-  KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev
+  KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev meson ninja-build desktop-file-utils
 
 permissions:
   contents: read
@@ -69,10 +69,14 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-lint
-      - run: cargo cranky -h &>/dev/null || cargo install cargo-cranky
+            subprojects/blueprint-compiler/
+            builddir/
+          key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-${{ hashFiles('subprojects/blueprint-compiler.wrap') }}-lint
+      - run: cargo cranky -h &>/dev/null || cargo install --locked cargo-cranky
+      - name: Configure meson
+        run: meson setup builddir
       - name: cranky
-        run: cargo cranky -- -D warnings
+        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo cranky --manifest-path=../Cargo.toml -- -D warnings
   test:
     runs-on: ubuntu-22.04
     steps:
@@ -91,6 +95,10 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-test
+            subprojects/blueprint-compiler/
+            builddir/
+          key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-${{ hashFiles('subprojects/blueprint-compiler.wrap') }}-test
+      - name: Configure meson
+        run: meson setup builddir
       - name: test
-        run: cargo test
+        run: meson test --verbose -C builddir
