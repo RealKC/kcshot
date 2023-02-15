@@ -305,8 +305,11 @@ Application Options:
             // we get started with `--no-window`)
             std::mem::forget(self.obj().hold());
 
-            if let Err(why) = gio::resources_register_include!("compiled.gresource") {
-                tracing::error!("Failed loading resources: {why}");
+            #[cfg(not(kcshot_linting))]
+            {
+                if let Err(why) = gio::resources_register_include!("compiled.gresource") {
+                    tracing::error!("Failed loading resources: {why}");
+                }
             }
 
             let settings = Settings::open();
