@@ -7,6 +7,8 @@ dependency('glib-2.0', version: '>= 2.66')
 dependency('gio-2.0', version: '>= 2.66')
 dependency('gtk4', version: '>= 4.0.0')
 
+subproject('blueprint-compiler')
+
 cargo = find_program('cargo', required: true)
 glib_compile_resources = find_program('glib-compile-resources', required: true)
 glib_compile_schemas = find_program('glib-compile-schemas', required: true)
@@ -27,6 +29,10 @@ else
 endif
 
 cargo_env = ['CARGO_HOME=' + meson.project_build_root() / 'cargo-home']
+
+message(
+    'blueprint-compiler is: ' / find_program('blueprint-compiler').full_path(),
+)
 
 cargo_build = custom_target(
     'cargo-build',
