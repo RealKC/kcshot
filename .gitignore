@@ -3,3 +3,4 @@ screenshot*
 *.db
 heaptrack.kcshot-rs.*
 builddir/
+/subprojects/blueprint-compiler
