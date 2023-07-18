@@ -106,7 +106,7 @@ mod underlying {
 
     #[derive(Debug, Default, Properties, CompositeTemplate)]
     #[properties(wrapper_type = super::TextInput)]
-    #[template(resource = "/kc/kcshot/ui/textdialog.ui")]
+    #[template(file = "src/editor/textdialog.blp")]
     pub struct TextInput {
         #[property(get, set, construct_only)]
         editor: WeakRef<EditorWindow>,
