@@ -28,11 +28,15 @@ else
     message('Building in debug mode')
 endif
 
-cargo_env = ['CARGO_HOME=' + meson.project_build_root() / 'cargo-home']
-
 message(
-    'blueprint-compiler is: ' / find_program('blueprint-compiler').full_path(),
+    'blueprint-compiler is: ' + find_program('blueprint-compiler').full_path(),
 )
+
+fs = import('fs')
+env = environment()
+env.append('PATH', fs.parent(find_program('blueprint-compiler').full_path()))
+env.set('CARGO_HOME', meson.project_build_root() / 'cargo-home')
+meson.add_devenv(env)
 
 cargo_build = custom_target(
     'cargo-build',
@@ -42,12 +46,7 @@ cargo_build = custom_target(
     console: true,
     install: true,
     install_dir: bindir,
-    env: {
-        'BLUEPRINT_COMPILER_PATH': find_program(
-            'blueprint-compiler',
-        ).full_path(),
-        'CARGO_HOME': meson.project_build_root() / 'cargo-home',
-    },
+    env: env,
     command: [
         'sh',
         '-c', cargo,
@@ -67,11 +66,7 @@ test(
         'test',
         '--manifest-path=@0@/Cargo.toml'.format(meson.global_source_root()),
     ],
-    env: {
-        'BLUEPRINT_COMPILER_PATH': find_program(
-            'blueprint-compiler',
-        ).full_path(),
-    },
+    env: env,
     timeout: 3000,
 )
 

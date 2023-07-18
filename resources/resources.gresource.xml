@@ -16,6 +16,5 @@
         <file>editor/tool-colourpicker.png</file>
 
         <!-- UI files generated from blueprints in build.rs -->
-        <file preprocess="xml-stripblanks" alias="ui/textdialog.ui">editor/textdialog.ui</file>
     </gresource>
 </gresources>
