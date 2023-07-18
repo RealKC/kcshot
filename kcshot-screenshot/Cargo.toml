@@ -14,7 +14,7 @@ ashpd = { version = "0.4.0-alpha.3", default-features = false, features = [
     "tokio",
     "tracing",
 ] }
-xcb = { version = "1.2.0", features = [
+xcb = { git = "https://github.com/rust-x-bindings/rust-xcb/", features = [
     "debug_atom_names",
     "shape",
     "xfixes",
