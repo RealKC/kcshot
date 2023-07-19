@@ -1,6 +1,6 @@
 using Gtk 4.0;
 
-template KCShotTextInput : Gtk.Box {
+template $KCShotTextInput : Gtk.Box {
     orientation: vertical;
     spacing: 2;
 
@@ -20,7 +20,7 @@ template KCShotTextInput : Gtk.Box {
             width-request: 25;
             height-request: 25;
 
-            clicked => on_colour_button_clicked() swapped;
+            clicked => $on_colour_button_clicked() swapped;
 
             child: Gtk.DrawingArea colour_button_drawing_area {
                 accessible-role: img;
@@ -49,7 +49,7 @@ template KCShotTextInput : Gtk.Box {
                 wrap-mode: word;
 
                 buffer: Gtk.TextBuffer {
-                    changed => on_input_textbuffer_changed() swapped;
+                    changed => $on_input_textbuffer_changed() swapped;
                 };
             }
         }
