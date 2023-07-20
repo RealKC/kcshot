@@ -84,6 +84,7 @@ mod underlying {
 
     use diesel::SqliteConnection;
     use gtk4::{
+        gdk,
         gio::{self, prelude::*},
         glib,
         prelude::*,
@@ -329,6 +330,14 @@ Application Options:
             }
 
             gtk4::Window::set_default_icon_name("kcshot");
+
+            let provider = gtk4::CssProvider::new();
+            provider.load_from_data(include_str!("style.css"));
+            gtk4::style_context_add_provider_for_display(
+                &gdk::Display::default().unwrap(),
+                &provider,
+                gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
         }
     }
 
