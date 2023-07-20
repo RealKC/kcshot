@@ -26,7 +26,7 @@ impl RowData {
 mod underlying {
     use std::cell::RefCell;
 
-    use gtk4::glib::{self, prelude::*, subclass::prelude::*, ParamSpecBuilderExt, Properties};
+    use gtk4::glib::{self, prelude::*, subclass::prelude::*, Properties};
 
     #[derive(Default, Debug, Properties)]
     #[properties(wrapper_type = super::RowData)]
