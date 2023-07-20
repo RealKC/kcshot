@@ -1,0 +1,95 @@
+using Gtk 4.0;
+
+template $KCShotAppWindow : Gtk.ApplicationWindow {
+    hide-on-close: true;
+
+    Gtk.Box {
+        orientation: horizontal;
+
+        Gtk.Frame {
+            Gtk.Box {
+                orientation: vertical;
+                spacing: 0;
+
+                Gtk.Button {
+                    child: Gtk.Label {
+                        label: 'Capture';
+                        halign: start;
+                    };
+
+                    clicked => $on_capture_clicked() swapped;
+                }
+
+                Gtk.Button {
+                    child: Gtk.Label {
+                        label: 'Settings';
+                        halign: start;
+                    };
+
+                    clicked => $on_settings_clicked() swapped;
+                }
+
+                Gtk.Button {
+                    child: Gtk.Label {
+                        label: 'Screenshots folder';
+                        halign: start;
+                    };
+
+                    clicked => $on_screenshots_folder_clicked() swapped;
+                }
+
+                Gtk.Button history_button {
+                    child: Gtk.Label {
+                        label: 'History';
+                        halign: start;
+                    };
+
+                    clicked => $on_history_clicked() swapped;
+                }
+
+                Gtk.Button {
+                    child: Gtk.Label {
+                        label: 'Quit kcshot';
+                        halign: start;
+                    };
+
+                    clicked => $on_quit_clicked() swapped;
+                }
+            }
+        }
+
+        Gtk.Frame {
+            Gtk.Stack stack {
+                Gtk.StackPage {
+                    name: 'message';
+                    child: Gtk.Box {
+                        orientation: vertical;
+                        spacing: 2;
+
+                        Gtk.Label {
+                            label: '(´• ω •`)';
+                            styles [ 'kc-label-emoji' ]
+                        }
+
+                        Gtk.Label {
+                            label: 'The history is disabled';
+                            styles [ 'kc-history-disabled-note' ]
+                        }
+                    };
+                }
+
+                Gtk.StackPage {
+                    name: 'image-grid';
+                    child: Gtk.ScrolledWindow {
+                        propagate-natural-width: true;
+                        min-content-height: 600;
+
+                        child: Gtk.GridView image_grid {
+                            min-columns: 3;
+                        };
+                    };
+                }
+            }
+        }
+    }
+}

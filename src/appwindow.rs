@@ -24,17 +24,26 @@ mod underlying {
         glib::{self, clone, ParamSpec, Properties},
         prelude::*,
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
+        CompositeTemplate,
     };
     use kcshot_data::settings::Settings;
     use once_cell::unsync::OnceCell;
 
     use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
 
-    #[derive(Debug, Properties)]
+    #[derive(Debug, Properties, CompositeTemplate)]
     #[properties(wrapper_type = super::AppWindow)]
+    #[template(file = "src/appwindow.blp")]
     pub struct AppWindow {
         #[property(get, set, construct_only)]
         history_model: RefCell<super::HistoryModel>,
+
+        #[template_child]
+        image_grid: TemplateChild<gtk4::GridView>,
+        #[template_child]
+        stack: TemplateChild<gtk4::Stack>,
+        #[template_child]
+        history_button: TemplateChild<gtk4::Button>,
 
         settings: OnceCell<Settings>,
     }
@@ -43,6 +52,9 @@ mod underlying {
         fn default() -> Self {
             Self {
                 history_model: Default::default(),
+                image_grid: Default::default(),
+                stack: Default::default(),
+                history_button: Default::default(),
                 settings: OnceCell::with_value(Settings::open()),
             }
         }
@@ -53,87 +65,52 @@ mod underlying {
         const NAME: &'static str = "KCShotAppWindow";
         type Type = super::AppWindow;
         type ParentType = gtk4::ApplicationWindow;
+
+        fn class_init(klass: &mut Self::Class) {
+            klass.bind_template();
+            klass.bind_template_callbacks();
+        }
+
+        fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+            obj.init_template();
+        }
     }
 
     impl ObjectImpl for AppWindow {
         fn constructed(&self) {
-            let obj = self.obj();
+            // self.parent_constructed();
+
             let settings = self.settings.get().unwrap();
 
-            let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
-
-            obj.set_hide_on_close(true);
+            let obj = self.obj();
 
             let list_model = obj.history_model();
-
-            let button_list = build_button_pane(KCShot::the().upcast_ref(), &list_model, settings);
-            let left_frame = gtk4::Frame::new(None);
-            left_frame.set_child(Some(&button_list));
-            hbox.append(&left_frame);
+            let selection_model = gtk4::SingleSelection::new(Some(list_model));
+            self.image_grid.set_model(Some(&selection_model));
 
             let factory = build_item_factory();
 
-            let selection_model = gtk4::SingleSelection::new(Some(list_model));
-
-            let stack = gtk4::Stack::new();
-
-            let message = gtk4::Box::new(gtk4::Orientation::Vertical, 2);
-
-            let emoji = gtk4::Label::new(Some("(´• ω •`)"));
-            emoji.add_css_class("kc-label-emoji");
-            let css_provider = gtk4::CssProvider::new();
-            css_provider.load_from_data(
-                "
-.kc-label-emoji {
-    font-size: 15em;
-}
-
-.kc-history-disabled-note {
-    font-size: 3em;
-}",
-            );
-            emoji
-                .style_context()
-                .add_provider(&css_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
-            message.append(&emoji);
-
-            let note = gtk4::Label::new(Some("The history is disabled"));
-            note.add_css_class("kc-history-disabled-note");
-            note.style_context()
-                .add_provider(&css_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
-            message.append(&note);
-
-            let image_grid = gtk4::GridView::new(Some(selection_model), Some(factory));
-            image_grid.set_min_columns(3);
-            let history_view = gtk4::ScrolledWindow::new();
-            history_view.set_child(Some(&image_grid));
-            history_view.set_propagate_natural_width(true);
-            history_view.set_min_content_height(600);
-            stack.add_named(&history_view, Some("image-grid"));
-            stack.add_named(&message, Some("message"));
+            self.image_grid.set_factory(Some(&factory));
 
             let is_history_enabled = settings.is_history_enabled();
-
             if is_history_enabled {
-                stack.set_visible_child_name("image-grid");
+                self.stack.set_visible_child_name("image-grid");
             } else {
-                stack.set_visible_child_name("message");
+                self.stack.set_visible_child_name("message");
             }
 
-            settings.connect_is_history_enabled_changed(clone!(@strong stack => move |settings| {
-                if settings.is_history_enabled() {
-                    stack.set_visible_child_name("image-grid");
-                } else {
-                    stack.set_visible_child_name("message");
-                }
-            }));
-
-            let right_frame = gtk4::Frame::new(None);
-            right_frame.set_child(Some(&stack));
-
-            hbox.append(&right_frame);
-
-            obj.set_child(Some(&hbox));
+            settings.connect_is_history_enabled_changed(
+                clone!(@strong self.stack as stack => move |settings| {
+                    if settings.is_history_enabled() {
+                        stack.set_visible_child_name("image-grid");
+                    } else {
+                        stack.set_visible_child_name("message");
+                    }
+                }),
+            );
+            settings
+                .bind_is_history_enabled(&self.history_button.get(), "visible")
+                .build();
         }
 
         fn properties() -> &'static [ParamSpec] {
@@ -150,6 +127,45 @@ mod underlying {
     }
 
     impl WindowImpl for AppWindow {}
+
+    #[gtk4::template_callbacks]
+    impl AppWindow {
+        #[template_callback]
+        fn on_capture_clicked(&self, _: &gtk4::Button) {
+            let editing_starts_with_cropping = self.settings().editing_starts_with_cropping();
+
+            EditorWindow::show(KCShot::the().upcast_ref(), editing_starts_with_cropping);
+        }
+
+        #[template_callback]
+        fn on_settings_clicked(&self, _: &gtk4::Button) {
+            build_settings_window().show();
+        }
+
+        #[template_callback]
+        fn on_screenshots_folder_clicked(&self, _: &gtk4::Button) {
+            let res = Command::new("xdg-open")
+                .arg(&KCShot::screenshot_folder())
+                .spawn();
+            if let Err(why) = res {
+                tracing::error!("Failed to spawn xdg-open: {why}");
+            }
+        }
+
+        #[template_callback]
+        fn on_history_clicked(&self, _: &gtk4::Button) {
+            tracing::error!("TODO: Implement history button");
+        }
+
+        #[template_callback]
+        fn on_quit_clicked(&self, _: &gtk4::Button) {
+            KCShot::the().quit();
+        }
+
+        fn settings(&self) -> &Settings {
+            self.settings.get().unwrap()
+        }
+    }
 
     fn build_item_factory() -> gtk4::SignalListItemFactory {
         let factory = gtk4::SignalListItemFactory::new();
@@ -180,59 +196,6 @@ mod underlying {
         });
 
         factory
-    }
-
-    fn build_button_pane(
-        application: &gtk4::Application,
-        history_model: &super::HistoryModel,
-        settings: &Settings,
-    ) -> gtk4::Box {
-        let buttons = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-
-        let capture_button = gtk4::Button::new();
-        capture_button.set_child(Some(&make_label("Capture")));
-        capture_button.connect_clicked(
-            glib::clone!(@weak application, @weak history_model => move |_| {
-                let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
-
-                EditorWindow::show(&application, editing_starts_with_cropping);
-            }),
-        );
-        buttons.append(&capture_button);
-
-        let settings_button = gtk4::Button::new();
-        settings_button.set_child(Some(&make_label("Settings")));
-        settings_button.connect_clicked(move |_| build_settings_window().show());
-        buttons.append(&settings_button);
-
-        let screenshots_folder_button = gtk4::Button::new();
-        screenshots_folder_button.set_child(Some(&make_label("Screenshots folder")));
-        screenshots_folder_button.connect_clicked(|_| {
-            let res = Command::new("xdg-open")
-                .arg(&KCShot::screenshot_folder())
-                .spawn();
-            if let Err(why) = res {
-                tracing::error!("Failed to spawn xdg-open: {why}");
-            }
-        });
-        buttons.append(&screenshots_folder_button);
-
-        let history_button = gtk4::Button::new();
-        history_button.set_child(Some(&make_label("History")));
-        history_button.connect_clicked(|_| tracing::error!("TODO: Implement history button"));
-        settings
-            .bind_is_history_enabled(&history_button, "visible")
-            .build();
-        buttons.append(&history_button);
-
-        let quit_button = gtk4::Button::new();
-        quit_button.set_child(Some(&make_label("Quit kcshot")));
-        quit_button.connect_clicked(glib::clone!(@weak application => move |_| {
-            application.quit();
-        }));
-        buttons.append(&quit_button);
-
-        buttons
     }
 
     fn build_settings_window() -> gtk4::Window {
@@ -349,12 +312,6 @@ mod underlying {
         window.set_child(Some(&notebook));
 
         window
-    }
-
-    fn make_label(text: &str) -> gtk4::Label {
-        let label = gtk4::Label::new(Some(text));
-        label.set_halign(gtk4::Align::Start);
-        label
     }
 
     impl WidgetImpl for AppWindow {}
