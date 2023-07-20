@@ -6,14 +6,14 @@ url="https://github.com/RealKC/$pkgname"
 arch=('x86_64')
 license=('custom:EUPL-1.2')
 depends=('gtk4' 'sqlite' 'xdg-utils')
-makedepends=('cargo' 'glib2' 'meson')
+makedepends=('cargo' 'glib2' 'meson' 'blueprint-compiler')
 optdepends=('xdg-desktop-portal: Wayland support')
 source=("git+https://github.com/RealKC/$pkgname")
 sha256sums=(SKIP)
 
 build() {
     export RUSTUP_TOOLCHAIN=stable
-    arch-meson "$pkgname-v$pkgver" build
+    arch-meson "$pkgname" build
     meson compile -C build
 }
 
