@@ -1,4 +1,4 @@
-use gtk4::gio;
+use gtk4::{gio, glib};
 
 use crate::colour::Colour;
 
