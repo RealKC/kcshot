@@ -29,7 +29,10 @@ mod underlying {
     use kcshot_data::settings::Settings;
     use once_cell::unsync::OnceCell;
 
-    use crate::{editor::EditorWindow, historymodel::RowData, kcshot::KCShot};
+    use crate::{
+        editor::EditorWindow, historymodel::RowData, kcshot::KCShot,
+        settings_window::SettingsWindow,
+    };
 
     #[derive(Debug, Properties, CompositeTemplate)]
     #[properties(wrapper_type = super::AppWindow)]
@@ -139,7 +142,7 @@ mod underlying {
 
         #[template_callback]
         fn on_settings_clicked(&self, _: &gtk4::Button) {
-            build_settings_window().show();
+            SettingsWindow::default().show();
         }
 
         #[template_callback]
@@ -196,122 +199,6 @@ mod underlying {
         });
 
         factory
-    }
-
-    fn build_settings_window() -> gtk4::Window {
-        let window = gtk4::Window::new();
-        window.set_title(Some("kcshot - Settings"));
-        let settings = Settings::open();
-
-        let folder_chooser = gtk4::FileChooserDialog::new(
-            Some("Choose a folder for your screenshot history"),
-            Some(&window),
-            gtk4::FileChooserAction::SelectFolder,
-            &[
-                ("Cancel", gtk4::ResponseType::Cancel),
-                ("Apply", gtk4::ResponseType::Apply),
-            ],
-        );
-        let settings_ = settings.clone();
-        folder_chooser.connect_response(move |this, response| {
-            if response == gtk4::ResponseType::Apply {
-                let folder = this.file().unwrap();
-                settings_.set_saved_screenshots_path(
-                    &folder
-                        .path()
-                        .and_then(|path| path.to_str().map(str::to_owned))
-                        .unwrap(),
-                );
-            }
-            this.destroy();
-        });
-
-        let folder_chooser_about = gtk4::Label::new(Some("Screenshot directory"));
-        let folder_chooser_button = gtk4::Button::new();
-
-        settings
-            .bind_saved_screenshots_path(&folder_chooser_button, "label")
-            .build();
-        folder_chooser_button.connect_clicked(move |_| {
-            folder_chooser.show();
-        });
-
-        let content_area = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
-
-        let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
-        settings.bind_is_history_enabled(&hbox, "sensitive").build();
-        hbox.append(&folder_chooser_about);
-        hbox.append(&folder_chooser_button);
-
-        content_area.append(&hbox);
-
-        let history_enabled_label = gtk4::Label::new(Some("Enable history"));
-        history_enabled_label.set_halign(gtk4::Align::Start);
-        let history_enabled_button = gtk4::Switch::new();
-        history_enabled_button.set_halign(gtk4::Align::End);
-        settings
-            .bind_is_history_enabled(&history_enabled_button, "active")
-            .build();
-
-        let history_enabled = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
-        history_enabled.set_homogeneous(true);
-        history_enabled.append(&history_enabled_label);
-        history_enabled.append(&history_enabled_button);
-
-        content_area.append(&history_enabled);
-        content_area.set_margin_top(5);
-        content_area.set_margin_bottom(10);
-        content_area.set_margin_start(10);
-        content_area.set_margin_end(10);
-
-        let capture_mouse_cursor_label = gtk4::Label::new(Some("Capture mouse cursor"));
-        capture_mouse_cursor_label.set_halign(gtk4::Align::Start);
-        let capture_mouse_cursor_button = gtk4::Switch::new();
-        capture_mouse_cursor_button.set_halign(gtk4::Align::End);
-        settings
-            .bind_capture_mouse_cursor(&capture_mouse_cursor_button, "active")
-            .build();
-
-        let capture_mouse_cursor_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
-        capture_mouse_cursor_container.set_homogeneous(true);
-        capture_mouse_cursor_container.append(&capture_mouse_cursor_label);
-        capture_mouse_cursor_container.append(&capture_mouse_cursor_button);
-
-        content_area.append(&capture_mouse_cursor_container);
-        content_area.set_margin_top(5);
-        content_area.set_margin_bottom(10);
-        content_area.set_margin_start(10);
-        content_area.set_margin_end(10);
-
-        let editing_starts_by_cropping_label = gtk4::Label::builder()
-            .label("Editing starts by cropping")
-            .halign(gtk4::Align::Start)
-            .build();
-        let editing_starts_by_cropping_button =
-            gtk4::Switch::builder().halign(gtk4::Align::End).build();
-        settings
-            .bind_editing_starts_with_cropping(&editing_starts_by_cropping_button, "active")
-            .build();
-        let editing_starts_by_cropping_container = gtk4::Box::builder()
-            .orientation(gtk4::Orientation::Horizontal)
-            .spacing(6)
-            .homogeneous(true)
-            .build();
-        editing_starts_by_cropping_container.append(&editing_starts_by_cropping_label);
-        editing_starts_by_cropping_container.append(&editing_starts_by_cropping_button);
-
-        content_area.append(&editing_starts_by_cropping_container);
-        content_area.set_margin_top(5);
-        content_area.set_margin_bottom(10);
-        content_area.set_margin_start(10);
-        content_area.set_margin_end(10);
-
-        let notebook = gtk4::Notebook::new();
-        notebook.append_page(&content_area, Some(&gtk4::Label::new(Some("General"))));
-
-        window.set_child(Some(&notebook));
-
-        window
     }
 
     impl WidgetImpl for AppWindow {}

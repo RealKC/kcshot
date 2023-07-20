@@ -1,0 +1,75 @@
+using Gtk 4.0;
+
+template $KCShotSettingsWindow : Gtk.Window {
+    title: 'kcshot - Settings';
+
+    child: Gtk.Notebook {
+        Gtk.NotebookPage {
+            tab: Gtk.Label { label: 'General'; };
+            child: Gtk.Box {
+                orientation: vertical;
+                spacing: 4;
+                margin-top: 5;
+                margin-bottom: 10;
+                margin-start: 10;
+                margin-end: 10;
+
+                Gtk.Box {
+                    orientation: horizontal;
+                    spacing: 6;
+
+                    Gtk.Label { label: 'Screenshot directory'; }
+
+                    Gtk.Button screenshot_directory_chooser_button {
+                        clicked => $on_screenshot_directory_clicked() swapped;
+                    }
+                }
+
+                Gtk.Box {
+                    orientation: horizontal;
+                    spacing: 6;
+                    homogeneous: true;
+
+                    Gtk.Label {
+                        label: 'Enable history';
+                        halign: start;
+                    }
+
+                    Gtk.Switch history_enabled_switch {
+                        halign: end;
+                    }
+                }
+
+                Gtk.Box {
+                    orientation: horizontal;
+                    spacing: 6;
+                    homogeneous: true;
+
+                    Gtk.Label {
+                        label: 'Capture mouse cursor';
+                        halign: start;
+                    }
+
+                    Gtk.Switch capture_mouse_switch {
+                        halign: end;
+                    }
+                }
+
+                Gtk.Box {
+                    orientation: horizontal;
+                    spacing: 6;
+                    homogeneous: true;
+
+                    Gtk.Label {
+                        label: 'Editing starts by croping';
+                        halign: start;
+                    }
+
+                    Gtk.Switch editing_starts_by_cropping_switch {
+                        halign: end;
+                    }
+                }
+            };
+        }
+    };
+}

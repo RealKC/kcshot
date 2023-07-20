@@ -16,6 +16,7 @@ mod editor;
 mod historymodel;
 mod kcshot;
 mod postcapture;
+mod settings_window;
 mod systray;
 
 fn main() -> glib::ExitCode {
