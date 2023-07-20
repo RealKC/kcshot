@@ -55,10 +55,10 @@ pub(super) fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<
     let uri = tokio
         .expect("kcshot is attempting to use portals but there is no tokio runtime running")
         .block_on(async {
-            ashpd::desktop::screenshot::ScreenshotRequest::default()
+            ashpd::desktop::screenshot::Screenshot::request()
                 .interactive(false)
                 .modal(false)
-                .build()
+                .send()
                 .await
         })
         .map_err(Error::Ashpd)?
