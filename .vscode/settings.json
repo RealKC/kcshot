@@ -1,7 +1,11 @@
 {
-    "rust-analyzer.checkOnSave.command": "cranky",
     // VSCode tries to format my sql in a very weird way, so let's just put an end to that
     "[sql]": {
         "editor.formatOnSave": false
-    }
+    },
+    "rust-analyzer.check.command": "cranky",
+    "rust-analyzer.checkOnSave": false,
+    "rust-analyzer.check.extraArgs": [
+        "--target target/r-a"
+    ]
 }
