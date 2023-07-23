@@ -10,7 +10,7 @@ use kcshot_data::settings::Settings;
 
 use crate::{
     db,
-    historymodel::{ModelNotifier, RowData},
+    history::{ModelNotifier, RowData},
 };
 
 /// Trait for the post capture actions.

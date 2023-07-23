@@ -6,7 +6,7 @@ use kcshot_data::settings::Settings;
 
 use crate::{
     appwindow,
-    historymodel::{HistoryModel, ModelNotifier},
+    history::{HistoryModel, ModelNotifier},
 };
 
 glib::wrapper! {
@@ -96,7 +96,7 @@ mod underlying {
     use crate::{
         appwindow, db,
         editor::EditorWindow,
-        historymodel::{HistoryModel, ModelNotifier, RowData},
+        history::{HistoryModel, ModelNotifier, RowData},
         systray,
     };
 

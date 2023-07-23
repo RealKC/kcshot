@@ -4,9 +4,7 @@ use gtk4::{
     subclass::prelude::ObjectSubclassIsExt,
 };
 
-pub use self::rowdata::RowData;
-
-mod rowdata;
+use super::RowData;
 
 glib::wrapper! {
     pub struct HistoryModel(ObjectSubclass<underlying::ListModel>)
@@ -33,7 +31,7 @@ impl Default for HistoryModel {
 /// This type is used to notify the HistoryModel that a new screenshot was taken, and it additionally
 /// carries a [`self::RowData`] with the newly taken screenshot.
 ///
-/// It caused [`HistoryModel::insert_screenshot`] to be called.
+/// It causes [`HistoryModel::insert_screenshot`] to be called.
 pub type ModelNotifier = Sender<RowData>;
 
 mod underlying {
@@ -46,7 +44,7 @@ mod underlying {
         subclass::prelude::*,
     };
 
-    use super::rowdata::RowData;
+    use super::RowData;
     use crate::{db, kcshot::KCShot};
 
     #[derive(Default)]
