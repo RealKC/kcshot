@@ -16,5 +16,6 @@
         <file>editor/tool-colourpicker.png</file>
 
         <!-- UI files generated from blueprints in build.rs -->
+        <file preprocess="xml-stripblanks" alias="ui/history/context_menu.ui">history/context_menu.ui</file>
     </gresource>
 </gresources>

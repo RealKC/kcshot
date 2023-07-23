@@ -4,8 +4,5 @@
         "editor.formatOnSave": false
     },
     "rust-analyzer.check.command": "cranky",
-    "rust-analyzer.checkOnSave": false,
-    "rust-analyzer.check.extraArgs": [
-        "--target target/r-a"
-    ]
+    "rust-analyzer.checkOnSave": true,
 }
