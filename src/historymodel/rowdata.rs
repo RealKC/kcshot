@@ -1,4 +1,4 @@
-use gtk4::glib;
+use gtk4::{glib, subclass::prelude::*};
 
 use crate::db::models::Screenshot;
 
@@ -21,6 +21,14 @@ impl RowData {
             .property("url", url)
             .build()
     }
+
+    pub fn set_context_menu(&self, menu: gtk4::PopoverMenu) {
+        self.imp().context_menu.replace(Some(menu));
+    }
+
+    pub fn context_menu(&self) -> Option<gtk4::PopoverMenu> {
+        self.imp().context_menu.borrow().clone()
+    }
 }
 
 mod underlying {
@@ -37,6 +45,10 @@ mod underlying {
         pub(super) time: RefCell<String>,
         #[property(get, set, default_value = None)]
         pub(super) url: RefCell<Option<String>>,
+
+        /// We need to keep the context menu here because creating context menus on every right click
+        /// behaves strangely
+        pub(super) context_menu: RefCell<Option<gtk4::PopoverMenu>>,
     }
 
     #[glib::object_subclass]

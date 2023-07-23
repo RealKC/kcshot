@@ -21,6 +21,7 @@ mod underlying {
     use std::{cell::RefCell, process::Command};
 
     use gtk4::{
+        gdk,
         glib::{self, clone, ParamSpec, Properties},
         prelude::*,
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
@@ -30,7 +31,7 @@ mod underlying {
     use once_cell::unsync::OnceCell;
 
     use crate::{
-        editor::EditorWindow, historymodel::RowData, kcshot::KCShot,
+        editor::EditorWindow, history, historymodel::RowData, kcshot::KCShot,
         settings_window::SettingsWindow,
     };
 
@@ -91,7 +92,7 @@ mod underlying {
             let selection_model = gtk4::SingleSelection::new(Some(list_model));
             self.image_grid.set_model(Some(&selection_model));
 
-            let factory = build_item_factory();
+            let factory = build_item_factory(selection_model);
 
             self.image_grid.set_factory(Some(&factory));
 
@@ -170,7 +171,7 @@ mod underlying {
         }
     }
 
-    fn build_item_factory() -> gtk4::SignalListItemFactory {
+    fn build_item_factory(model: gtk4::SingleSelection) -> gtk4::SignalListItemFactory {
         let factory = gtk4::SignalListItemFactory::new();
 
         factory.connect_setup(|_this, list_item| {
@@ -182,7 +183,7 @@ mod underlying {
             list_item.set_child(Some(&picture));
         });
 
-        factory.connect_bind(|_this, list_item| {
+        factory.connect_bind(move |_this, list_item| {
             let object = list_item
                 .item()
                 .and_downcast::<RowData>()
@@ -192,6 +193,29 @@ mod underlying {
                 .child()
                 .and_downcast::<gtk4::Picture>()
                 .expect("The child has to exist and it should be a gtk4::Picture");
+
+            let mouse = gtk4::GestureClick::builder()
+                .button(gdk::BUTTON_SECONDARY)
+                .build();
+            mouse.connect_released(
+                clone!(@strong list_item, @strong model, @strong picture, @strong object => move |_, _, x, y| {
+                    model.set_selected(list_item.position());
+
+                    match object.context_menu() {
+                        Some(context_menu) => {
+                            context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                            context_menu.popup();
+                        }
+                        None => {
+                            let context_menu = history::context_menu(object.clone(), picture.upcast_ref());
+                            context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                            context_menu.popup();
+                            object.set_context_menu(context_menu);
+                        }
+                    }
+                }),
+            );
+            picture.add_controller(mouse);
 
             if let Some(path) = object.path() {
                 picture.set_filename(Some(&path));

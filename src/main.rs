@@ -13,6 +13,7 @@ use self::kcshot::KCShot;
 mod appwindow;
 mod db;
 mod editor;
+mod history;
 mod historymodel;
 mod kcshot;
 mod postcapture;
