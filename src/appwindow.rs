@@ -1,6 +1,6 @@
 use gtk4::glib;
 
-use crate::{historymodel::HistoryModel, kcshot::KCShot};
+use crate::{history::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
@@ -31,7 +31,7 @@ mod underlying {
     use once_cell::unsync::OnceCell;
 
     use crate::{
-        editor::EditorWindow, history, historymodel::RowData, kcshot::KCShot,
+        editor::EditorWindow, history, history::RowData, kcshot::KCShot,
         settings_window::SettingsWindow,
     };
 

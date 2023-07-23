@@ -1,6 +1,6 @@
 use gtk4::{gdk, gio, prelude::*};
 
-use crate::historymodel::RowData;
+use super::RowData;
 
 /// Creates a context menu with the usual operations you'd expect from a context menu on a history entry
 pub fn context_menu(data: RowData, parent: &gtk4::Widget) -> gtk4::PopoverMenu {

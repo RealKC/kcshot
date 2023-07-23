@@ -20,7 +20,7 @@ use crate::{
         operations::{OperationStack, SelectionMode, Tool},
         utils,
     },
-    historymodel::ModelNotifier,
+    history::ModelNotifier,
     kcshot::KCShot,
     log_if_err,
     postcapture::run_postcapture_actions,
