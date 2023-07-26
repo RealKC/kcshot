@@ -1,8 +1,10 @@
 using Gtk 4.0;
 
-template $KCShotTextInput : Gtk.Box {
-    orientation: vertical;
-    spacing: 2;
+template $KCShotTextInput : Gtk.Widget {
+    layout-manager: Gtk.BoxLayout {
+        orientation: vertical;
+        spacing: 2;
+    };
 
     // Button area
     Gtk.Box {

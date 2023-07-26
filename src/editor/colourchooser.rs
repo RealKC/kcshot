@@ -11,7 +11,7 @@ use crate::editor::Colour;
 
 glib::wrapper! {
     pub struct ColourChooserWidget(ObjectSubclass<underlying::ColourChooserWidget>)
-        @extends gtk4::Widget, gtk4::Box;
+        @extends gtk4::Widget;
 }
 
 impl ColourChooserWidget {
@@ -181,7 +181,11 @@ mod underlying {
     impl ObjectSubclass for ColourChooserWidget {
         const NAME: &'static str = "KCShotColourChooserWidget";
         type Type = super::ColourChooserWidget;
-        type ParentType = gtk4::Box;
+        type ParentType = gtk4::Widget;
+
+        fn class_init(klass: &mut Self::Class) {
+            klass.set_layout_manager_type::<gtk4::BoxLayout>();
+        }
     }
 
     impl ObjectImpl for ColourChooserWidget {
@@ -204,7 +208,7 @@ mod underlying {
             let alpha_button = self.make_alpha_button(&self.obj(), colour_wheel);
             vbox.append(&alpha_button);
 
-            self.obj().append(vbox);
+            vbox.set_parent(&*(self.obj()));
         }
         fn dispose(&self) {
             if let Some(vbox) = self.vbox.get() {

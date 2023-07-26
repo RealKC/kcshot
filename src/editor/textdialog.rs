@@ -8,7 +8,7 @@ mod parse;
 
 glib::wrapper! {
     pub struct TextInput(ObjectSubclass<underlying::TextInput>)
-        @extends gtk4::Widget, gtk4::Box;
+        @extends gtk4::Widget;
 }
 
 impl TextInput {
@@ -125,7 +125,7 @@ mod underlying {
     impl ObjectSubclass for TextInput {
         const NAME: &'static str = "KCShotTextInput";
         type Type = super::TextInput;
-        type ParentType = gtk4::Box;
+        type ParentType = gtk4::Widget;
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
