@@ -20,6 +20,7 @@ use crate::{
         operations::{OperationStack, SelectionMode, Tool},
         utils,
     },
+    ext::DisposeExt,
     history::ModelNotifier,
     kcshot::KCShot,
     log_if_err,
@@ -437,10 +438,7 @@ impl ObjectImpl for EditorWindow {
     }
 
     fn dispose(&self) {
-        if let Some(overlay) = self.overlay.get() {
-            overlay.unparent();
-        }
-
+        self.obj().dispose_children();
         self.with_image_mut("dispose", |image| image.surface.finish());
     }
 

@@ -101,6 +101,7 @@ mod underlying {
     use super::parse;
     use crate::{
         editor::{colourchooser, utils::CairoExt, Colour, EditorWindow},
+        ext::DisposeExt,
         log_if_err,
     };
 
@@ -187,7 +188,7 @@ mod underlying {
         }
 
         fn dispose(&self) {
-            self.obj().first_child().unwrap().unparent();
+            self.obj().dispose_children();
         }
 
         fn properties() -> &'static [glib::ParamSpec] {

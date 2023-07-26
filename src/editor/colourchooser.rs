@@ -166,7 +166,7 @@ mod underlying {
     use kcshot_data::colour::Hsv;
     use once_cell::{sync::Lazy, unsync::OnceCell};
 
-    use crate::editor::colourwheel::ColourWheel;
+    use crate::{editor::colourwheel::ColourWheel, ext::DisposeExt};
 
     #[derive(Default, Debug)]
     pub struct ColourChooserWidget {
@@ -210,10 +210,9 @@ mod underlying {
 
             vbox.set_parent(&*(self.obj()));
         }
+
         fn dispose(&self) {
-            if let Some(vbox) = self.vbox.get() {
-                vbox.unparent();
-            }
+            self.obj().dispose_children();
         }
 
         fn properties() -> &'static [ParamSpec] {

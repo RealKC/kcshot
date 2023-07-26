@@ -18,6 +18,8 @@ mod underlying {
     use gtk4::{glib, prelude::*, subclass::prelude::*, traits::DialogExt, CompositeTemplate};
     use kcshot_data::settings::Settings;
 
+    use crate::ext::DisposeExt;
+
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(file = "src/settings_window.blp")]
     pub struct SettingsWindow {
@@ -74,6 +76,10 @@ mod underlying {
                     "active",
                 )
                 .build();
+        }
+
+        fn dispose(&self) {
+            self.obj().dispose_children();
         }
     }
 

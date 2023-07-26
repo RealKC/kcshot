@@ -31,7 +31,7 @@ mod underlying {
     use once_cell::unsync::OnceCell;
 
     use crate::{
-        editor::EditorWindow, history, history::RowData, kcshot::KCShot,
+        editor::EditorWindow, ext::DisposeExt, history, history::RowData, kcshot::KCShot,
         settings_window::SettingsWindow,
     };
 
@@ -82,7 +82,7 @@ mod underlying {
 
     impl ObjectImpl for AppWindow {
         fn constructed(&self) {
-            // self.parent_constructed();
+            self.parent_constructed();
 
             let settings = self.settings.get().unwrap();
 
@@ -115,6 +115,10 @@ mod underlying {
             settings
                 .bind_is_history_enabled(&self.history_button.get(), "visible")
                 .build();
+        }
+
+        fn dispose(&self) {
+            self.obj().dispose_children();
         }
 
         fn properties() -> &'static [ParamSpec] {

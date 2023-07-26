@@ -32,13 +32,13 @@ mod underlying {
         Inhibit,
     };
     use kcshot_data::colour::Colour;
-    use once_cell::unsync::OnceCell;
 
     use crate::{
         editor::{
             self, colourchooser, operations::Tool, underlying::EditorWindow as EditorWindowImp,
             utils::CairoExt,
         },
+        ext::DisposeExt,
         kcshot::KCShot,
         log_if_err,
     };
@@ -50,8 +50,6 @@ mod underlying {
         parent_editor: WeakRef<editor::EditorWindow>,
         #[property(set, construct_only)]
         editing_started_with_cropping: Cell<bool>,
-
-        buttons: OnceCell<Vec<gtk4::ToggleButton>>,
     }
 
     #[glib::object_subclass]
@@ -113,10 +111,6 @@ mod underlying {
                 buttons[0].0.set_active(true);
             }
 
-            self.buttons
-                .set(buttons.iter().map(|(button, _)| button.clone()).collect())
-                .expect("construct should only be called once");
-
             primary_colour_button.set_parent(&obj);
             secondary_colour_button.set_parent(&obj);
             line_width_spinner.set_parent(&obj);
@@ -143,11 +137,7 @@ mod underlying {
         }
 
         fn dispose(&self) {
-            if let Some(buttons) = self.buttons.get() {
-                for button in buttons {
-                    button.unparent();
-                }
-            }
+            self.obj().dispose_children();
         }
 
         fn properties() -> &'static [ParamSpec] {

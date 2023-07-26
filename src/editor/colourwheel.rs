@@ -305,6 +305,8 @@ mod underlying {
 
     use once_cell::{sync::Lazy, unsync::OnceCell};
 
+    use crate::ext::DisposeExt;
+
     use super::*;
 
     #[derive(Debug)]
@@ -529,6 +531,10 @@ mod underlying {
             }));
 
             obj.add_controller(drag);
+        }
+
+        fn dispose(&self) {
+            self.obj().dispose_children();
         }
     }
     impl WidgetImpl for ColourWheel {
