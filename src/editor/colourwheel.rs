@@ -305,9 +305,8 @@ mod underlying {
 
     use once_cell::{sync::Lazy, unsync::OnceCell};
 
-    use crate::ext::DisposeExt;
-
     use super::*;
+    use crate::ext::DisposeExt;
 
     #[derive(Debug)]
     pub struct ColourWheel {
