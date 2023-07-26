@@ -56,6 +56,18 @@ cargo_build = custom_target(
     ],
 )
 
+install_data('resources/kc.kcshot.gschema.xml',
+    install_dir: get_option('datadir') / 'glib-2.0/schemas',
+)
+
+glib_compile_schemas = find_program('glib-compile-schemas', required: false)
+if glib_compile_schemas.found()
+    test('validate gsettings schemas',
+        glib_compile_schemas,
+        args: ['--strict', '--dry-run', meson.current_source_dir() / 'resources']
+    )
+endif
+
 test(
     'cargo-test',
     cargo,
