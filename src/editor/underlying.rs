@@ -1,4 +1,4 @@
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell, OnceCell, RefCell};
 
 use cairo::Context;
 use diesel::SqliteConnection;
@@ -8,10 +8,9 @@ use gtk4::{
     glib::{self, clone, ParamSpec, Properties},
     prelude::*,
     subclass::prelude::*,
-    Allocation,
+    Allocation, CompositeTemplate,
 };
 use kcshot_data::geometry::{Point, Rectangle};
-use once_cell::unsync::OnceCell;
 use tracing::error;
 
 use super::{toolbar, utils::ContextLogger, Colour};
@@ -69,14 +68,21 @@ impl Image {
     }
 }
 
-#[derive(Default, Properties)]
+#[derive(Default, Properties, CompositeTemplate)]
 #[properties(wrapper_type = super::EditorWindow)]
+#[template(file = "src/editor/editor.blp")]
 pub struct EditorWindow {
     #[property(name = "editing-starts-with-cropping", construct_only, set)]
     editing_started_with_cropping: Cell<bool>,
 
     pub(super) image: RefCell<Option<Image>>,
-    overlay: OnceCell<gtk4::Overlay>,
+
+    #[template_child]
+    overlay: TemplateChild<gtk4::Overlay>,
+    #[template_child]
+    drawing_area: TemplateChild<gtk4::DrawingArea>,
+
+    toolbar: OnceCell<toolbar::ToolbarWidget>,
 
     /// This field is part of the "pick a colour from the screen" mechanism, we send the colour under
     /// the mouse cursor to the colour chooser dialog currently open
@@ -87,13 +93,297 @@ impl std::fmt::Debug for EditorWindow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EditorWindow")
             .field("image", &self.image)
-            .field("overlay", &self.overlay)
             .field(
                 "editing_started_with_cropping",
                 &self.editing_started_with_cropping,
             )
             .field("colour_tx", &"<...>")
             .finish()
+    }
+}
+
+#[glib::object_subclass]
+impl ObjectSubclass for EditorWindow {
+    const NAME: &'static str = "KCShotEditorWindow";
+    type Type = super::EditorWindow;
+    type ParentType = gtk4::ApplicationWindow;
+
+    fn class_init(klass: &mut Self::Class) {
+        klass.bind_template();
+        klass.bind_template_callbacks();
+    }
+
+    fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+        obj.init_template();
+    }
+}
+
+impl ObjectImpl for EditorWindow {
+    fn constructed(&self) {
+        self.parent_constructed();
+        let obj = self.obj();
+
+        let image = kcshot_screenshot::take_screenshot(KCShot::the().tokio_rt())
+            .expect("Couldn't take a screenshot");
+        let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
+            tracing::info!("Got while trying to retrieve windows: {why}");
+            vec![]
+        });
+        let screen_dimensions = Rectangle {
+            x: 0.0,
+            y: 0.0,
+            w: image.width() as f64,
+            h: image.height() as f64,
+        };
+
+        self.overlay.connect_get_child_position({
+            let obj = obj.clone();
+            move |_, widget| obj.imp().on_get_child_position(widget)
+        });
+
+        let toolbar = self.toolbar.get_or_init(|| {
+            toolbar::ToolbarWidget::new(&obj, self.editing_started_with_cropping.get())
+        });
+        self.overlay.add_overlay(toolbar);
+
+        self.drawing_area.set_draw_func(clone!(@weak obj => move |_, cairo, _, _| {
+            obj.imp().with_image("draw event", |image| EditorWindow::do_draw(image, cairo, true));
+        }));
+
+        self.setup_actions();
+
+        self.image.replace(Some(Image {
+            surface: image,
+            operation_stack: OperationStack::new(
+                windows,
+                screen_dimensions,
+                self.editing_started_with_cropping.get(),
+            ),
+        }));
+    }
+
+    fn dispose(&self) {
+        self.obj().dispose_children();
+        self.with_image_mut("dispose", |image| image.surface.finish());
+    }
+
+    fn properties() -> &'static [ParamSpec] {
+        Self::derived_properties()
+    }
+
+    #[tracing::instrument]
+    fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        Self::derived_set_property(self, id, value, pspec);
+    }
+}
+
+impl EditorWindow {
+    fn on_get_child_position(&self, widget: &gtk4::Widget) -> Option<Allocation> {
+        if widget.is::<gtk4::DrawingArea>() {
+            return Some(Allocation::new(0, 0, widget.width(), widget.height()));
+        }
+
+        let (width, height) = self.with_image("get-child-position", |image| {
+            (image.surface.width(), image.surface.height())
+        })?;
+
+        Some(Allocation::new(
+            width / 2 - widget.width() / 2,
+            height / 5,
+            widget.width(),
+            widget.height().max(32),
+        ))
+    }
+}
+
+// Event controllers
+#[gtk4::template_callbacks]
+impl EditorWindow {
+    #[track_caller]
+    fn toolbar(&self) -> &toolbar::ToolbarWidget {
+        self.toolbar.get().unwrap()
+    }
+
+    #[template_callback]
+    fn on_mouse_button_pressed(&self, _: i32, x: f64, y: f64, click: &gtk4::GestureClick) {
+        if click.current_button() == BUTTON_PRIMARY {
+            if let Some(colour_tx) = self.colour_tx.take() {
+                // if colour_tx is non-None it means there is a colour dialog open, and the user
+                // is trying to pick a colour at the moment!
+                self.with_image("colour picker", |image| {
+                    let colour = image.get_colour_at(x, y);
+                    if let Err(why) = colour_tx.send(colour) {
+                        tracing::error!("Failed to send colour through colour_tx: {why}");
+                    }
+                });
+            } else {
+                assert!(
+                    self.colour_tx.take().is_none(),
+                    "There should be no colour_tx on the EditorWindow when we're not picking a colour"
+                );
+
+                self.with_image_mut("primary button pressed", |image| {
+                    image.operation_stack.start_operation_at(Point { x, y });
+                });
+            }
+        } else if click.current_button() == BUTTON_SECONDARY {
+            self.obj().close();
+        }
+    }
+
+    #[template_callback]
+    fn on_mouse_motion(&self, x: f64, y: f64, _: &gtk4::EventControllerMotion) {
+        self.with_image_mut("motion event", |image| {
+            image.operation_stack.set_current_window(x, y);
+            self.drawing_area.queue_draw();
+        });
+    }
+
+    #[template_callback]
+    fn on_mouse_button_released(&self, _: i32, x: f64, y: f64, _: &gtk4::GestureClick) {
+        let should_queue_draw = self.with_image_mut("mouse button released event", |image| {
+            // NOTE: image.operation_stack.finish_current_operation MUST be called in all
+            //       branches of this if-chain, in order for tools to take part in the undo
+            //       stack! For the Text tool, this happens in pop_text_dialog_and_get_text.
+            if image.operation_stack.current_tool() == Tool::Text {
+                super::textdialog::pop_text_dialog_and_get_text(&self.obj());
+                true
+            } else if !image.operation_stack.current_tool().is_saving_tool() {
+                image.operation_stack.finish_current_operation();
+                true
+            } else {
+                image.operation_stack.finish_current_operation();
+
+                KCShot::the().with_conn(|conn| {
+                    Self::do_save_surface(
+                        &KCShot::the().model_notifier(),
+                        conn,
+                        self.obj().upcast_ref(),
+                        image,
+                        Some(Point { x, y }),
+                    );
+                });
+                false
+            }
+        });
+
+        if should_queue_draw.unwrap_or(true) {
+            self.drawing_area.queue_draw();
+        }
+    }
+
+    #[template_callback]
+    fn on_drag_update(&self, x: f64, y: f64, _: &gtk4::GestureDrag) {
+        self.with_image_mut("drag update event", |image| {
+            image
+                .operation_stack
+                .update_current_operation_end_coordinate(x, y);
+            if image.operation_stack.current_tool().is_cropping_tool() {
+                image.operation_stack.set_is_in_crop_drag(true);
+            }
+            self.drawing_area.queue_draw();
+        });
+    }
+
+    #[template_callback]
+    fn on_drag_end(&self, x: f64, y: f64, _: &gtk4::GestureDrag) {
+        self.with_image_mut("drag end event", |image| {
+            image
+                .operation_stack
+                .update_current_operation_end_coordinate(x, y);
+            if image.operation_stack.current_tool() == Tool::Crop {
+                self.toolbar().set_visible(true);
+                image.operation_stack.finish_current_operation();
+                image.operation_stack.set_current_tool(Tool::Pencil);
+            }
+            self.drawing_area.queue_draw();
+        });
+    }
+
+    #[template_callback]
+    fn on_key_pressed(
+        &self,
+        key: gdk::Key,
+        _: u32,
+        _: gdk::ModifierType,
+        _: &gtk4::EventControllerKey,
+    ) -> bool {
+        self.with_image_mut("key pressed event", |image| {
+            if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                image.operation_stack.set_ignore_windows(true);
+                self.drawing_area.queue_draw();
+                return true;
+            } else if key == gdk::Key::Return {
+                if !self.editing_started_with_cropping.get() {
+                    // Saving a screenshot using `Return` only makes sense in "crop-first"
+                    // mode
+                    return false;
+                }
+
+                KCShot::the().with_conn(|conn| {
+                    Self::do_save_surface(
+                        &KCShot::the().model_notifier(),
+                        conn,
+                        self.obj().upcast_ref(),
+                        image,
+                        None,
+                    );
+                });
+
+                return true;
+            } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
+                image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
+                return true;
+            }
+
+            false
+        })
+        .unwrap_or(false)
+    }
+
+    #[template_callback]
+    fn on_key_released(
+        &self,
+        key: gdk::Key,
+        _: u32,
+        _: gdk::ModifierType,
+        _: &gtk4::EventControllerKey,
+    ) {
+        self.with_image_mut("key released event", |image| {
+            if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                image.operation_stack.set_ignore_windows(false);
+                self.drawing_area.queue_draw();
+            } else if key == gdk::Key::Escape {
+                self.obj().close();
+            } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
+                image.operation_stack.selection_mode = SelectionMode::WindowsWithDecorations;
+            }
+        });
+    }
+}
+
+// Actions
+impl EditorWindow {
+    fn setup_actions(&self) {
+        let obj = self.obj();
+
+        let undo_action = gio::SimpleAction::new("undo", None);
+        undo_action.connect_activate(clone!(@weak obj => move |_, _| {
+            obj.imp().with_image_mut("win.undo activated", |image| {
+                image.operation_stack.undo();
+                obj.imp().drawing_area.queue_draw();
+            });
+        }));
+        obj.add_action(&undo_action);
+
+        let redo_action = gio::SimpleAction::new("redo", None);
+        redo_action.connect_activate(clone!(@weak obj => move |_, _| {
+            obj.imp().with_image_mut("win.redo activated", |image| {
+                image.operation_stack.redo();
+                obj.imp().drawing_area.queue_draw();
+            });
+        }));
+        obj.add_action(&redo_action);
     }
 }
 
@@ -199,256 +489,6 @@ impl EditorWindow {
         }
 
         None
-    }
-}
-
-#[glib::object_subclass]
-impl ObjectSubclass for EditorWindow {
-    const NAME: &'static str = "KCShotEditorWindow";
-    type Type = super::EditorWindow;
-    type ParentType = gtk4::ApplicationWindow;
-}
-
-impl ObjectImpl for EditorWindow {
-    fn constructed(&self) {
-        self.parent_constructed();
-        let obj = self.obj();
-
-        let image = kcshot_screenshot::take_screenshot(KCShot::the().tokio_rt())
-            .expect("Couldn't take a screenshot");
-        let windows = kcshot_screenshot::get_windows().unwrap_or_else(|why| {
-            tracing::info!("Got while trying to retrieve windows: {why}");
-            vec![]
-        });
-        let screen_dimensions = Rectangle {
-            x: 0.0,
-            y: 0.0,
-            w: image.width() as f64,
-            h: image.height() as f64,
-        };
-
-        let overlay = gtk4::Overlay::new();
-        obj.set_child(Some(&overlay));
-        let drawing_area = gtk4::DrawingArea::builder().can_focus(true).build();
-
-        overlay.set_child(Some(&drawing_area));
-
-        let toolbar = toolbar::ToolbarWidget::new(&obj, self.editing_started_with_cropping.get());
-        overlay.add_overlay(&toolbar);
-
-        overlay.connect_get_child_position(move |_this, widget| {
-            let Rectangle {
-                w: screen_width,
-                h: screen_height,
-                ..
-            } = screen_dimensions;
-
-            Some(Allocation::new(
-                (screen_width / 2.0 - widget.width() as f64 / 2.0) as i32,
-                (screen_height / 5.0) as i32,
-                11 * 32,
-                32,
-            ))
-        });
-
-        self.overlay
-            .set(overlay)
-            .expect("construct should not be called more than once");
-
-        drawing_area.set_draw_func(clone!(@weak obj => move |_widget, cairo, _w, _h| {
-            obj.imp().with_image("draw event", |image| EditorWindow::do_draw(image, cairo, true));
-        }));
-
-        let click_event_handler = gtk4::GestureClick::new();
-
-        click_event_handler.set_button(0);
-        click_event_handler.connect_pressed(clone!(@weak obj =>  move |this, _n_clicks, x, y| {
-            if this.current_button() == BUTTON_PRIMARY {
-                if let Some(colour_tx) = obj.imp().colour_tx.take() {
-                    // if colour_tx is non-None it means there is a colour dialog open, and the user
-                    // is trying to pick a colour at the moment!
-                    obj.imp().with_image("colour picker", |image| {
-                        let colour = image.get_colour_at(x, y);
-                            if let Err(why) = colour_tx.send(colour) {
-                                tracing::error!("Failed to send colour through colour_tx: {why}");
-                            }
-                    });
-                } else {
-                    assert!(
-                        obj.imp().colour_tx.take().is_none(),
-                        "There should be no colour_tx on the EditorWindow when we're not picking a colour"
-                    );
-
-                    obj.imp().with_image_mut("primary button pressed", |image| {
-                        image.operation_stack.start_operation_at(Point { x, y });
-                    });
-                }
-            } else if this.current_button() == BUTTON_SECONDARY {
-                obj.close();
-            }
-        }));
-
-        let motion_event_handler = gtk4::EventControllerMotion::new();
-        motion_event_handler.connect_motion(
-            clone!(@weak obj, @weak drawing_area => move |_, x, y| {
-                obj.imp().with_image_mut("motion event", |image| {
-                    image.operation_stack.set_current_window(x, y);
-                    drawing_area.queue_draw();
-                });
-            }),
-        );
-        drawing_area.add_controller(motion_event_handler);
-
-        click_event_handler.connect_released(
-            clone!(@weak obj, @weak drawing_area => move |_this, _n_clicks, x, y| {
-                let should_queue_draw = obj.imp().with_image_mut("mouse button released event", |image| {
-                    // NOTE: image.operation_stack.finish_current_operation MUST be called in all
-                    //       branches of this if-chain, in order for tools to take part in the undo
-                    //       stack! For the Text tool, this happens in pop_text_dialog_and_get_text.
-                    if image.operation_stack.current_tool() == Tool::Text {
-                        super::textdialog::pop_text_dialog_and_get_text(&obj);
-                        true
-                    } else if !image.operation_stack.current_tool().is_saving_tool() {
-                        image.operation_stack.finish_current_operation();
-                        true
-                    } else {
-                        image.operation_stack.finish_current_operation();
-
-                        KCShot::the().with_conn(|conn| EditorWindow::do_save_surface(
-                            &KCShot::the().model_notifier(),
-                            conn,
-                            obj.upcast_ref(),
-                            image,
-                            Some(Point { x, y })
-                        ));
-                        false
-                    }
-                });
-
-                if should_queue_draw.unwrap_or(true) {
-                    drawing_area.queue_draw();
-                }
-            }),
-        );
-
-        drawing_area.add_controller(click_event_handler);
-
-        let drag_controller = gtk4::GestureDrag::new();
-        drag_controller.connect_drag_update(
-            clone!(@weak obj, @weak drawing_area =>  move |_this, x, y| {
-                obj.imp().with_image_mut("drag update event", |image| {
-                    image.operation_stack.update_current_operation_end_coordinate(x, y);
-                    if image.operation_stack.current_tool().is_cropping_tool() {
-                        image.operation_stack.set_is_in_crop_drag(true);
-                    }
-                    drawing_area.queue_draw();
-                });
-            }),
-        );
-        drag_controller.connect_drag_end(
-            clone!(@weak obj, @weak drawing_area, @weak toolbar => move |_, x, y| {
-                obj.imp().with_image_mut("drag end event", |image| {
-                    image.operation_stack.update_current_operation_end_coordinate(x, y);
-                    if image.operation_stack.current_tool() == Tool::Crop {
-                        toolbar.set_visible(true);
-                        image.operation_stack.finish_current_operation();
-                        image.operation_stack.set_current_tool(Tool::Pencil);
-                    }
-                    drawing_area.queue_draw();
-                });
-            }),
-        );
-        drawing_area.add_controller(drag_controller);
-
-        let key_event_controller = gtk4::EventControllerKey::new();
-        key_event_controller.connect_key_pressed(
-            clone!(@weak obj, @weak drawing_area => @default-return gtk4::Inhibit(false), move |_, key, _, _| {
-                obj.imp().with_image_mut("key pressed event", |image| {
-                    if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
-                        image.operation_stack.set_ignore_windows(true);
-                        drawing_area.queue_draw();
-                    } else if key == gdk::Key::Return {
-                        if !obj.imp().editing_started_with_cropping.get() {
-                            // Saving a screenshot using `Return` only makes sense in "crop-first"
-                            // mode
-                            return;
-                        }
-
-                        KCShot::the().with_conn(|conn| Self::do_save_surface(
-                            &KCShot::the().model_notifier(),
-                            conn,
-                            obj.upcast_ref(),
-                            image,
-                            None
-                        ));
-                    } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
-                        image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
-                    }
-                });
-                gtk4::Inhibit(false)
-            }),
-        );
-        key_event_controller.connect_key_released(
-            clone!(@weak obj, @weak drawing_area => move |_, key, _, _| {
-                obj.imp().with_image_mut("key released event", |image| {
-                    if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
-                        image.operation_stack.set_ignore_windows(false);
-                        drawing_area.queue_draw();
-                    } else if key == gdk::Key::Escape {
-                        obj.close();
-                    } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
-                        image.operation_stack.selection_mode = SelectionMode::WindowsWithDecorations;
-                    }
-                });
-            }),
-        );
-        obj.add_controller(key_event_controller);
-
-        let undo_action = gio::SimpleAction::new("undo", None);
-        undo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
-            obj.imp().with_image_mut("win.undo activated", |image| {
-                image.operation_stack.undo();
-                drawing_area.queue_draw();
-            });
-        }));
-        obj.add_action(&undo_action);
-
-        let redo_action = gio::SimpleAction::new("redo", None);
-        redo_action.connect_activate(clone!(@weak obj, @weak drawing_area => move |_, _| {
-            obj.imp().with_image_mut("win.redo activated", |image| {
-                image.operation_stack.redo();
-                drawing_area.queue_draw();
-            });
-        }));
-        obj.add_action(&redo_action);
-
-        // FIXME: Figure out how/if we make this work across keyboard layouts that don't have Z and Y
-        // in the same place QWERTY does.
-        KCShot::the().set_accels_for_action("win.undo", &["<Ctrl>Z"]);
-        KCShot::the().set_accels_for_action("win.redo", &["<Ctrl>Y"]);
-
-        self.image.replace(Some(Image {
-            surface: image,
-            operation_stack: OperationStack::new(
-                windows,
-                screen_dimensions,
-                self.editing_started_with_cropping.get(),
-            ),
-        }));
-    }
-
-    fn dispose(&self) {
-        self.obj().dispose_children();
-        self.with_image_mut("dispose", |image| image.surface.finish());
-    }
-
-    fn properties() -> &'static [ParamSpec] {
-        Self::derived_properties()
-    }
-
-    #[tracing::instrument]
-    fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-        Self::derived_set_property(self, id, value, pspec);
     }
 }
 

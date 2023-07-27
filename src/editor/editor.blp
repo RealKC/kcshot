@@ -1,0 +1,51 @@
+using Gtk 4.0;
+
+template $KCShotEditorWindow : Gtk.ApplicationWindow {
+    Gtk.Overlay overlay {
+        Gtk.DrawingArea drawing_area {
+            can-focus: true;
+
+            Gtk.GestureClick {
+                button: 0;
+
+                pressed => $on_mouse_button_pressed() swapped;
+                released => $on_mouse_button_released() swapped;
+            }
+
+            Gtk.GestureDrag {
+                drag-update => $on_drag_update() swapped;
+                drag-end => $on_drag_end() swapped;
+            }
+
+            Gtk.EventControllerMotion {
+                motion => $on_mouse_motion() swapped;
+            }
+        }
+
+        // Added by .constructed, as it needs construct-only params
+        // [overlay]
+        // $KCShotToolbarWidget { }
+    }
+
+    Gtk.EventControllerKey {
+        key-pressed => $on_key_pressed() swapped;
+        key-released => $on_key_released() swapped;
+    }
+
+
+    // FIXME: Figure out how/if we make this work across keyboard layouts that don't have Z and Y
+    // in the same place QWERTY does.
+    Gtk.ShortcutController {
+        scope: local;
+
+        Gtk.Shortcut {
+            trigger: "<Ctrl>Z";
+            action: "action(win.undo)";
+        }
+
+        Gtk.Shortcut {
+            trigger: "<Ctrl>Y";
+            action: "action(win.redo)";
+        }
+    }
+}
