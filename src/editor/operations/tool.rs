@@ -1,5 +1,8 @@
+use gtk4::glib;
+
 /// This enum is like [Operations] but without any associated data
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "KCShotTool")]
 pub enum Tool {
     CropAndSave = 0,
     Line = 1,
