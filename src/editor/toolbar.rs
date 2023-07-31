@@ -74,10 +74,8 @@ mod underlying {
     pub struct ToolbarWidget {
         #[property(get, set, construct_only)]
         pub(super) editor: WeakRef<EditorWindow>,
-        #[property(set, get, construct_only)]
+        #[property(get, set, construct_only)]
         editing_started_with_cropping: Cell<bool>,
-        // #[property(name = "group-source", get)]
-        // _group_source: PhantomData
         #[template_child]
         pub(super) group_source: TemplateChild<ToolButton>,
         #[template_child]

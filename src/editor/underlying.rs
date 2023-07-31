@@ -75,7 +75,7 @@ impl Image {
 #[properties(wrapper_type = super::EditorWindow)]
 #[template(file = "src/editor/editor.blp")]
 pub struct EditorWindow {
-    #[property(name = "editing-starts-with-cropping", construct_only, set)]
+    #[property(name = "editing-starts-with-cropping", set, construct_only)]
     editing_started_with_cropping: Cell<bool>,
 
     pub(super) image: RefCell<Option<Image>>,
