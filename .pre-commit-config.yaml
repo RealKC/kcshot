@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: Running cargo fmt to ensure linting will pass CI
+        entry: cargo +nightly fmt
+        args: [ "--check", "--" ]
+        types: [ rust ]
+        stages: [ commit ]
+        language: system
