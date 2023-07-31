@@ -1,7 +1,6 @@
 use gtk4::{gdk, glib, prelude::*, subclass::prelude::*};
 
 use self::toolbutton::ToolButton;
-
 use super::operations::Tool;
 
 mod toolbutton;
@@ -62,13 +61,12 @@ mod underlying {
     };
     use kcshot_data::colour::Colour;
 
+    use super::toolbutton::{should_start_saving_immediately, ToolButton};
     use crate::{
         editor::{colourchooser, operations::Tool, utils::CairoExt, EditorWindow},
         ext::DisposeExt,
         log_if_err,
     };
-
-    use super::toolbutton::{should_start_saving_immediately, ToolButton};
 
     #[derive(Debug, Default, Properties, CompositeTemplate)]
     #[properties(wrapper_type = super::ToolbarWidget)]

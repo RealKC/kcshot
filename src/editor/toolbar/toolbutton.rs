@@ -35,12 +35,11 @@ mod underlying {
         CompositeTemplate,
     };
 
+    use super::should_start_saving_immediately;
     use crate::{
         editor::{operations::Tool, EditorWindow},
         ext::DisposeExt,
     };
-
-    use super::should_start_saving_immediately;
 
     #[derive(Debug, Properties, CompositeTemplate)]
     #[template(file = "src/editor/toolbar/toolbutton.blp")]

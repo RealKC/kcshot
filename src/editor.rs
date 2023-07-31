@@ -7,9 +7,8 @@ use gtk4::{
 };
 use kcshot_data::{colour::Colour, settings::Settings};
 
-use crate::kcshot::KCShot;
-
 use self::operations::Tool;
+use crate::kcshot::KCShot;
 
 mod colourchooser;
 mod colourwheel;
