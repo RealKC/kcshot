@@ -308,37 +308,44 @@ impl EditorWindow {
         _: gdk::ModifierType,
         _: &gtk4::EventControllerKey,
     ) -> bool {
-        self.with_image_mut("key pressed event", |image| {
-            if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
-                image.operation_stack.set_ignore_windows(true);
-                self.drawing_area.queue_draw();
-                return true;
-            } else if key == gdk::Key::Return {
-                if !self.editing_started_with_cropping.get() {
-                    // Saving a screenshot using `Return` only makes sense in "crop-first"
-                    // mode
-                    return false;
+        let handled = self
+            .with_image_mut("key pressed event", |image| {
+                if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
+                    image.operation_stack.set_ignore_windows(true);
+                    self.drawing_area.queue_draw();
+                    return true;
+                } else if key == gdk::Key::Return {
+                    if !self.editing_started_with_cropping.get() {
+                        // Saving a screenshot using `Return` only makes sense in "crop-first"
+                        // mode
+                        return false;
+                    }
+
+                    KCShot::the().with_conn(|conn| {
+                        Self::do_save_surface(
+                            &KCShot::the().model_notifier(),
+                            conn,
+                            self.obj().upcast_ref(),
+                            image,
+                            None,
+                        );
+                    });
+
+                    return true;
+                } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
+                    image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
+                    return true;
                 }
 
-                KCShot::the().with_conn(|conn| {
-                    Self::do_save_surface(
-                        &KCShot::the().model_notifier(),
-                        conn,
-                        self.obj().upcast_ref(),
-                        image,
-                        None,
-                    );
-                });
+                false
+            })
+            .unwrap_or(false);
 
-                return true;
-            } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
-                image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
-                return true;
-            }
+        if handled {
+            return true;
+        }
 
-            false
-        })
-        .unwrap_or(false)
+        self.toolbar().key_activates_tool(key)
     }
 
     #[template_callback]
