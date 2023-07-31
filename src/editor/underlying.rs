@@ -97,11 +97,13 @@ pub struct EditorWindow {
 impl std::fmt::Debug for EditorWindow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EditorWindow")
-            .field("image", &self.image)
             .field(
                 "editing_started_with_cropping",
                 &self.editing_started_with_cropping,
             )
+            .field("overlay", &self.overlay)
+            .field("drawing_area", &self.drawing_area)
+            .field("image", &self.image)
             .field("colour_tx", &"<...>")
             .field("is_in_image_mut", &self.is_in_with_image_mut)
             .finish()
