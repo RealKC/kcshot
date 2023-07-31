@@ -1,4 +1,7 @@
-use std::cell::{Cell, OnceCell, RefCell};
+use std::{
+    backtrace::Backtrace,
+    cell::{Cell, OnceCell, RefCell},
+};
 
 use cairo::Context;
 use diesel::SqliteConnection;
@@ -87,6 +90,8 @@ pub struct EditorWindow {
     /// This field is part of the "pick a colour from the screen" mechanism, we send the colour under
     /// the mouse cursor to the colour chooser dialog currently open
     pub(super) colour_tx: Cell<Option<glib::Sender<Colour>>>,
+
+    is_in_with_image_mut: Cell<bool>,
 }
 
 impl std::fmt::Debug for EditorWindow {
@@ -98,6 +103,7 @@ impl std::fmt::Debug for EditorWindow {
                 &self.editing_started_with_cropping,
             )
             .field("colour_tx", &"<...>")
+            .field("is_in_image_mut", &self.is_in_with_image_mut)
             .finish()
     }
 }
@@ -448,6 +454,14 @@ impl EditorWindow {
     {
         let _ctx = ContextLogger::new(ctx, "with_image");
 
+        if self.is_in_with_image_mut.get() {
+            tracing::error!(
+                "with_image called inside with_image_mut, likely a bug...\n{}",
+                Backtrace::capture()
+            );
+            return None;
+        }
+
         match self.image.try_borrow() {
             Ok(image) => {
                 if let Some(image) = image.as_ref() {
@@ -476,9 +490,20 @@ impl EditorWindow {
     {
         let _ctx = ContextLogger::new(ctx, "with_image_mut");
 
+        if self.is_in_with_image_mut.get() {
+            tracing::error!(
+                "with_image_mut called inside with_image_mut, likely a bug...\n{}",
+                Backtrace::capture()
+            );
+            return None;
+        }
+
+        self.is_in_with_image_mut.set(true);
+
         match self.image.try_borrow_mut() {
             Ok(mut image) => {
                 if let Some(image) = image.as_mut() {
+                    self.is_in_with_image_mut.set(false);
                     return Some(func(image));
                 }
             }
@@ -494,6 +519,7 @@ impl EditorWindow {
                 }
             }
         }
+        self.is_in_with_image_mut.set(false);
 
         None
     }
