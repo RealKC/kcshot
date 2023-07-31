@@ -1,10 +1,13 @@
 use gtk4::{
     gio,
     glib::{self, CastNone},
+    prelude::Cast,
     subclass::prelude::ObjectSubclassIsExt,
     traits::{GtkWindowExt, NativeExt, WidgetExt},
 };
 use kcshot_data::{colour::Colour, settings::Settings};
+
+use crate::kcshot::KCShot;
 
 use self::operations::Tool;
 
@@ -119,5 +122,20 @@ impl EditorWindow {
         self.imp().with_image_mut("set_line_width", |image| {
             image.operation_stack.line_width = line_width;
         });
+    }
+
+    fn save_image(&self) {
+        self.imp()
+            .with_image_mut("EditorWindow::save_image", |image| {
+                KCShot::the().with_conn(|conn| {
+                    underlying::EditorWindow::do_save_surface(
+                        &KCShot::the().model_notifier(),
+                        conn,
+                        self.upcast_ref(),
+                        image,
+                        None,
+                    );
+                });
+            });
     }
 }
