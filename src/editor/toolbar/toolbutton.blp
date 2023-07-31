@@ -1,0 +1,12 @@
+using Gtk 4.0;
+
+template $KCShotToolButton : Gtk.Widget {
+    Gtk.ToggleButton toggle {
+        active: false;
+
+        clicked => $on_clicked() swapped;
+        toggled => $on_toggled() swapped;
+
+        Gtk.Image image {}
+    }
+}
