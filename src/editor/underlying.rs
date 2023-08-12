@@ -8,7 +8,7 @@ use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, ParamSpec, Properties},
+    glib::{self, clone, Properties},
     prelude::*,
     subclass::prelude::*,
     Allocation, CompositeTemplate,
@@ -126,6 +126,7 @@ impl ObjectSubclass for EditorWindow {
     }
 }
 
+#[glib::derived_properties]
 impl ObjectImpl for EditorWindow {
     fn constructed(&self) {
         self.parent_constructed();
@@ -173,15 +174,6 @@ impl ObjectImpl for EditorWindow {
     fn dispose(&self) {
         self.obj().dispose_children();
         self.with_image_mut("dispose", |image| image.surface.finish());
-    }
-
-    fn properties() -> &'static [ParamSpec] {
-        Self::derived_properties()
-    }
-
-    #[tracing::instrument]
-    fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-        Self::derived_set_property(self, id, value, pspec);
     }
 }
 

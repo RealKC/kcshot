@@ -22,7 +22,7 @@ mod underlying {
 
     use gtk4::{
         gdk,
-        glib::{self, clone, ParamSpec, Properties},
+        glib::{self, clone, Properties},
         prelude::*,
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
         CompositeTemplate,
@@ -80,6 +80,7 @@ mod underlying {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for AppWindow {
         fn constructed(&self) {
             self.parent_constructed();
@@ -119,18 +120,6 @@ mod underlying {
 
         fn dispose(&self) {
             self.obj().dispose_children();
-        }
-
-        fn properties() -> &'static [ParamSpec] {
-            Self::derived_properties()
-        }
-
-        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            Self::derived_set_property(self, id, value, pspec);
-        }
-
-        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
-            Self::derived_property(self, id, pspec)
         }
     }
 

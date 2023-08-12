@@ -29,7 +29,7 @@ mod underlying {
     };
 
     use gtk4::{
-        glib::{self, ParamSpec, Properties},
+        glib::{self, Properties},
         prelude::*,
         subclass::prelude::*,
         CompositeTemplate,
@@ -99,6 +99,7 @@ mod underlying {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ToolButton {
         fn constructed(&self) {
             self.parent_constructed();
@@ -110,18 +111,6 @@ mod underlying {
 
         fn dispose(&self) {
             self.obj().dispose_children();
-        }
-
-        fn properties() -> &'static [ParamSpec] {
-            Self::derived_properties()
-        }
-
-        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            Self::derived_set_property(self, id, value, pspec);
-        }
-
-        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
-            Self::derived_property(self, id, pspec)
         }
     }
 
