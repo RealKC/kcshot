@@ -2,7 +2,7 @@ use std::{process::Command, thread::Builder as ThreadBuilder};
 
 use gtk4::{
     gdk_pixbuf::Pixbuf,
-    glib::{self, Continue, MainContext, Sender},
+    glib::{self, MainContext, Sender},
     prelude::*,
 };
 use kcshot_data::settings::Settings;
@@ -28,7 +28,7 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
 
     // We use channels because AFAIK gtk function calls can only be done on the main thread, and we
     // spawn a new thread to handle SNI events
-    let (tx, rx) = MainContext::channel::<Message>(glib::PRIORITY_DEFAULT);
+    let (tx, rx) = MainContext::channel::<Message>(glib::Priority::DEFAULT);
 
     let tray_service = ksni::TrayService::new(Tray { tx, icon });
 
@@ -64,7 +64,7 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
             }
             Message::Quit => app.quit(),
         }
-        Continue(true)
+        glib::ControlFlow::Continue
     });
 
     Initialised::Yes
