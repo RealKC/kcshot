@@ -3,7 +3,7 @@ use std::{
     cell::{Cell, OnceCell, RefCell},
 };
 
-use cairo::Context;
+use cairo::{glib::Propagation, Context};
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
@@ -315,7 +315,7 @@ impl EditorWindow {
         _: u32,
         _: gdk::ModifierType,
         _: &gtk4::EventControllerKey,
-    ) -> bool {
+    ) -> Propagation {
         let handled = self
             .with_image_mut("key pressed event", |image| {
                 if key == gdk::Key::Control_L || key == gdk::Key::Control_R {
@@ -350,10 +350,14 @@ impl EditorWindow {
             .unwrap_or(false);
 
         if handled {
-            return true;
+            return Propagation::Stop;
         }
 
-        self.toolbar().key_activates_tool(key)
+        if self.toolbar().key_activates_tool(key) {
+            Propagation::Stop
+        } else {
+            Propagation::Proceed
+        }
     }
 
     #[template_callback]
