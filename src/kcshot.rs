@@ -178,7 +178,7 @@ mod underlying {
             };
 
             self.history_model.replace(Some(HistoryModel::default()));
-            let (tx, rx) = glib::MainContext::channel::<RowData>(glib::PRIORITY_DEFAULT);
+            let (tx, rx) = glib::MainContext::channel::<RowData>(glib::Priority::DEFAULT);
 
             self.model_notifier
                 .set(tx)
@@ -194,12 +194,12 @@ mod underlying {
             // It appears that this is the proper way to achieve that.
             rx.attach(
                 None,
-                glib::clone!(@weak model => @default-return Continue(false), move |msg| {
+                glib::clone!(@weak model => @default-return glib::ControlFlow::Break, move |msg| {
                     model.insert_screenshot(msg);
                     // I've tried moving this items_changed call inside HistoryModel::insert_screenshot,
                     // but the items showed up twice in the view if you had two windows opened for some reason.
                     model.items_changed(0, 0, 1);
-                    Continue(true)
+                    glib::ControlFlow::Continue
                 }),
             );
         }

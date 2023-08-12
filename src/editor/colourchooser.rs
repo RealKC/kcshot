@@ -86,16 +86,16 @@ impl Dialog {
                 // the dialog again, as such eventually one of the other two branches of this `if` will
                 // be reached.
 
-                let (colour_tx, colour_rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+                let (colour_tx, colour_rx) = glib::MainContext::channel(glib::Priority::DEFAULT);
 
                 editor.start_picking_a_colour(colour_tx);
 
                 colour_rx.attach(None, glib::clone!(
                     @weak this
-                => @default-return Continue(false), move |colour| {
+                => @default-return glib::ControlFlow::Break, move |colour| {
                     colour_chooser.set_colour(colour);
                     this.show();
-                    Continue(false)
+                    glib::ControlFlow::Break
                 }));
             } else {
                 this.close();

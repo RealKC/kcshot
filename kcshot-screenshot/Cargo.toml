@@ -9,12 +9,12 @@ edition = "2021"
 kcshot-data = { path = "../kcshot-data" }
 
 # Actually taking the screeenshot
-ashpd = { version = "0.4.0", default-features = false, features = [
+ashpd = { version = "0.6.0", default-features = false, features = [
     "gtk4",
     "tokio",
     "tracing",
 ] }
-xcb = { git = "https://github.com/rust-x-bindings/rust-xcb/", features = [
+xcb = { version = "1.2.2", features = [
     "debug_atom_names",
     "shape",
     "xfixes",

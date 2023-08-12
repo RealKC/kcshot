@@ -82,7 +82,7 @@ pub(super) fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<
     // The org.freedesktop.Screenshot portal places the screenshots inside the user's home instead of
     // making temp files, so this is to ensure that they get deleted and the user's home isn't polluted.
     glib::MainContext::default().spawn_local(async move {
-        if let Err(why) = file.delete_future(glib::PRIORITY_LOW).await {
+        if let Err(why) = file.delete_future(glib::Priority::LOW).await {
             tracing::error!("Failed to delete file {uri} due to {why}");
         }
     });
