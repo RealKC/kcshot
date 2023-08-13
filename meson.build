@@ -58,7 +58,7 @@ cargo_build = custom_target(
 install_data('resources/kc.kcshot.gschema.xml',
     install_dir: get_option('datadir') / 'glib-2.0/schemas',
 )
-install_data('resources/logo/kcshot_logo_dark.svg', rename: 'kcshot.svg'
+install_data('resources/logo/kcshot_logo_dark.svg', rename: 'kcshot.svg',
     install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps',
 )
 install_data('resources/kcshot.desktop',
