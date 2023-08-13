@@ -46,7 +46,6 @@ cargo_build = custom_target(
     install_dir: bindir,
     env: env,
     command: [
-        'sh', '-c',
         cargo, 'build',
         cargo_options,
         '&&',
