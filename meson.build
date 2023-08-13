@@ -58,6 +58,12 @@ cargo_build = custom_target(
 install_data('resources/kc.kcshot.gschema.xml',
     install_dir: get_option('datadir') / 'glib-2.0/schemas',
 )
+install_data('resources/logo/kcshot_logo_dark.svg', rename: 'kcshot.svg'
+    install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps',
+)
+install_data('resources/kcshot.desktop',
+    install_dir: get_option('datadir') / 'applications'
+)
 
 glib_compile_schemas = find_program('glib-compile-schemas', required: false)
 if glib_compile_schemas.found()
