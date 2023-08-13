@@ -60,12 +60,10 @@ pub(super) fn take_screenshot(tokio: Option<&tokio::runtime::Handle>) -> Result<
                 .modal(false)
                 .send()
                 .await
+                .and_then(|r| r.response())
+                .map(|s| s.uri().to_string())
         })
-        .map_err(Error::Ashpd)?
-        .response()
-        .map_err(Error::Ashpd)?
-        .uri()
-        .to_string();
+        .map_err(Error::Ashpd)?;
 
     let file = gio::File::for_uri(&uri);
     let read = file
