@@ -153,7 +153,7 @@ pub fn dialog(editor: &EditorWindow) -> Dialog {
 }
 
 mod underlying {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
     use gtk4::{
         gdk,
@@ -164,7 +164,7 @@ mod underlying {
         subclass::prelude::*,
     };
     use kcshot_data::colour::Hsv;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::sync::Lazy;
 
     use crate::{editor::colourwheel::ColourWheel, ext::DisposeExt};
 

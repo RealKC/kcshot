@@ -78,7 +78,7 @@ impl KCShot {
 
 mod underlying {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         ffi::OsString,
     };
 
@@ -90,7 +90,7 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::sync::Lazy;
 
     use super::Settings;
     use crate::{

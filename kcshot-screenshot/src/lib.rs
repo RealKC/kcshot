@@ -1,8 +1,7 @@
-use std::{env, io};
+use std::{env, io, sync::OnceLock};
 
 use cairo::{self, Error as CairoError, ImageSurface};
 use kcshot_data::geometry::Rectangle;
-use once_cell::sync::OnceCell;
 use tracing::error;
 
 mod wayland;
@@ -60,9 +59,17 @@ impl WmFeatures {
     /// Talks with the WM to get the features we're interested in
     /// These get cached and as such calling it multiple times in succession should be cheap
     fn get() -> Result<&'static Self> {
-        static FEATURES: OnceCell<WmFeatures> = OnceCell::new();
+        static FEATURES: OnceLock<WmFeatures> = OnceLock::new();
 
-        FEATURES.get_or_try_init(Self::get_impl)
+        match FEATURES.get() {
+            Some(val) => Ok(val),
+            None => {
+                FEATURES
+                    .set(Self::get_impl()?)
+                    .expect("FEATURES cannot be initialised at this point");
+                Ok(FEATURES.get().unwrap())
+            }
+        }
     }
 
     fn get_impl() -> Result<WmFeatures> {

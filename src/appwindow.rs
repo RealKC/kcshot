@@ -28,7 +28,6 @@ mod underlying {
         CompositeTemplate,
     };
     use kcshot_data::settings::Settings;
-    use once_cell::unsync::OnceCell;
 
     use crate::{
         editor::EditorWindow, ext::DisposeExt, history, history::RowData, kcshot::KCShot,
@@ -49,7 +48,7 @@ mod underlying {
         #[template_child]
         history_button: TemplateChild<gtk4::Button>,
 
-        settings: OnceCell<Settings>,
+        settings: Settings,
     }
 
     impl Default for AppWindow {
@@ -59,7 +58,7 @@ mod underlying {
                 image_grid: Default::default(),
                 stack: Default::default(),
                 history_button: Default::default(),
-                settings: OnceCell::with_value(Settings::open()),
+                settings: Settings::open(),
             }
         }
     }
@@ -85,8 +84,6 @@ mod underlying {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let settings = self.settings.get().unwrap();
-
             let obj = self.obj();
 
             let list_model = obj.history_model();
@@ -97,14 +94,14 @@ mod underlying {
 
             self.image_grid.set_factory(Some(&factory));
 
-            let is_history_enabled = settings.is_history_enabled();
+            let is_history_enabled = self.settings.is_history_enabled();
             if is_history_enabled {
                 self.stack.set_visible_child_name("image-grid");
             } else {
                 self.stack.set_visible_child_name("message");
             }
 
-            settings.connect_is_history_enabled_changed(
+            self.settings.connect_is_history_enabled_changed(
                 clone!(@strong self.stack as stack => move |settings| {
                     if settings.is_history_enabled() {
                         stack.set_visible_child_name("image-grid");
@@ -113,7 +110,7 @@ mod underlying {
                     }
                 }),
             );
-            settings
+            self.settings
                 .bind_is_history_enabled(&self.history_button.get(), "visible")
                 .build();
         }
@@ -129,7 +126,7 @@ mod underlying {
     impl AppWindow {
         #[template_callback]
         fn on_capture_clicked(&self, _: &gtk4::Button) {
-            let editing_starts_with_cropping = self.settings().editing_starts_with_cropping();
+            let editing_starts_with_cropping = self.settings.editing_starts_with_cropping();
 
             EditorWindow::show(KCShot::the().upcast_ref(), editing_starts_with_cropping);
         }
@@ -157,10 +154,6 @@ mod underlying {
         #[template_callback]
         fn on_quit_clicked(&self, _: &gtk4::Button) {
             KCShot::the().quit();
-        }
-
-        fn settings(&self) -> &Settings {
-            self.settings.get().unwrap()
         }
     }
 

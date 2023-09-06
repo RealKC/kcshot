@@ -301,9 +301,9 @@ impl ColourWheel {
 }
 
 mod underlying {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::sync::Lazy;
 
     use super::*;
     use crate::ext::DisposeExt;

@@ -1,9 +1,10 @@
+use std::sync::OnceLock;
+
 use cairo::{self, Format as CairoImageFormat, ImageSurface};
 use kcshot_data::{
     geometry::{Point, Rectangle},
     settings::Settings,
 };
-use once_cell::sync::OnceCell;
 use xcb::{
     shape,
     x::{
@@ -201,6 +202,7 @@ fn overlay_cursor(cursor: xfixes::GetCursorImageReply, screenshot: &mut [u8], bo
 xcb::atoms_struct! {
     /// This structs contains the atoms we'll use multiple times over the course of the program and as
     /// such are cached. None of the atoms here will ever be [`xcb::x::ATOM_NONE`]
+    #[derive(Debug)]
     struct AtomsOfInterest {
         /// This corresponds to _NET_CLIENT_LIST_STACKING, querying this property on the root window
         /// gives us the list of windows in stacking order.
@@ -229,9 +231,9 @@ xcb::atoms_struct! {
 
 impl AtomsOfInterest {
     fn get(connection: &xcb::Connection) -> Result<&Self> {
-        static ATOMS_OF_INTEREST: OnceCell<AtomsOfInterest> = OnceCell::new();
+        static ATOMS_OF_INTEREST: OnceLock<AtomsOfInterest> = OnceLock::new();
 
-        ATOMS_OF_INTEREST.get_or_try_init(|| {
+        let init = || {
             let Self {
                 wm_client_list,
                 frame_extents,
@@ -240,11 +242,11 @@ impl AtomsOfInterest {
             } = Self::intern_all(connection).map_err(Error::from)?;
 
             if wm_client_list == ATOM_NONE {
-                return Err(Error::WmDoesNotSupportWindowList.into());
+                return Err(Error::WmDoesNotSupportWindowList);
             }
 
             if [frame_extents, window_state, window_is_fullscreen].contains(&ATOM_NONE) {
-                return Err(Error::WmDoesNotSupportFrameExtents.into());
+                return Err(Error::WmDoesNotSupportFrameExtents);
             }
 
             Ok(Self {
@@ -253,7 +255,17 @@ impl AtomsOfInterest {
                 window_state,
                 window_is_fullscreen,
             })
-        })
+        };
+
+        match ATOMS_OF_INTEREST.get() {
+            Some(val) => Ok(val),
+            None => {
+                ATOMS_OF_INTEREST
+                    .set(init()?)
+                    .expect("ATOMS_OF_INTEREST cannot be initialised at this point");
+                Ok(ATOMS_OF_INTEREST.get().unwrap())
+            }
+        }
     }
 }
 
