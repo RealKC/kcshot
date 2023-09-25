@@ -93,7 +93,7 @@ template $KCShotToolbarWidget : Gtk.Widget {
     }
 
     Gtk.Button secondary {
-        clicked => $on_primary_colour_clicked() swapped;
+        clicked => $on_secondary_colour_clicked() swapped;
 
         visible: false;
         tooltip-text: "Set secondary colour";
