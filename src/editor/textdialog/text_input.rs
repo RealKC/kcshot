@@ -51,7 +51,10 @@ mod underlying {
 
     use super::parse;
     use crate::{
-        editor::{colourchooser, utils::CairoExt, Colour, EditorWindow},
+        editor::{
+            colourchooserdialog::ColourChooserDialog, textdialog::TextDialog, utils::CairoExt,
+            Colour, EditorWindow,
+        },
         ext::DisposeExt,
         log_if_err,
     };
@@ -62,6 +65,8 @@ mod underlying {
     pub struct TextInput {
         #[property(get, set)]
         editor: WeakRef<EditorWindow>,
+        #[property(get, set)]
+        parent_dialog: WeakRef<TextDialog>,
 
         #[template_child]
         colour_button_drawing_area: TemplateChild<gtk4::DrawingArea>,
@@ -148,17 +153,15 @@ mod underlying {
     #[gtk4::template_callbacks]
     impl TextInput {
         #[template_callback]
-        fn on_colour_button_clicked(&self, _colour_button: &gtk4::Button) {
+        async fn on_colour_button_clicked(&self, _colour_button: &gtk4::Button) {
             let editor = self.obj().editor().unwrap();
-            let dialog = colourchooser::dialog(&editor);
-            let drawing_area = self.colour_button_drawing_area.get();
 
-            dialog.connect_response(glib::clone!(@weak drawing_area => move |editor, colour| {
-                editor.set_secondary_colour(colour);
-                drawing_area.queue_draw();
-            }));
-
+            let dialog = ColourChooserDialog::new(&editor);
+            dialog.set_transient_for(self.parent_dialog.upgrade().as_ref());
             dialog.show();
+            editor.set_secondary_colour(dialog.colour().await);
+
+            self.colour_button_drawing_area.queue_draw();
         }
 
         #[template_callback]

@@ -63,7 +63,10 @@ mod underlying {
 
     use super::toolbutton::{should_start_saving_immediately, ToolButton};
     use crate::{
-        editor::{colourchooser, operations::Tool, utils::CairoExt, EditorWindow},
+        editor::{
+            colourchooserdialog::ColourChooserDialog, operations::Tool, utils::CairoExt,
+            EditorWindow,
+        },
         ext::DisposeExt,
         log_if_err,
     };
@@ -202,25 +205,23 @@ mod underlying {
         }
 
         #[template_callback]
-        fn on_primary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = colourchooser::dialog(&self.editor());
+        async fn on_primary_colour_clicked(&self, _: &gtk4::Button) {
+            let dialog = ColourChooserDialog::new(&self.editor());
+
             let drawing_area = self.primary_button_drawing_area.get();
-            dialog.connect_response(move |editor, colour| {
-                editor.set_primary_colour(colour);
-                drawing_area.queue_draw();
-            });
             dialog.show();
+            self.editor().set_primary_colour(dialog.colour().await);
+            drawing_area.queue_draw();
         }
 
         #[template_callback]
-        fn on_secondary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = colourchooser::dialog(&self.editor());
-            let drawing_area = self.secondary_button_drawing_area.get();
-            dialog.connect_response(move |editor, colour| {
-                editor.set_secondary_colour(colour);
-                drawing_area.queue_draw();
-            });
+        async fn on_secondary_colour_clicked(&self, _: &gtk4::Button) {
+            let dialog = ColourChooserDialog::new(&self.editor());
+
+            let drawing_area = self.primary_button_drawing_area.get();
             dialog.show();
+            self.editor().set_secondary_colour(dialog.colour().await);
+            drawing_area.queue_draw();
         }
 
         #[template_callback]

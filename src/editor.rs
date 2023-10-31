@@ -11,6 +11,7 @@ use self::operations::Tool;
 use crate::kcshot::KCShot;
 
 mod colourchooser;
+mod colourchooserdialog;
 mod colourwheel;
 mod operations;
 mod textdialog;

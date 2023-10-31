@@ -1,9 +1,10 @@
 using Gtk 4.0;
 
-template $KCShotTextDialog : Gtk.Window {
-    title: "kcshot - Add text";
+template $KCShotColourChooserDialog : Gtk.Window {
+    title: "kcshot - Pick a colour";
     modal: true;
     destroy-with-parent: true;
+    resizable: false;
 
     Gtk.Box {
         orientation: vertical;
@@ -12,10 +13,7 @@ template $KCShotTextDialog : Gtk.Window {
         margin-start: 10;
         margin-end: 10;
 
-        $KCShotTextInput text_input {
-            editor: bind template.editor;
-            parent_dialog: bind template;
-        }
+        $KCShotColourChooserWidget colour_chooser {}
 
         Gtk.Box {
             orientation: horizontal;
@@ -28,6 +26,15 @@ template $KCShotTextDialog : Gtk.Window {
                 styles ["destructive-action"]
 
                 clicked => $on_cancel_clicked() swapped;
+            }
+
+            Gtk.Button {
+                child: Gtk.Image {
+                    resource: "/kc/kcshot/editor/tool-colourpicker.png";
+                };
+                margin-end: 10;
+
+                clicked => $on_colour_picker_clicked() swapped;
             }
 
             Gtk.Button {

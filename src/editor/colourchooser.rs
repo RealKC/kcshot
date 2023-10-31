@@ -1,12 +1,9 @@
 use gtk4::{
     gdk, glib,
     glib::{ObjectExt, ToValue},
-    prelude::*,
     subclass::prelude::*,
-    ResponseType,
 };
 
-use super::EditorWindow;
 use crate::editor::Colour;
 
 glib::wrapper! {
@@ -43,112 +40,6 @@ impl ColourChooserWidget {
 impl Default for ColourChooserWidget {
     fn default() -> Self {
         glib::Object::new()
-    }
-}
-
-// NOTE: This struct doesn't need to participate in the gtk widget tree because its fields already do
-// and it only wraps some functions of its fields.
-pub struct Dialog {
-    editor: glib::WeakRef<EditorWindow>,
-    dialog: gtk4::Dialog,
-    colour_chooser: ColourChooserWidget,
-}
-
-impl Dialog {
-    pub fn show(&self) {
-        self.dialog.show();
-    }
-
-    pub fn connect_response<F>(&self, func: F)
-    where
-        F: Fn(&EditorWindow, Colour) + 'static,
-    {
-        let Some(editor) = self.editor.upgrade() else {
-            tracing::warn!("Failed to upgrade self.editor in `Dialog::connect_response`");
-            return;
-        };
-
-        self.dialog.connect_response(glib::clone!(
-            @weak self.colour_chooser as colour_chooser,
-        => move |this, response| {
-            if response == ResponseType::Ok {
-                func(&editor, colour_chooser.colour());
-                this.close();
-            } else if response == PICKER_RESPONSE_ID {
-                this.hide();
-
-                // This branch is part of the mechanism that handles picking a colour from the image.
-                // The actual retrieving a colour part is implemented directly in the editor's click
-                // event handler, which checks the `is_picking_a_colour` field on the impl struct of
-                // EditorWindow.
-                // Once the colour is picked, the receive end of the channel will receive the colour
-                // of the pixel the user clicked on, set the colour_chooser's colour to that, and show
-                // the dialog again, as such eventually one of the other two branches of this `if` will
-                // be reached.
-
-                let (colour_tx, colour_rx) = glib::MainContext::channel(glib::Priority::DEFAULT);
-
-                editor.start_picking_a_colour(colour_tx);
-
-                colour_rx.attach(None, glib::clone!(
-                    @weak this
-                => @default-return glib::ControlFlow::Break, move |colour| {
-                    colour_chooser.set_colour(colour);
-                    this.show();
-                    glib::ControlFlow::Break
-                }));
-            } else {
-                this.close();
-            }
-        }));
-    }
-}
-
-/// The Response ID used by the colour picker when a colour was picked from the image being edited
-const PICKER_RESPONSE_ID: ResponseType = ResponseType::Other(123);
-
-pub fn dialog(editor: &EditorWindow) -> Dialog {
-    let colour_chooser = ColourChooserWidget::default();
-    colour_chooser.set_margin_bottom(10);
-    colour_chooser.set_margin_top(10);
-    colour_chooser.set_margin_start(10);
-    colour_chooser.set_margin_end(10);
-
-    let dialog = gtk4::Dialog::with_buttons(
-        Some("kcshot - Pick a colour"),
-        Some(editor),
-        gtk4::DialogFlags::MODAL | gtk4::DialogFlags::DESTROY_WITH_PARENT,
-        &[],
-    );
-    dialog.set_resizable(false);
-
-    let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
-    cancel_button.add_css_class("destructive-action");
-    cancel_button.set_margin_bottom(10);
-    cancel_button.set_margin_end(5);
-
-    // Part of the "pick a colour from the image" mechanism, see big comment in `Dialog::connect_response`
-    let colour_picker = gtk4::Button::new();
-    colour_picker.set_child(Some(&gtk4::Image::from_resource(
-        "/kc/kcshot/editor/tool-colourpicker.png",
-    )));
-    colour_picker.set_margin_bottom(10);
-    colour_picker.set_tooltip_text(Some("Pick a colour from the image"));
-    colour_picker.set_halign(gtk4::Align::Start);
-    dialog.add_action_widget(&colour_picker, PICKER_RESPONSE_ID);
-
-    let ok_button = dialog.add_button("OK", ResponseType::Ok);
-    ok_button.add_css_class("suggested-action");
-    ok_button.set_margin_start(5);
-    ok_button.set_margin_end(10);
-    ok_button.set_margin_bottom(10);
-
-    dialog.content_area().append(&colour_chooser);
-
-    Dialog {
-        editor: editor.downgrade(),
-        dialog,
-        colour_chooser,
     }
 }
 

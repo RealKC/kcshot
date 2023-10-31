@@ -246,7 +246,9 @@ impl EditorWindow {
             //       branches of this if-chain, in order for tools to take part in the undo
             //       stack! For the Text tool, this happens in pop_text_dialog_and_get_text.
             if image.operation_stack.current_tool() == Tool::Text {
-                TextDialog::new(&self.obj()).show();
+                let dialog = TextDialog::new(&self.obj());
+                dialog.set_transient_for(Some(&*self.obj()));
+                dialog.show();
                 true
             } else if !image.operation_stack.current_tool().is_saving_tool() {
                 image.operation_stack.finish_current_operation();
