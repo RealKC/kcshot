@@ -60,7 +60,7 @@ mod underlying {
     #[properties(wrapper_type = super::TextInput)]
     #[template(file = "src/editor/textdialog/text_input.blp")]
     pub struct TextInput {
-        #[property(get, set, construct_only)]
+        #[property(get, set)]
         editor: WeakRef<EditorWindow>,
 
         #[template_child]
@@ -143,7 +143,6 @@ mod underlying {
             self.obj().dispose_children();
         }
     }
-    impl BoxImpl for TextInput {}
     impl WidgetImpl for TextInput {}
 
     #[gtk4::template_callbacks]

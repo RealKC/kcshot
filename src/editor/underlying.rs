@@ -16,7 +16,7 @@ use gtk4::{
 use kcshot_data::geometry::{Point, Rectangle};
 use tracing::error;
 
-use super::{toolbar, utils::ContextLogger, Colour};
+use super::{textdialog::TextDialog, toolbar, utils::ContextLogger, Colour};
 use crate::{
     editor::{
         operations::{OperationStack, SelectionMode, Tool},
@@ -246,7 +246,7 @@ impl EditorWindow {
             //       branches of this if-chain, in order for tools to take part in the undo
             //       stack! For the Text tool, this happens in pop_text_dialog_and_get_text.
             if image.operation_stack.current_tool() == Tool::Text {
-                super::textdialog::pop_text_dialog_and_get_text(&self.obj());
+                TextDialog::new(&self.obj()).show();
                 true
             } else if !image.operation_stack.current_tool().is_saving_tool() {
                 image.operation_stack.finish_current_operation();

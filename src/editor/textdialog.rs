@@ -1,58 +1,98 @@
-use gtk4::{
-    glib, glib::clone, prelude::*, subclass::prelude::ObjectSubclassIsExt, DialogFlags,
-    ResponseType,
-};
-use kcshot_data::Text;
-
-use text_input::*;
+use gtk4::glib;
 
 mod parse;
 mod text_input;
 
-pub fn pop_text_dialog_and_get_text(editor: &super::EditorWindow) {
-    let dialog = gtk4::Dialog::with_buttons(
-        Some("Add text"),
-        Some(editor),
-        DialogFlags::MODAL | DialogFlags::DESTROY_WITH_PARENT,
-        &[],
-    );
+glib::wrapper! {
+    pub struct TextDialog(ObjectSubclass<underlying::TextDialog>)
+        @extends gtk4::Widget, gtk4::Window;
+}
 
-    let cancel_button = dialog.add_button("Cancel", ResponseType::Cancel);
-    cancel_button.add_css_class("destructive-action");
-    cancel_button.set_margin_bottom(10);
+impl TextDialog {
+    pub fn new(editor: &super::EditorWindow) -> Self {
+        glib::Object::builder().property("editor", editor).build()
+    }
+}
 
-    let ok_button = dialog.add_button("OK", ResponseType::Ok);
-    ok_button.add_css_class("suggested-action");
-    ok_button.set_margin_bottom(10);
-    ok_button.set_margin_start(5);
-    ok_button.set_margin_end(10);
+mod underlying {
+    use gtk4::{
+        glib::{self, Properties, WeakRef},
+        prelude::*,
+        subclass::prelude::*,
+        CompositeTemplate,
+    };
+    use kcshot_data::Text;
 
-    let text_input = TextInput::new(editor);
-    dialog.content_area().append(&text_input);
+    use crate::{editor::EditorWindow, ext::DisposeExt};
 
-    dialog.connect_response(clone!(
-        @weak text_input,
-        @weak editor
-    => move |this, response| {
-        this.close();
+    use super::text_input::TextInput;
 
-        if response != ResponseType::Ok {
-            tracing::trace!("Text dialog response wasn't 'Ok', returning...");
-            return;
+    #[derive(Debug, Default, Properties, CompositeTemplate)]
+    #[properties(wrapper_type = super::TextDialog)]
+    #[template(file = "src/editor/textdialog.blp")]
+    pub struct TextDialog {
+        #[property(get, set, construct_only)]
+        editor: WeakRef<EditorWindow>,
+
+        #[template_child]
+        text_input: TemplateChild<TextInput>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for TextDialog {
+        const NAME: &'static str = "KCShotTextDialog";
+        type Type = super::TextDialog;
+        type ParentType = gtk4::Window;
+
+        fn class_init(klass: &mut Self::Class) {
+            klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
-        // NOTE: We create the `Text` outside the `with_image_mut` closure because `TextInput::colour`
-        //       calls `with_image`, which will fail inside `with_image_mut`
-        let text = Text {
-            string: text_input.text(),
-            font_description: text_input.font_description(),
-            colour: text_input.colour(),
-        };
-        editor.imp().with_image_mut("text dialog response", |image| {
-            image.operation_stack.set_text(text);
-            image.operation_stack.finish_current_operation();
-        });
-    }));
+        fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
 
-    dialog.show();
+    #[glib::derived_properties]
+    impl ObjectImpl for TextDialog {
+        fn dispose(&self) {
+            self.obj().dispose_children();
+        }
+    }
+
+    impl WidgetImpl for TextDialog {}
+    impl WindowImpl for TextDialog {}
+
+    #[gtk4::template_callbacks]
+    impl TextDialog {
+        #[template_callback]
+        fn on_cancel_clicked(&self, _: &gtk4::Button) {
+            self.obj().close();
+        }
+
+        #[template_callback]
+        fn on_ok_clicked(&self, _: &gtk4::Button) {
+            self.obj().close();
+
+            // NOTE: We create the `Text` outside the `with_image_mut` closure because `TextInput::colour`
+            //       calls `with_image`, which will fail inside `with_image_mut`
+            let text = Text {
+                string: self.text_input.text(),
+                font_description: self.text_input.font_description(),
+                colour: self.text_input.colour(),
+            };
+
+            if let Some(editor) = self.editor.upgrade() {
+                editor
+                    .imp()
+                    .with_image_mut("text dialog response", |image| {
+                        image.operation_stack.set_text(text);
+                        image.operation_stack.finish_current_operation();
+                    });
+            } else {
+                tracing::warn!("Failed to upgrade editor weak ref to strong ref. Did this TextDialog get OK'ed after its parent died?");
+            }
+        }
+    }
 }
