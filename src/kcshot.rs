@@ -96,7 +96,7 @@ mod underlying {
     use crate::{
         appwindow, db,
         editor::EditorWindow,
-        history::{HistoryModel, ModelNotifier, RowData},
+        history::{HistoryModel, ModelNotifier},
         systray,
     };
 
@@ -178,7 +178,7 @@ mod underlying {
             };
 
             self.history_model.replace(Some(HistoryModel::default()));
-            let (tx, rx) = glib::MainContext::channel::<RowData>(glib::Priority::DEFAULT);
+            let (tx, mut rx) = tokio::sync::mpsc::channel(16);
 
             self.model_notifier
                 .set(tx)
@@ -192,16 +192,14 @@ mod underlying {
             // (src: https://docs.gtk.org/gio/method.ListModel.items_changed.html)
             //
             // It appears that this is the proper way to achieve that.
-            rx.attach(
-                None,
-                glib::clone!(@weak model => @default-return glib::ControlFlow::Break, move |msg| {
-                    model.insert_screenshot(msg);
+            glib::MainContext::default().spawn_local(async move {
+                while let Some(screenshot) = rx.recv().await {
+                    model.insert_screenshot(screenshot);
                     // I've tried moving this items_changed call inside HistoryModel::insert_screenshot,
                     // but the items showed up twice in the view if you had two windows opened for some reason.
                     model.items_changed(0, 0, 1);
-                    glib::ControlFlow::Continue
-                }),
-            );
+                }
+            });
         }
     }
 

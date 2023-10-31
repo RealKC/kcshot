@@ -1,6 +1,6 @@
 use gtk4::{
     gio::ListModel as GListModel,
-    glib::{self, Sender},
+    glib::{self},
     subclass::prelude::ObjectSubclassIsExt,
 };
 
@@ -32,7 +32,7 @@ impl Default for HistoryModel {
 /// carries a [`self::RowData`] with the newly taken screenshot.
 ///
 /// It causes [`HistoryModel::insert_screenshot`] to be called.
-pub type ModelNotifier = Sender<RowData>;
+pub type ModelNotifier = tokio::sync::mpsc::Sender<RowData>;
 
 mod underlying {
     use std::{cell::RefCell, rc::Rc};

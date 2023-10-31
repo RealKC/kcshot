@@ -82,7 +82,9 @@ impl PostCaptureAction for SaveToDisk {
             tracing::error!("Failed to add screenshot to history: {why}");
             return;
         }
-        if let Err(why) = model_notifier.send(RowData::new_from_components(Some(path), now, None)) {
+        if let Err(why) =
+            model_notifier.blocking_send(RowData::new_from_components(Some(path), now, None))
+        {
             tracing::error!("Failed to notify the history model that a new item was added: {why}");
         }
     }
