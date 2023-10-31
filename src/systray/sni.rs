@@ -2,10 +2,11 @@ use std::{process::Command, thread::Builder as ThreadBuilder};
 
 use gtk4::{
     gdk_pixbuf::Pixbuf,
-    glib::{self, MainContext, Sender},
+    glib::{self},
     prelude::*,
 };
 use kcshot_data::settings::Settings;
+use tokio::sync::mpsc::{self, Sender};
 
 use super::Initialised;
 use crate::{editor::EditorWindow, kcshot::KCShot};
@@ -26,9 +27,9 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
         }
     };
 
-    // We use channels because AFAIK gtk function calls can only be done on the main thread, and we
-    // spawn a new thread to handle SNI events
-    let (tx, rx) = MainContext::channel::<Message>(glib::Priority::DEFAULT);
+    // We can't invoke GTK methods from threads other than the main one, so we use channels
+    // and an async task running on the main thread to invoke GTK stuff from the SNI thread
+    let (tx, mut rx) = mpsc::channel(16);
 
     let tray_service = ksni::TrayService::new(Tray { tx, icon });
 
@@ -46,25 +47,27 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
         return Initialised::No;
     }
 
-    rx.attach(None, move |msg| {
-        match msg {
-            Message::OpenMainWindow => app.main_window().present(),
-            Message::OpenScreenshotFolder => {
-                let res = Command::new("xdg-open")
-                    .arg(&KCShot::screenshot_folder())
-                    .spawn();
-                if let Err(why) = res {
-                    tracing::error!("Failed to spawn xdg-open: {why}");
+    glib::MainContext::default().spawn_local(async move {
+        while let Some(msg) = rx.recv().await {
+            match msg {
+                Message::OpenMainWindow => app.main_window().present(),
+                Message::OpenScreenshotFolder => {
+                    let res = Command::new("xdg-open")
+                        .arg(&KCShot::screenshot_folder())
+                        .spawn();
+                    if let Err(why) = res {
+                        tracing::error!("Failed to spawn xdg-open: {why}");
+                    }
                 }
-            }
-            Message::TakeScreenshot => {
-                let editing_starts_with_cropping = Settings::open().editing_starts_with_cropping();
+                Message::TakeScreenshot => {
+                    let editing_starts_with_cropping =
+                        Settings::open().editing_starts_with_cropping();
 
-                EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
+                    EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
+                }
+                Message::Quit => app.quit(),
             }
-            Message::Quit => app.quit(),
         }
-        glib::ControlFlow::Continue
     });
 
     Initialised::Yes
@@ -108,7 +111,7 @@ struct Tray {
 
 impl ksni::Tray for Tray {
     fn activate(&mut self, _x: i32, _y: i32) {
-        if let Err(why) = self.tx.send(Message::TakeScreenshot) {
+        if let Err(why) = self.tx.try_send(Message::TakeScreenshot) {
             tracing::error!("Failed to send message: {why:?}");
         }
     }
@@ -127,7 +130,7 @@ impl ksni::Tray for Tray {
             StandardItem {
                 label: "Open window".into(),
                 activate: Box::new(|tray: &mut Self| {
-                    if let Err(why) = tray.tx.send(Message::OpenMainWindow) {
+                    if let Err(why) = tray.tx.try_send(Message::OpenMainWindow) {
                         tracing::error!("Failed to send message: {why:?}");
                     }
                 }),
@@ -137,7 +140,7 @@ impl ksni::Tray for Tray {
             StandardItem {
                 label: "Open screenshot folder".into(),
                 activate: Box::new(|tray: &mut Self| {
-                    if let Err(why) = tray.tx.send(Message::OpenScreenshotFolder) {
+                    if let Err(why) = tray.tx.try_send(Message::OpenScreenshotFolder) {
                         tracing::error!("Failed to send message: {why:?}");
                     }
                 }),
@@ -148,7 +151,7 @@ impl ksni::Tray for Tray {
                 label: "Quit".into(),
                 icon_name: "application-exit".into(),
                 activate: Box::new(|tray: &mut Self| {
-                    if let Err(why) = tray.tx.send(Message::Quit) {
+                    if let Err(why) = tray.tx.try_send(Message::Quit) {
                         tracing::error!("Failed to send message: {why:?}");
                     }
                 }),
