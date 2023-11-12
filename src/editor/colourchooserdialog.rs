@@ -97,34 +97,12 @@ mod underlying {
         }
 
         #[template_callback]
-        fn on_colour_picker_clicked(&self, _: &gtk4::Button) {
+        async fn on_colour_picker_clicked(&self, _: &gtk4::Button) {
             if let Some(editor) = self.editor.upgrade() {
                 self.obj().hide();
-
-                // This branch is part of the mechanism that handles picking a colour from the image.
-                // The actual retrieving a colour part is implemented directly in the editor's click
-                // event handler, which checks the `is_picking_a_colour` field on the impl struct of
-                // EditorWindow.
-                // Once the colour is picked, the receive end of the channel will receive the colour
-                // of the pixel the user clicked on, set the colour_chooser's colour to that, and show
-                // the dialog again, as such eventually one of the other two branches of this `if` will
-                // be reached.
-
-                let (colour_tx, colour_rx) = glib::MainContext::channel(glib::Priority::DEFAULT);
-
-                editor.start_picking_a_colour(colour_tx);
-
-                let this = self.obj();
-                colour_rx.attach(
-                    None,
-                    glib::clone!(
-                        @weak this
-                    => @default-return glib::ControlFlow::Break, move |colour| {
-                        this.imp().colour_chooser.set_colour(colour);
-                        this.show();
-                        glib::ControlFlow::Break
-                    }),
-                );
+                let colour = editor.pick_colour().await;
+                self.colour_chooser.set_colour(colour);
+                self.obj().show();
             }
         }
 

@@ -60,9 +60,8 @@ impl EditorWindow {
         }
     }
 
-    fn start_picking_a_colour(&self, colour_tx: glib::Sender<Colour>) {
-        let imp = self.imp();
-        imp.colour_tx.set(Some(colour_tx));
+    async fn pick_colour(&self) -> Colour {
+        self.imp().pick_colour().await
     }
 
     fn set_current_tool(&self, tool: Tool) {

@@ -3,17 +3,18 @@ use std::{
     cell::{Cell, OnceCell, RefCell},
 };
 
-use cairo::{glib::Propagation, Context};
+use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, Properties},
+    glib::{self, clone, Propagation, Properties},
     prelude::*,
     subclass::prelude::*,
     Allocation, CompositeTemplate,
 };
 use kcshot_data::geometry::{Point, Rectangle};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::error;
 
 use super::{textdialog::TextDialog, toolbar, utils::ContextLogger, Colour};
@@ -71,7 +72,7 @@ impl Image {
     }
 }
 
-#[derive(Default, Properties, CompositeTemplate)]
+#[derive(Debug, Properties, CompositeTemplate)]
 #[properties(wrapper_type = super::EditorWindow)]
 #[template(file = "src/editor/editor.blp")]
 pub struct EditorWindow {
@@ -87,26 +88,28 @@ pub struct EditorWindow {
 
     toolbar: OnceCell<toolbar::ToolbarWidget>,
 
-    /// This field is part of the "pick a colour from the screen" mechanism, we send the colour under
-    /// the mouse cursor to the colour chooser dialog currently open
-    pub(super) colour_tx: Cell<Option<glib::Sender<Colour>>>,
+    colour_tx: Sender<Colour>,
+    colour_rx: RefCell<Receiver<Colour>>,
+    colour_requested: Cell<bool>,
 
     is_in_with_image_mut: Cell<bool>,
 }
 
-impl std::fmt::Debug for EditorWindow {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EditorWindow")
-            .field(
-                "editing_started_with_cropping",
-                &self.editing_started_with_cropping,
-            )
-            .field("overlay", &self.overlay)
-            .field("drawing_area", &self.drawing_area)
-            .field("image", &self.image)
-            .field("colour_tx", &"<...>")
-            .field("is_in_image_mut", &self.is_in_with_image_mut)
-            .finish()
+impl Default for EditorWindow {
+    fn default() -> Self {
+        let (colour_tx, colour_rx) = mpsc::channel(8);
+
+        Self {
+            editing_started_with_cropping: Default::default(),
+            image: Default::default(),
+            overlay: Default::default(),
+            drawing_area: Default::default(),
+            toolbar: Default::default(),
+            colour_tx,
+            colour_rx: RefCell::new(colour_rx),
+            colour_requested: Default::default(),
+            is_in_with_image_mut: Default::default(),
+        }
     }
 }
 
@@ -205,23 +208,13 @@ impl EditorWindow {
     }
 
     #[template_callback]
-    fn on_mouse_button_pressed(&self, _: i32, x: f64, y: f64, click: &gtk4::GestureClick) {
+    async fn on_mouse_button_pressed(&self, _: i32, x: f64, y: f64, click: &gtk4::GestureClick) {
         if click.current_button() == BUTTON_PRIMARY {
-            if let Some(colour_tx) = self.colour_tx.take() {
-                // if colour_tx is non-None it means there is a colour dialog open, and the user
-                // is trying to pick a colour at the moment!
-                self.with_image("colour picker", |image| {
-                    let colour = image.get_colour_at(x, y);
-                    if let Err(why) = colour_tx.send(colour) {
-                        tracing::error!("Failed to send colour through colour_tx: {why}");
-                    }
-                });
+            if self.colour_requested.get() {
+                let colour = self.with_image("colour picker", |image| image.get_colour_at(x, y));
+                self.colour_requested.set(false);
+                self.colour_tx.send(colour.unwrap()).await.unwrap();
             } else {
-                assert!(
-                    self.colour_tx.take().is_none(),
-                    "There should be no colour_tx on the EditorWindow when we're not picking a colour"
-                );
-
                 self.with_image_mut("primary button pressed", |image| {
                     image.operation_stack.start_operation_at(Point { x, y });
                 });
@@ -401,6 +394,12 @@ impl EditorWindow {
 }
 
 impl EditorWindow {
+    #[allow(clippy::await_holding_refcell_ref)]
+    pub(super) async fn pick_colour(&self) -> Colour {
+        self.colour_requested.set(true);
+        self.colour_rx.borrow_mut().recv().await.unwrap()
+    }
+
     fn do_draw(image: &Image, cairo: &Context, is_in_draw_event: bool) {
         cairo.set_operator(cairo::Operator::Source);
         log_if_err!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
