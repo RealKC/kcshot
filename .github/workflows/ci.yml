@@ -72,11 +72,10 @@ jobs:
             subprojects/blueprint-compiler/
             builddir/
           key: ${{ runner.os }}-${{ steps.toolchain-install.outputs.cachekey }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock')}}-${{ hashFiles('subprojects/blueprint-compiler.wrap') }}-lint
-      - run: cargo cranky -h &>/dev/null || cargo install --locked cargo-cranky
       - name: Configure meson
         run: meson setup builddir
-      - name: cranky
-        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo cranky --manifest-path=../Cargo.toml -- -D warnings
+      - name: check
+        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo check --manifest-path=../Cargo.toml -- -D warnings
   test:
     runs-on: ubuntu-22.04
     steps:

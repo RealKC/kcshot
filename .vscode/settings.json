@@ -3,6 +3,5 @@
     "[sql]": {
         "editor.formatOnSave": false
     },
-    "rust-analyzer.check.command": "cranky",
     "rust-analyzer.checkOnSave": true,
 }
