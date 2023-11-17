@@ -22,6 +22,11 @@ items_after_statements = "warn"
 useless_conversion = "warn"
 dbg_macro = "warn"
 unnecessary_wraps = "warn"
+manual_let_else = "warn"
+manual_ok_or = "warn"
+no_effect_underscore_binding = "warn"
+redundant_else = "warn"
+single_match_else = "warn"
 
 [workspace.dependencies]
 cairo = { package = "cairo-rs", version = "0.18.0", features = ["png"] }

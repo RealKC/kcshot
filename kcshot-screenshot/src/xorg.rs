@@ -257,15 +257,14 @@ impl AtomsOfInterest {
             })
         };
 
-        match ATOMS_OF_INTEREST.get() {
-            Some(val) => Ok(val),
-            None => {
-                ATOMS_OF_INTEREST
-                    .set(init()?)
-                    .expect("ATOMS_OF_INTEREST cannot be initialised at this point");
-                Ok(ATOMS_OF_INTEREST.get().unwrap())
-            }
-        }
+        Ok(if let Some(val) = ATOMS_OF_INTEREST.get() {
+            val
+        } else {
+            ATOMS_OF_INTEREST
+                .set(init()?)
+                .expect("ATOMS_OF_INTEREST cannot be initialised at this point");
+            ATOMS_OF_INTEREST.get().unwrap()
+        })
     }
 }
 

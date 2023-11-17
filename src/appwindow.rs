@@ -187,17 +187,14 @@ mod underlying {
                 clone!(@strong list_item, @strong model, @strong picture, @strong object => move |_, _, x, y| {
                     model.set_selected(list_item.position());
 
-                    match object.context_menu() {
-                        Some(context_menu) => {
-                            context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                    if let Some(context_menu) = object.context_menu() {
+                        context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                             context_menu.popup();
-                        }
-                        None => {
-                            let context_menu = history::context_menu(object.clone(), picture.upcast_ref());
-                            context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
-                            context_menu.popup();
-                            object.set_context_menu(context_menu);
-                        }
+                    } else {
+                        let context_menu = history::context_menu(object.clone(), picture.upcast_ref());
+                        context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                        context_menu.popup();
+                        object.set_context_menu(context_menu);
                     }
                 }),
             );

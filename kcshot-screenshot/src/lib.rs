@@ -61,15 +61,14 @@ impl WmFeatures {
     fn get() -> Result<&'static Self> {
         static FEATURES: OnceLock<WmFeatures> = OnceLock::new();
 
-        match FEATURES.get() {
-            Some(val) => Ok(val),
-            None => {
-                FEATURES
-                    .set(Self::get_impl()?)
-                    .expect("FEATURES cannot be initialised at this point");
-                Ok(FEATURES.get().unwrap())
-            }
-        }
+        Ok(if let Some(val) = FEATURES.get() {
+            val
+        } else {
+            FEATURES
+                .set(Self::get_impl()?)
+                .expect("FEATURES cannot be initialised at this point");
+            FEATURES.get().unwrap()
+        })
     }
 
     fn get_impl() -> Result<WmFeatures> {
