@@ -1,9 +1,8 @@
 use gtk4::{glib, pango, prelude::*, subclass::prelude::ObjectSubclassIsExt};
 use kcshot_data::colour::Colour;
 
-use crate::editor::EditorWindow;
-
 use super::parse;
+use crate::editor::EditorWindow;
 
 glib::wrapper! {
     pub struct TextInput(ObjectSubclass<underlying::TextInput>)

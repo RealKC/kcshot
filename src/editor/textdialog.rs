@@ -23,9 +23,8 @@ mod underlying {
     };
     use kcshot_data::Text;
 
-    use crate::{editor::EditorWindow, ext::DisposeExt};
-
     use super::text_input::TextInput;
+    use crate::{editor::EditorWindow, ext::DisposeExt};
 
     #[derive(Debug, Default, Properties, CompositeTemplate)]
     #[properties(wrapper_type = super::TextDialog)]

@@ -75,7 +75,7 @@ jobs:
       - name: Configure meson
         run: meson setup builddir
       - name: check
-        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo check --manifest-path=../Cargo.toml -- -D warnings
+        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo clippy --manifest-path=../Cargo.toml -- -D warnings
   test:
     runs-on: ubuntu-22.04
     steps:
