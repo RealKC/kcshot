@@ -88,6 +88,7 @@ mod underlying {
         fn class_init(klass: &mut Self::Class) {
             klass.set_layout_manager_type::<gtk4::BinLayout>();
             klass.set_accessible_role(gtk4::AccessibleRole::Button);
+            klass.set_css_name("kcshot-tool-button");
 
             klass.bind_template();
             klass.bind_template_callbacks();

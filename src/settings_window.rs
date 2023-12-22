@@ -42,6 +42,8 @@ mod underlying {
         type ParentType = gtk4::Window;
 
         fn class_init(klass: &mut Self::Class) {
+            klass.set_css_name("kcshot-settings-window");
+
             klass.bind_template();
             klass.bind_template_callbacks();
         }

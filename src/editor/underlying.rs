@@ -120,6 +120,8 @@ impl ObjectSubclass for EditorWindow {
     type ParentType = gtk4::ApplicationWindow;
 
     fn class_init(klass: &mut Self::Class) {
+        klass.set_css_name("kcshot-editor-window");
+
         klass.bind_template();
         klass.bind_template_callbacks();
     }

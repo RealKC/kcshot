@@ -76,6 +76,7 @@ mod underlying {
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_layout_manager_type::<gtk4::BoxLayout>();
+            klass.set_css_name("kcshot-colour-chooser");
         }
     }
 

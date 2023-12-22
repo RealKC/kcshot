@@ -84,6 +84,8 @@ mod underlying {
         type ParentType = gtk4::Widget;
 
         fn class_init(klass: &mut Self::Class) {
+            klass.set_css_name("kcshot-text-input");
+
             klass.bind_template();
             klass.bind_template_callbacks();
         }
