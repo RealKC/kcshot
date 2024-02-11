@@ -2,8 +2,7 @@ use gtk4::glib;
 
 glib::wrapper! {
     pub struct SettingsWindow(ObjectSubclass<underlying::SettingsWindow>)
-        @extends gtk4::Widget, gtk4::Window,
-        @implements gtk4::Native;
+        @extends gtk4::Widget, gtk4::Window;
 }
 
 impl Default for SettingsWindow {
@@ -15,7 +14,7 @@ impl Default for SettingsWindow {
 mod underlying {
     use std::cell::OnceCell;
 
-    use gtk4::{glib, prelude::*, subclass::prelude::*, traits::DialogExt, CompositeTemplate};
+    use gtk4::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
     use kcshot_data::settings::Settings;
 
     use crate::ext::DisposeExt;
@@ -117,5 +116,4 @@ mod underlying {
 
     impl WidgetImpl for SettingsWindow {}
     impl WindowImpl for SettingsWindow {}
-    impl NativeImpl for SettingsWindow {}
 }

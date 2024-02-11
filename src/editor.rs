@@ -1,10 +1,4 @@
-use gtk4::{
-    gio,
-    glib::{self, CastNone},
-    prelude::Cast,
-    subclass::prelude::ObjectSubclassIsExt,
-    traits::{GtkWindowExt, NativeExt, WidgetExt},
-};
+use gtk4::{gio, glib, prelude::*, subclass::prelude::ObjectSubclassIsExt};
 use kcshot_data::{colour::Colour, settings::Settings};
 
 use self::operations::Tool;
@@ -51,7 +45,7 @@ impl EditorWindow {
 
         let surface = window
             .native()
-            .map(|native| native.surface())
+            .and_then(|native| native.surface())
             .and_downcast::<gdk4_x11::X11Surface>();
 
         if let Some(surface) = surface {

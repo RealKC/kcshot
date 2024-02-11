@@ -1,8 +1,4 @@
-use gtk4::{
-    gdk, glib,
-    glib::{ObjectExt, ToValue},
-    subclass::prelude::*,
-};
+use gtk4::{gdk, glib, glib::prelude::*, subclass::prelude::*};
 
 use crate::editor::Colour;
 

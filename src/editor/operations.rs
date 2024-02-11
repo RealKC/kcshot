@@ -1,6 +1,7 @@
 use cairo::{Context, Error as CairoError, ImageSurface};
 use gtk4::pango::FontDescription;
 use kcshot_data::{colour::Colour, geometry::*, Text};
+use pangocairo::functions::{create_layout, show_layout, update_layout};
 use rand::Rng;
 
 pub use self::{stack::*, tool::*};
@@ -350,14 +351,14 @@ fn draw_text_at(
     colour: Colour,
     font_description: &FontDescription,
 ) {
-    let layout = pangocairo::create_layout(cairo);
+    let layout = create_layout(cairo);
 
     layout.set_markup(text);
     layout.set_font_description(Some(font_description));
     cairo.move_to(x, y);
     cairo.set_source_colour(colour);
-    pangocairo::update_layout(cairo, &layout);
-    pangocairo::show_layout(cairo, &layout);
+    update_layout(cairo, &layout);
+    show_layout(cairo, &layout);
 }
 
 fn draw_text_centred_at(
@@ -367,7 +368,7 @@ fn draw_text_centred_at(
     colour: Colour,
     font_description: &FontDescription,
 ) {
-    let layout = pangocairo::create_layout(cairo);
+    let layout = create_layout(cairo);
 
     layout.set_markup(text);
     layout.set_font_description(Some(font_description));
@@ -378,6 +379,6 @@ fn draw_text_centred_at(
 
     cairo.move_to(x - w / 2.0, y - h / 2.0);
     cairo.set_source_colour(colour);
-    pangocairo::update_layout(cairo, &layout);
-    pangocairo::show_layout(cairo, &layout);
+    update_layout(cairo, &layout);
+    show_layout(cairo, &layout);
 }

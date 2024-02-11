@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use gtk4::{
     gdk::RGBA,
-    glib::{self, FromVariant, StaticVariantType, ToVariant},
+    glib::{self, prelude::*},
 };
 
 #[derive(Clone, Copy, Debug)]

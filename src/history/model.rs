@@ -39,8 +39,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, Object, StaticType},
-        prelude::*,
+        glib::{self, prelude::*, Object},
         subclass::prelude::*,
     };
 

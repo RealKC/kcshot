@@ -9,5 +9,5 @@ edition = "2021"
 workspace = true
 
 [dependencies]
-gsettings-macro = "0.1.19"
+gsettings-macro = "0.2.0"
 gtk4.workspace = true

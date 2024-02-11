@@ -4,8 +4,7 @@ use crate::{history::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
-        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
-        @implements gtk4::Native;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
 }
 
 impl AppWindow {

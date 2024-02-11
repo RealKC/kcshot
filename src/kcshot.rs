@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use diesel::SqliteConnection;
-use gtk4::{gio, glib, subclass::prelude::*};
+use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 use kcshot_data::settings::Settings;
 
 use crate::{
@@ -29,8 +29,6 @@ impl KCShot {
 
     #[track_caller]
     pub fn the() -> Self {
-        use glib::CastNone;
-
         gio::Application::default()
             .and_downcast()
             .expect("The global application should be of type `KCShot`")

@@ -1,4 +1,4 @@
-use gtk4::{glib::BorrowedObject, traits::WidgetExt};
+use gtk4::{glib::BorrowedObject, prelude::*};
 
 pub trait DisposeExt {
     /// Disposes all children of a widget
