@@ -336,7 +336,7 @@ impl OperationStack {
         if let Some(Operation::Crop(rect)) = self.current_operation {
             shapes::dimmen_rectangle_around(cairo, self.screen_dimensions, rect.normalised());
             log_if_err!(cairo.fill());
-        } else if let Some(&Operation::Crop(rect)) = self.operations.get(0) {
+        } else if let Some(&Operation::Crop(rect)) = self.operations.first() {
             shapes::dimmen_rectangle_around(cairo, self.screen_dimensions, rect.normalised());
             log_if_err!(cairo.fill());
         } else if self.operations.is_empty() {
