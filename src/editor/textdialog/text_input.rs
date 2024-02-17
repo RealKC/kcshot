@@ -154,7 +154,7 @@ mod underlying {
     #[gtk4::template_callbacks]
     impl TextInput {
         #[template_callback]
-        async fn on_colour_button_clicked(&self, _colour_button: &gtk4::Button) {
+        async fn on_colour_button_clicked(&self, _: &gtk4::Button) {
             let editor = self.obj().editor().unwrap();
 
             let dialog = ColourChooserDialog::new(&editor);
