@@ -14,6 +14,10 @@ use crate::{
 };
 
 /// Trait for the post capture actions.
+#[allow(
+    dead_code,
+    reason = "I need to figure out the post capture actions situation still"
+)]
 pub trait PostCaptureAction {
     /// Returns the ID of the action, this is used for the settings.
     fn id(&self) -> String;
