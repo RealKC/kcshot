@@ -5,7 +5,7 @@ pub trait DisposeExt {
     fn dispose_children(&self);
 }
 
-impl<'a, T> DisposeExt for BorrowedObject<'a, T>
+impl<T> DisposeExt for BorrowedObject<'_, T>
 where
     T: WidgetExt,
 {

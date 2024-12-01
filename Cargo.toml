@@ -12,6 +12,7 @@ members = ["kcshot-data", "kcshot-screenshot"]
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kcshot_linting)'] }
 
 [workspace.lints.clippy]
 match_same_arms = "warn"

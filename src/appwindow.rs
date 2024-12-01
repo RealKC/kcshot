@@ -140,7 +140,7 @@ mod underlying {
         #[template_callback]
         fn on_screenshots_folder_clicked(&self, _: &gtk4::Button) {
             let res = Command::new("xdg-open")
-                .arg(&KCShot::screenshot_folder())
+                .arg(KCShot::screenshot_folder())
                 .spawn();
             if let Err(why) = res {
                 tracing::error!("Failed to spawn xdg-open: {why}");

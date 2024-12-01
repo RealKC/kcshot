@@ -53,7 +53,7 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
                 Message::OpenMainWindow => app.main_window().present(),
                 Message::OpenScreenshotFolder => {
                     let res = Command::new("xdg-open")
-                        .arg(&KCShot::screenshot_folder())
+                        .arg(KCShot::screenshot_folder())
                         .spawn();
                     if let Err(why) = res {
                         tracing::error!("Failed to spawn xdg-open: {why}");

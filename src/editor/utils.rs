@@ -63,7 +63,7 @@ impl<'s> ContextLogger<'s> {
     }
 }
 
-impl<'s> Drop for ContextLogger<'s> {
+impl Drop for ContextLogger<'_> {
     fn drop(&mut self) {
         let Self { method, ctx } = self;
         tracing::trace!("\x1b[31mExiting\x1b[0m context inside {method}: '{ctx}'");
