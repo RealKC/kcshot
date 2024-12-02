@@ -160,9 +160,15 @@ impl ObjectImpl for EditorWindow {
         });
         self.overlay.add_overlay(toolbar);
 
-        self.drawing_area.set_draw_func(clone!(@weak obj => move |_, cairo, _, _| {
-            obj.imp().with_image("draw event", |image| EditorWindow::do_draw(image, cairo, true));
-        }));
+        self.drawing_area.set_draw_func(clone!(
+            #[weak]
+            obj,
+            move |_, cairo, _, _| {
+                obj.imp().with_image("draw event", |image| {
+                    EditorWindow::do_draw(image, cairo, true);
+                });
+            }
+        ));
 
         self.setup_actions();
 
@@ -376,21 +382,29 @@ impl EditorWindow {
         let obj = self.obj();
 
         let undo_action = gio::SimpleAction::new("undo", None);
-        undo_action.connect_activate(clone!(@weak obj => move |_, _| {
-            obj.imp().with_image_mut("win.undo activated", |image| {
-                image.operation_stack.undo();
-                obj.imp().drawing_area.queue_draw();
-            });
-        }));
+        undo_action.connect_activate(clone!(
+            #[weak]
+            obj,
+            move |_, _| {
+                obj.imp().with_image_mut("win.undo activated", |image| {
+                    image.operation_stack.undo();
+                    obj.imp().drawing_area.queue_draw();
+                });
+            }
+        ));
         obj.add_action(&undo_action);
 
         let redo_action = gio::SimpleAction::new("redo", None);
-        redo_action.connect_activate(clone!(@weak obj => move |_, _| {
-            obj.imp().with_image_mut("win.redo activated", |image| {
-                image.operation_stack.redo();
-                obj.imp().drawing_area.queue_draw();
-            });
-        }));
+        redo_action.connect_activate(clone!(
+            #[weak]
+            obj,
+            move |_, _| {
+                obj.imp().with_image_mut("win.redo activated", |image| {
+                    image.operation_stack.redo();
+                    obj.imp().drawing_area.queue_draw();
+                });
+            }
+        ));
         obj.add_action(&redo_action);
     }
 }

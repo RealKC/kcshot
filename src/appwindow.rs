@@ -102,15 +102,17 @@ mod underlying {
                 self.stack.set_visible_child_name("message");
             }
 
-            self.settings.connect_is_history_enabled_changed(
-                clone!(@strong self.stack as stack => move |settings| {
+            self.settings.connect_is_history_enabled_changed(clone!(
+                #[strong(rename_to = stack)]
+                self.stack,
+                move |settings| {
                     if settings.is_history_enabled() {
                         stack.set_visible_child_name("image-grid");
                     } else {
                         stack.set_visible_child_name("message");
                     }
-                }),
-            );
+                }
+            ));
             self.settings
                 .bind_is_history_enabled(&self.history_button.get(), "visible")
                 .build();
@@ -184,21 +186,32 @@ mod underlying {
             let mouse = gtk4::GestureClick::builder()
                 .button(gdk::BUTTON_SECONDARY)
                 .build();
-            mouse.connect_released(
-                clone!(@strong list_item, @strong model, @strong picture, @strong object => move |_, _, x, y| {
+            mouse.connect_released(clone!(
+                #[strong]
+                list_item,
+                #[strong]
+                model,
+                #[strong]
+                picture,
+                #[strong]
+                object,
+                move |_, _, x, y| {
                     model.set_selected(list_item.position());
 
                     if let Some(context_menu) = object.context_menu() {
-                        context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
-                            context_menu.popup();
+                        context_menu
+                            .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                        context_menu.popup();
                     } else {
-                        let context_menu = history::context_menu(object.clone(), picture.upcast_ref());
-                        context_menu.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                        let context_menu =
+                            history::context_menu(object.clone(), picture.upcast_ref());
+                        context_menu
+                            .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                         context_menu.popup();
                         object.set_context_menu(context_menu);
                     }
-                }),
-            );
+                }
+            ));
             picture.add_controller(mouse);
 
             if let Some(path) = object.path() {

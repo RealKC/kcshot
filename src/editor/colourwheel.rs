@@ -303,6 +303,7 @@ impl ColourWheel {
 mod underlying {
     use std::cell::{Cell, OnceCell};
 
+    use glib::clone;
     use once_cell::sync::Lazy;
 
     use super::*;
@@ -464,71 +465,87 @@ mod underlying {
             click.set_button(0);
 
             let obj = self.obj();
-            click.connect_pressed(glib::clone!(@weak obj => move |_, _, x, y| {
-                let (x, y) = (x as f32, y as f32);
-                if obj.is_in_ring(x , y) {
-                    let imp = obj.imp();
+            click.connect_pressed(clone!(
+                #[weak]
+                obj,
+                move |_, _, x, y| {
+                    let (x, y) = (x as f32, y as f32);
+                    if obj.is_in_ring(x, y) {
+                        let imp = obj.imp();
 
-                    let mut hsv = imp.hsv.get();
-                    hsv.h = obj.h_from_ring_pos(x, y);
+                        let mut hsv = imp.hsv.get();
+                        hsv.h = obj.h_from_ring_pos(x, y);
 
-                    obj.set_property("rgba", gdk::RGBA::from(hsv));
-                    return;
+                        obj.set_property("rgba", gdk::RGBA::from(hsv));
+                        return;
+                    }
+
+                    if obj.is_in_triangle(x, y) {
+                        let hsv = obj.hsv_from_triangle_pos(x, y);
+                        obj.set_property("rgba", gdk::RGBA::from(hsv));
+                    }
                 }
-
-                if obj.is_in_triangle(x,y) {
-                    let hsv = obj.hsv_from_triangle_pos(x,y);
-                    obj.set_property("rgba", gdk::RGBA::from(hsv));
-                }
-            }));
+            ));
 
             obj.add_controller(click);
 
             let drag = gtk4::GestureDrag::new();
 
-            drag.connect_drag_begin(glib::clone!(@weak obj => move |_, x, y| {
-                let (x, y) = (x as f32, y as f32);
-                if obj.is_in_ring(x , y) {
-                    let imp = obj.imp();
-                    imp.state.set(Drag::Ring(x,y));
+            drag.connect_drag_begin(clone!(
+                #[weak]
+                obj,
+                move |_, x, y| {
+                    let (x, y) = (x as f32, y as f32);
+                    if obj.is_in_ring(x, y) {
+                        let imp = obj.imp();
+                        imp.state.set(Drag::Ring(x, y));
 
-                    return;
+                        return;
+                    }
+
+                    if obj.is_in_triangle(x, y) {
+                        let imp = obj.imp();
+                        imp.state.set(Drag::Triangle(x, y));
+                    }
                 }
+            ));
 
-                if obj.is_in_triangle(x,y) {
+            drag.connect_drag_end(clone!(
+                #[weak]
+                obj,
+                move |_, _x, _y| {
                     let imp = obj.imp();
-                    imp.state.set(Drag::Triangle(x,y));
+                    imp.state.set(Drag::None);
                 }
-            }));
+            ));
 
-            drag.connect_drag_end(glib::clone!(@weak obj => move |_, _x, _y| {
-                let imp = obj.imp();
-                imp.state.set(Drag::None);
-            }));
+            drag.connect_drag_update(clone!(
+                #[weak]
+                obj,
+                move |_, x, y| {
+                    let (x, y) = (x as f32, y as f32);
+                    let imp = obj.imp();
+                    let state = imp.state.get();
 
-            drag.connect_drag_update(glib::clone!(@weak obj => move |_, x, y| {
-                let (x, y) = (x as f32, y as f32);
-                let imp = obj.imp();
-                let state = imp.state.get();
+                    match state {
+                        Drag::Ring(x_0, y_0) => {
+                            let mut hsv = imp.hsv.get();
+                            hsv.h = obj.h_from_ring_pos(x + x_0, y + y_0);
 
-                match state {
-                    Drag::Ring(x_0,y_0) => {
-                        let mut hsv = imp.hsv.get();
-                        hsv.h = obj.h_from_ring_pos(x + x_0, y + y_0);
-
-                        obj.set_property("rgba", gdk::RGBA::from(hsv));
-                    },
-                    Drag::Triangle(x_0, y_0) => {
-                        if !obj.is_in_triangle(x + x_0, y + y_0) {
-                            return;
+                            obj.set_property("rgba", gdk::RGBA::from(hsv));
                         }
+                        Drag::Triangle(x_0, y_0) => {
+                            if !obj.is_in_triangle(x + x_0, y + y_0) {
+                                return;
+                            }
 
-                        let hsv = obj.hsv_from_triangle_pos(x + x_0, y + y_0);
-                        obj.set_property("rgba", gdk::RGBA::from(hsv));
-                    },
-                    Drag::None => (),
+                            let hsv = obj.hsv_from_triangle_pos(x + x_0, y + y_0);
+                            obj.set_property("rgba", gdk::RGBA::from(hsv));
+                        }
+                        Drag::None => (),
+                    }
                 }
-            }));
+            ));
 
             obj.add_controller(drag);
         }

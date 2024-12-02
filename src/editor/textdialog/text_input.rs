@@ -105,8 +105,10 @@ mod underlying {
 
             let text_input = self.obj();
 
-            self.colour_button_drawing_area.set_draw_func(
-                glib::clone!(@weak text_input => move |_this, cairo, _w, _h| {
+            self.colour_button_drawing_area.set_draw_func(glib::clone!(
+                #[weak]
+                text_input,
+                move |_this, cairo, _w, _h| {
                     cairo.set_operator(cairo::Operator::Over);
 
                     let editor = text_input.editor().unwrap();
@@ -127,13 +129,13 @@ mod underlying {
                         });
                         cairo.rectangle(0.0, 0.0, SIZE / 2.0, SIZE / 2.0);
                         log_if_err!(cairo.fill());
-                        cairo.rectangle(SIZE / 2.0,SIZE / 2.0,SIZE / 2.0, SIZE / 2.0);
+                        cairo.rectangle(SIZE / 2.0, SIZE / 2.0, SIZE / 2.0, SIZE / 2.0);
                         log_if_err!(cairo.fill());
 
                         cairo.set_source_colour(Colour::BLACK);
-                        cairo.rectangle(0.0, SIZE / 2.0,SIZE / 2.0,SIZE / 2.0);
+                        cairo.rectangle(0.0, SIZE / 2.0, SIZE / 2.0, SIZE / 2.0);
                         log_if_err!(cairo.fill());
-                        cairo.rectangle(SIZE / 2.0, 0.0, SIZE / 2.0,SIZE / 2.0);
+                        cairo.rectangle(SIZE / 2.0, 0.0, SIZE / 2.0, SIZE / 2.0);
                         log_if_err!(cairo.fill());
                     }
 
@@ -141,8 +143,8 @@ mod underlying {
                     cairo.rectangle(0.0, 0.0, SIZE, SIZE);
                     cairo.set_line_width(1.0);
                     log_if_err!(cairo.stroke());
-                }),
-            );
+                }
+            ));
         }
 
         fn dispose(&self) {

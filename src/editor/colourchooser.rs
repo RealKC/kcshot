@@ -322,19 +322,23 @@ mod underlying {
             .build();
         entry.set_hexpand(false);
         entry.set_halign(gtk4::Align::End);
-        entry.connect_activate(glib::clone!(@weak colour_wheel => move |this| {
-            let text = this.text();
+        entry.connect_activate(glib::clone!(
+            #[weak]
+            colour_wheel,
+            move |this| {
+                let text = this.text();
 
-            if let Ok(colour) = pango::Color::parse(&text) {
-                let convert = |c: u16| (c as f32) / 65535.0;
-                let r = convert(colour.red());
-                let g = convert(colour.green());
-                let b = convert(colour.blue());
-                let rgba = gdk::RGBA::new(r, g, b, 1.0);
+                if let Ok(colour) = pango::Color::parse(&text) {
+                    let convert = |c: u16| (c as f32) / 65535.0;
+                    let r = convert(colour.red());
+                    let g = convert(colour.green());
+                    let b = convert(colour.blue());
+                    let rgba = gdk::RGBA::new(r, g, b, 1.0);
 
-                colour_wheel.set_property("rgba", rgba);
+                    colour_wheel.set_property("rgba", rgba);
+                }
             }
-        }));
+        ));
 
         hbox.append(&entry);
 
