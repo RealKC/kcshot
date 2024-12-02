@@ -1294,7 +1294,7 @@ dependencies = [
  "rand",
  "regex",
  "stackblur-iter",
- "thiserror",
+ "thiserror 2.0.3",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1320,7 +1320,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.3",
  "tokio",
  "tracing",
  "xcb",
@@ -1335,7 +1335,7 @@ dependencies = [
  "dbus",
  "dbus-codegen",
  "dbus-tree",
- "thiserror",
+ "thiserror 1.0.44",
 ]
 
 [[package]]
@@ -2043,7 +2043,16 @@ version = "1.0.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "611040a08a0439f8248d1990b111c95baa9c704c805fa1f62104b39655fd7f90"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 1.0.44",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c006c85c7651b3cf2ada4584faa36773bd07bac24acfb39f3c431b36d7e667aa"
+dependencies = [
+ "thiserror-impl 2.0.3",
 ]
 
 [[package]]
@@ -2051,6 +2060,17 @@ name = "thiserror-impl"
 version = "1.0.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "090198534930841fab3a5d1bb637cde49e339654e606195f8d9c76eeb081dc96"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f077553d607adc1caf65430528a576c757a71ed73944b66ebb58ef2bbd243568"
 dependencies = [
  "proc-macro2",
  "quote",

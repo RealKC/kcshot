@@ -32,5 +32,5 @@ once_cell.workspace = true
 tokio.workspace = true
 
 # Error and logging
-thiserror = "1.0.30"
+thiserror.workspace = true
 tracing.workspace = true
