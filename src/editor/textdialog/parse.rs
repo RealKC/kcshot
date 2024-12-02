@@ -1,7 +1,8 @@
 use std::fmt::Write as _;
 
 use once_cell::sync::Lazy;
-use pulldown_cmark::{escape::escape_html, Event, Options, Parser, Tag};
+use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark_escape::escape_html;
 use regex::Regex;
 
 const ERROR_MSG: &str = "fmt::Write on a string shouldn't fail";
@@ -12,39 +13,70 @@ pub fn markdown2pango(markdown: &str) -> String {
 
     for event in parser {
         match event {
-            Event::Start(tag) => handle_tag(&mut pango_markup, tag, true),
-            Event::End(tag) => handle_tag(&mut pango_markup, tag, false),
+            Event::Start(tag) => handle_tag_start(&mut pango_markup, tag),
+            Event::End(tag) => handle_tag_end(&mut pango_markup, tag),
             // We escape pango unsafe characters because if '<' and '>' end up in regular text or
             // code, Pango simply won't display the thing at all if it is not a valid tag, which
             // is undesirable
             Event::Text(text) => escape_html(&mut pango_markup, text.as_ref()).expect(ERROR_MSG),
             Event::Code(code) => escape_html(&mut pango_markup, code.as_ref()).expect(ERROR_MSG),
-            Event::Html(html) => handle_html(&mut pango_markup, html.as_ref()),
+            Event::Html(html) | Event::InlineHtml(html) => {
+                handle_html(&mut pango_markup, html.as_ref());
+            }
+            Event::InlineMath(_) | Event::DisplayMath(_) => {
+                unreachable!("Math mode was not enabled");
+            }
             Event::SoftBreak | Event::HardBreak => pango_markup.push('\n'),
-            Event::FootnoteReference(_) | Event::Rule | Event::TaskListMarker(_) => {} // Noops
+            // Noops
+            Event::FootnoteReference(_) | Event::Rule | Event::TaskListMarker(_) => {}
         }
     }
 
     pango_markup
 }
 
-fn handle_tag(pango_markup: &mut String, tag: Tag, is_start: bool) {
-    let mut format = |tag_name: &str| {
-        write!(
-            pango_markup,
-            "<{}{tag_name}>",
-            if is_start { "" } else { "/" }
-        )
-    };
+fn handle_tag_end(pango_markup: &mut String, tag: TagEnd) {
+    let mut format = |tag_name: &str| write!(pango_markup, "</{tag_name}>");
+
+    match tag {
+        TagEnd::CodeBlock => format("tt"),
+        TagEnd::Emphasis => format("i"),
+        TagEnd::Strong => format("b"),
+        TagEnd::Strikethrough => format("s"),
+        // no-ops
+        TagEnd::Heading(_)
+        | TagEnd::Paragraph
+        | TagEnd::BlockQuote(_)
+        | TagEnd::List(_)
+        | TagEnd::Item
+        | TagEnd::FootnoteDefinition
+        | TagEnd::Table
+        | TagEnd::TableHead
+        | TagEnd::TableRow
+        | TagEnd::TableCell
+        | TagEnd::Link
+        | TagEnd::Image
+        | TagEnd::HtmlBlock
+        | TagEnd::DefinitionList
+        | TagEnd::DefinitionListTitle
+        | TagEnd::DefinitionListDefinition
+        | TagEnd::MetadataBlock(_) => return,
+    }
+    .expect(ERROR_MSG);
+}
+
+fn handle_tag_start(pango_markup: &mut String, tag: Tag) {
+    let mut format = |tag_name: &str| write!(pango_markup, "<{tag_name}>");
 
     match tag {
         Tag::CodeBlock(_) => format("tt"),
         Tag::Emphasis => format("i"),
         Tag::Strong => format("b"),
         Tag::Strikethrough => format("s"),
-        Tag::Heading(_, _, _)
+        // no-ops
+        Tag::Heading { .. }
         | Tag::Paragraph
-        | Tag::BlockQuote
+        | Tag::BlockQuote(_)
         | Tag::List(_)
         | Tag::Item
         | Tag::FootnoteDefinition(_)
@@ -52,8 +84,13 @@ fn handle_tag(pango_markup: &mut String, tag: Tag, is_start: bool) {
         | Tag::TableHead
         | Tag::TableRow
         | Tag::TableCell
-        | Tag::Link(_, _, _)
-        | Tag::Image(_, _, _) => return, // no-ops
+        | Tag::Link { .. }
+        | Tag::Image { .. }
+        | Tag::HtmlBlock
+        | Tag::DefinitionList
+        | Tag::DefinitionListTitle
+        | Tag::DefinitionListDefinition
+        | Tag::MetadataBlock(_) => return,
     }
     .expect(ERROR_MSG);
 }
