@@ -1,5 +1,3 @@
-#![expect(unused_qualifications, reason = "Macro generated code")]
-
 table! {
     screenshots (id) {
         id -> Integer,
