@@ -40,7 +40,10 @@ impl Default for ColourChooserWidget {
 }
 
 mod underlying {
-    use std::cell::{Cell, OnceCell};
+    use std::{
+        cell::{Cell, OnceCell},
+        sync::LazyLock,
+    };
 
     use gtk4::{
         gdk,
@@ -51,7 +54,6 @@ mod underlying {
         subclass::prelude::*,
     };
     use kcshot_data::colour::Hsv;
-    use once_cell::sync::Lazy;
 
     use crate::{editor::colourwheel::ColourWheel, ext::DisposeExt};
 
@@ -104,7 +106,7 @@ mod underlying {
         }
 
         fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            static PROPERTIES: LazyLock<Vec<ParamSpec>> = LazyLock::new(|| {
                 vec![glib::ParamSpecInt::builder("alpha")
                     .minimum(0)
                     .maximum(256)

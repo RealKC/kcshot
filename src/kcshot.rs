@@ -78,6 +78,7 @@ mod underlying {
     use std::{
         cell::{Cell, OnceCell, RefCell},
         ffi::OsString,
+        sync::LazyLock,
     };
 
     use diesel::SqliteConnection;
@@ -88,7 +89,6 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
-    use once_cell::sync::Lazy;
 
     use super::Settings;
     use crate::{
@@ -203,11 +203,11 @@ mod underlying {
 
     const LONG: usize = 1;
 
-    static SCREENSHOT_FLAGS_OS: Lazy<Vec<OsString>> =
-        Lazy::new(|| vec!["-s".into(), "--screenshot".into()]);
+    static SCREENSHOT_FLAGS_OS: LazyLock<Vec<OsString>> =
+        LazyLock::new(|| vec!["-s".into(), "--screenshot".into()]);
     const SCREENSHOT_FLAGS: &[&str] = &["-s", "--screenshot"];
-    static NO_WINDOW_FLAGS_OS: Lazy<Vec<OsString>> =
-        Lazy::new(|| vec!["-n".into(), "--no-window".into()]);
+    static NO_WINDOW_FLAGS_OS: LazyLock<Vec<OsString>> =
+        LazyLock::new(|| vec!["-n".into(), "--no-window".into()]);
     const NO_WINDOW_FLAGS: &[&str] = &["-n", "--no-window"];
 
     impl ApplicationImpl for KCShot {

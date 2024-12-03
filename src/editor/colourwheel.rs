@@ -301,10 +301,12 @@ impl ColourWheel {
 }
 
 mod underlying {
-    use std::cell::{Cell, OnceCell};
+    use std::{
+        cell::{Cell, OnceCell},
+        sync::LazyLock,
+    };
 
     use glib::clone;
-    use once_cell::sync::Lazy;
 
     use super::*;
     use crate::ext::DisposeExt;
@@ -343,7 +345,7 @@ mod underlying {
 
     impl ObjectImpl for ColourWheel {
         fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+            static PROPERTIES: LazyLock<Vec<glib::ParamSpec>> = LazyLock::new(|| {
                 vec![
                     glib::ParamSpecInt::builder("h")
                         .minimum(1)

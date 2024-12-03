@@ -1,6 +1,5 @@
-use std::fmt::Write as _;
+use std::{fmt::Write as _, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_escape::escape_html;
 use regex::Regex;
@@ -99,7 +98,7 @@ fn handle_tag_start(pango_markup: &mut String, tag: Tag) {
 ///
 /// [pango-markup]: https://docs.gtk.org/Pango/pango_markup.html
 fn handle_html(pango_markup: &mut String, html: &str) {
-    static PANGO_TAG_REGEX: Lazy<Regex> = Lazy::new(|| {
+    static PANGO_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(</|<)(b|big|i|s|sub|sup|small|tt|u)\s?>").expect("The regex should be valid")
     });
 
