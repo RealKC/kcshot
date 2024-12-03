@@ -1,4 +1,4 @@
-use cairo::{Context, Error as CairoError, ImageSurface};
+use cairo::{Context, Error as CairoError};
 use gtk4::pango::FontDescription;
 use kcshot_data::{colour::Colour, geometry::*, Text};
 use pangocairo::functions::{create_layout, show_layout, update_layout};
@@ -182,7 +182,6 @@ impl Operation {
 
     pub fn execute(
         &self,
-        surface: &ImageSurface,
         cairo: &Context,
         is_in_draw_event: bool,
         should_crop_indicators_be_dashed: bool,
@@ -215,13 +214,13 @@ impl Operation {
             }
             Operation::Blur { rect, radius } => {
                 cairo.save()?;
-                pixelops::blur(cairo, surface, *radius as usize, rect.normalised())?;
+                pixelops::blur(cairo, *radius as usize, rect.normalised())?;
                 cairo.restore()?;
             }
             Operation::Pixelate { rect, seed } => {
                 let rect = rect.normalised();
 
-                pixelops::pixelate(cairo, surface, &rect, *seed)?;
+                pixelops::pixelate(cairo, &rect, *seed)?;
             }
             Operation::DrawLine {
                 start,

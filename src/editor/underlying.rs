@@ -422,9 +422,7 @@ impl EditorWindow {
         log_if_err!(cairo.paint());
         cairo.set_operator(cairo::Operator::Over);
 
-        image
-            .operation_stack
-            .execute(&image.surface, cairo, is_in_draw_event);
+        image.operation_stack.execute(cairo, is_in_draw_event);
     }
 
     pub(super) fn do_save_surface(
@@ -441,7 +439,8 @@ impl EditorWindow {
                 return;
             }
         };
-        EditorWindow::do_draw(image, &cairo, false);
+
+        Self::do_draw(image, &cairo, false);
 
         let rectangle = image
             .operation_stack

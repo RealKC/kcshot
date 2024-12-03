@@ -1,4 +1,4 @@
-use cairo::{Context, ImageSurface};
+use cairo::Context;
 use kcshot_data::{
     colour::Colour,
     geometry::{Point, Rectangle},
@@ -251,25 +251,19 @@ impl OperationStack {
         }
     }
 
-    pub fn execute(&self, surface: &ImageSurface, cairo: &Context, is_in_draw_event: bool) {
+    pub fn execute(&self, cairo: &Context, is_in_draw_event: bool) {
         for operation in self.operations.iter() {
-            if let Err(why) = operation.execute(
-                surface,
-                cairo,
-                is_in_draw_event,
-                !self.editing_started_with_cropping,
-            ) {
+            if let Err(why) =
+                operation.execute(cairo, is_in_draw_event, !self.editing_started_with_cropping)
+            {
                 error!("Got error trying to execute {operation:?}: {why}");
             }
         }
 
         if let Some(operation) = &self.current_operation {
-            if let Err(why) = operation.execute(
-                surface,
-                cairo,
-                is_in_draw_event,
-                !self.editing_started_with_cropping,
-            ) {
+            if let Err(why) =
+                operation.execute(cairo, is_in_draw_event, !self.editing_started_with_cropping)
+            {
                 error!("Got error trying to execute {operation:?}: {why}");
             }
         }
