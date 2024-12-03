@@ -59,7 +59,7 @@ stackblur-iter = "0.2.0"
 tokio.workspace = true
 
 # User settings, history
-diesel = { version = "2.1.0", features = ["sqlite"] }
+diesel = { version = "2.2.6", features = ["sqlite"] }
 diesel_migrations = "2.1.0"
 xdg = "2.1"
 
