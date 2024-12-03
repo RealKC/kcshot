@@ -59,7 +59,7 @@ tokio.workspace = true
 
 # User settings, history
 diesel = { version = "2.2.6", features = ["sqlite"] }
-diesel_migrations = "2.1.0"
+diesel_migrations = "2.2.0"
 xdg = "2.1"
 
 # Miscellaneous
