@@ -1,4 +1,7 @@
-#![allow(clippy::unnecessary_wraps /*, reason = "The point of the wraps is to keep a consistent interface between xorg and wayland implementations" */)]
+#![expect(
+    clippy::unnecessary_wraps,
+    reason = "The point of the wraps is to keep a consistent interface between xorg and wayland implementations"
+)]
 
 use cairo::ImageSurface;
 use gtk4::{

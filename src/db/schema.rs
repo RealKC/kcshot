@@ -1,4 +1,4 @@
-#![allow(unused_qualifications /*, reason = "Macro generated code" */)]
+#![expect(unused_qualifications, reason = "Macro generated code")]
 
 table! {
     screenshots (id) {

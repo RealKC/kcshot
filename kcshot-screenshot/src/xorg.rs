@@ -169,7 +169,10 @@ fn overlay_cursor(cursor: xfixes::GetCursorImageReply, screenshot: &mut [u8], bo
     let h_draw = usize::min(h, bounds.h as usize - cy);
 
     for x in 0..w_draw {
-        #[allow(clippy::identity_op /*, reason = "Identity ops add a symmetry that makes the code nicer and easier to read." */)]
+        #[expect(
+            clippy::identity_op,
+            reason = "Identity ops add a symmetry that makes the code nicer and easier to read."
+        )]
         for y in 0..h_draw {
             let r = cursor[y * w + x] >> 0 & 0xff;
             let g = cursor[y * w + x] >> 8 & 0xff;
