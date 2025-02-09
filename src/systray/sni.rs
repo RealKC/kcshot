@@ -6,7 +6,11 @@ use gtk4::{
     prelude::*,
 };
 use kcshot_data::settings::Settings;
-use tokio::sync::mpsc::{self, Sender};
+use ksni::TrayMethods;
+use tokio::{
+    runtime::Builder as RtBuilder,
+    sync::mpsc::{self, Sender},
+};
 
 use super::Initialised;
 use crate::{editor::EditorWindow, kcshot::KCShot};
@@ -31,15 +35,24 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
     // and an async task running on the main thread to invoke GTK stuff from the SNI thread
     let (tx, mut rx) = mpsc::channel(16);
 
-    let tray_service = ksni::TrayService::new(Tray { tx, icon });
+    let tray_service = Tray { tx, icon };
 
     // We make a new thread ourselves so we can give it a more descriptive name :^)
     let res = ThreadBuilder::new()
         .name("tray icon thread".into())
         .spawn(move || {
-            if let Err(why) = tray_service.run() {
-                tracing::warn!("Failed to run SNI tray service. This is not fatal: {why}");
-            }
+            let rt = RtBuilder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            rt.block_on(async {
+                if let Err(why) = tray_service.spawn().await {
+                    tracing::warn!("Failed to run SNI tray service. This is not fatal: {why}");
+                }
+
+                std::future::pending::<()>().await;
+            });
         });
 
     if let Err(why) = res {
@@ -168,5 +181,17 @@ impl ksni::Tray for Tray {
             title: "kcshot".into(),
             description: String::new(),
         }
+    }
+
+    fn watcher_offline(&self, reason: ksni::OfflineReason) -> bool {
+        let why = match reason {
+            ksni::OfflineReason::No => "StatusNotifierWatcher went offline without a reason or error".to_string(),
+            ksni::OfflineReason::Error(err) => err.to_string(),
+            _ => format!("Reason is not known because ksni was updated without the match at {}:{} being updated", file!(), column!())
+        };
+
+        tracing::info!("Watcher went offline: {why}");
+
+        true
     }
 }

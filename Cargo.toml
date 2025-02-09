@@ -44,7 +44,7 @@ kcshot-data = { path = "./kcshot-data" }
 
 # UI-related dependencies
 gtk4.workspace = true
-ksni = "0.2.0"
+ksni = "0.3.1"
 
 # Screenshot editing & capturing
 kcshot-screenshot = { path = "./kcshot-screenshot" }
