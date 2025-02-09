@@ -171,8 +171,8 @@ pub fn pixelate(cairo: &Context, rect: &Rectangle, seed: u64) -> Result<(), Erro
             let pixelate_size_x: u64 = PIXELATE_SIZE.min(w as u64 - i);
             let pixelate_size_y: u64 = PIXELATE_SIZE.min(h as u64 - j);
 
-            let sample_x: u64 = i + rng.gen_range(0..pixelate_size_x);
-            let sample_y: u64 = j + rng.gen_range(0..pixelate_size_y);
+            let sample_x: u64 = i + rng.random_range(0..pixelate_size_x);
+            let sample_y: u64 = j + rng.random_range(0..pixelate_size_y);
 
             // Note that we don't multiply sample_y by bytes_per_pixel since its size is contained inside rowstride
             let row_index = sample_y * rowstride + bytes_per_pixel * sample_x;

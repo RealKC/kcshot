@@ -63,7 +63,7 @@ diesel_migrations = "2.2.0"
 xdg = "2.1"
 
 # Miscellaneous
-rand = "0.8.4"
+rand = "0.9.0"
 
 # Logging and error reporting
 tracing.workspace = true

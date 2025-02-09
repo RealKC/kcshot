@@ -147,7 +147,7 @@ impl Operation {
             Tool::Highlight => Self::Highlight { rect },
             Tool::Pixelate => Self::Pixelate {
                 rect,
-                seed: rand::thread_rng().gen(),
+                seed: rand::rng().random(),
             },
             Tool::Blur => Self::Blur { rect, radius: 5.0 },
             Tool::AutoincrementBubble => {
