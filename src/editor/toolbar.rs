@@ -54,18 +54,18 @@ mod underlying {
     use std::cell::Cell;
 
     use gtk4::{
+        CompositeTemplate,
         glib::{self, Properties, WeakRef},
         prelude::*,
         subclass::prelude::*,
-        CompositeTemplate,
     };
     use kcshot_data::colour::Colour;
 
-    use super::toolbutton::{should_start_saving_immediately, ToolButton};
+    use super::toolbutton::{ToolButton, should_start_saving_immediately};
     use crate::{
         editor::{
-            colourchooserdialog::ColourChooserDialog, operations::Tool, utils::CairoExt,
-            EditorWindow,
+            EditorWindow, colourchooserdialog::ColourChooserDialog, operations::Tool,
+            utils::CairoExt,
         },
         ext::DisposeExt,
         log_if_err,

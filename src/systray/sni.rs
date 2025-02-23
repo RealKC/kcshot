@@ -26,7 +26,9 @@ pub(super) fn try_init(app: KCShot) -> Initialised {
     let icon = match load_icon() {
         Ok(icon) => icon,
         Err(why) => {
-            tracing::warn!("Failed to load image for systray icon: {why}\n\tThis is not fatal, but the systray icon will not be initialised");
+            tracing::warn!(
+                "Failed to load image for systray icon: {why}\n\tThis is not fatal, but the systray icon will not be initialised"
+            );
             return Initialised::No;
         }
     };
@@ -185,9 +187,15 @@ impl ksni::Tray for Tray {
 
     fn watcher_offline(&self, reason: ksni::OfflineReason) -> bool {
         let why = match reason {
-            ksni::OfflineReason::No => "StatusNotifierWatcher went offline without a reason or error".to_string(),
+            ksni::OfflineReason::No => {
+                "StatusNotifierWatcher went offline without a reason or error".to_string()
+            }
             ksni::OfflineReason::Error(err) => err.to_string(),
-            _ => format!("Reason is not known because ksni was updated without the match at {}:{} being updated", file!(), column!())
+            _ => format!(
+                "Reason is not known because ksni was updated without the match at {}:{} being updated",
+                file!(),
+                column!()
+            ),
         };
 
         tracing::info!("Watcher went offline: {why}");

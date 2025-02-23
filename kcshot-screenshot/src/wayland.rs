@@ -34,7 +34,9 @@ pub(super) fn get_wm_features() -> Result<WmFeatures> {
             if xdg_current_desktop.eq_ignore_ascii_case("hyprland") {
                 DisplayServerKind::Hyprland
             } else {
-                tracing::warn!("Unknown Wayland compositor ('{xdg_current_desktop}'), assuming a generic Wayland setup.");
+                tracing::warn!(
+                    "Unknown Wayland compositor ('{xdg_current_desktop}'), assuming a generic Wayland setup."
+                );
                 DisplayServerKind::GenericWayland
             }
         }
@@ -102,7 +104,7 @@ pub(super) fn get_windows() -> Result<Vec<Window>> {
 }
 
 fn get_windows_hyprland() -> Result<Vec<Window>> {
-    use serde::{de::DeserializeOwned, Deserialize};
+    use serde::{Deserialize, de::DeserializeOwned};
 
     #[derive(Deserialize)]
     struct HyprWindow {

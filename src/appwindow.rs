@@ -20,11 +20,10 @@ mod underlying {
     use std::{cell::RefCell, process::Command};
 
     use gtk4::{
-        gdk,
-        glib::{self, clone, Properties},
+        CompositeTemplate, gdk,
+        glib::{self, Properties, clone},
         prelude::*,
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
-        CompositeTemplate,
     };
     use kcshot_data::settings::Settings;
 

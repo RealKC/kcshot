@@ -107,12 +107,14 @@ mod underlying {
 
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: LazyLock<Vec<ParamSpec>> = LazyLock::new(|| {
-                vec![glib::ParamSpecInt::builder("alpha")
-                    .minimum(0)
-                    .maximum(256)
-                    .default_value(255)
-                    .readwrite()
-                    .build()]
+                vec![
+                    glib::ParamSpecInt::builder("alpha")
+                        .minimum(0)
+                        .maximum(256)
+                        .default_value(255)
+                        .readwrite()
+                        .build(),
+                ]
             });
 
             PROPERTIES.as_ref()

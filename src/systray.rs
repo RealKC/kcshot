@@ -15,7 +15,9 @@ pub fn init(app: &KCShot) {
         return;
     }
 
-    tracing::warn!("Failed to initialise a systray icon. This is not fatal and you can use kcshot anyway. No core functionality is missing.");
+    tracing::warn!(
+        "Failed to initialise a systray icon. This is not fatal and you can use kcshot anyway. No core functionality is missing."
+    );
 }
 
 #[derive(PartialEq, Eq)]

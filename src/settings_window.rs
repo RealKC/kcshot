@@ -14,7 +14,7 @@ impl Default for SettingsWindow {
 mod underlying {
     use std::cell::OnceCell;
 
-    use gtk4::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+    use gtk4::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
     use kcshot_data::settings::Settings;
 
     use crate::ext::DisposeExt;

@@ -6,7 +6,7 @@ extern crate diesel_migrations;
 use std::{env, fs, io, path};
 
 use gtk4::{glib, prelude::*};
-use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt};
 
 use self::kcshot::KCShot;
 

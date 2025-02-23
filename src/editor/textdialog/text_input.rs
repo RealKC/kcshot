@@ -42,17 +42,17 @@ impl TextInput {
 
 mod underlying {
     use gtk4::{
+        CompositeTemplate,
         glib::{self, Properties, WeakRef},
         prelude::*,
         subclass::prelude::*,
-        CompositeTemplate,
     };
 
     use super::parse;
     use crate::{
         editor::{
-            colourchooserdialog::ColourChooserDialog, textdialog::TextDialog, utils::CairoExt,
-            Colour, EditorWindow,
+            Colour, EditorWindow, colourchooserdialog::ColourChooserDialog, textdialog::TextDialog,
+            utils::CairoExt,
         },
         ext::DisposeExt,
         log_if_err,

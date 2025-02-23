@@ -37,7 +37,9 @@ impl Tool {
             Tool::AutoincrementBubble => "/kc/kcshot/editor/tool-autoincrementbubble.png",
             Tool::Text => "/kc/kcshot/editor/tool-text.png",
             Tool::Pencil => "/kc/kcshot/editor/tool-pencil.png",
-            Tool::Crop => panic!("Nothing should try to get the associated path of the simple Crop tool, as it intentionally does not have a button"),
+            Tool::Crop => panic!(
+                "Nothing should try to get the associated path of the simple Crop tool, as it intentionally does not have a button"
+            ),
             Tool::Save => "/kc/kcshot/editor/tool-checkmark.png",
         }
     }
@@ -73,7 +75,9 @@ impl Tool {
             Tool::AutoincrementBubble => "Auto<u>i</u>crement bubble tool",
             Tool::Text => "<u>T</u>ext tool",
             Tool::Pencil => "Pe<u>n</u>cil tool",
-            Tool::Crop => panic!("Nothing should try to get the tooltip of the simple Crop tool, as it does not have a button"),
+            Tool::Crop => panic!(
+                "Nothing should try to get the tooltip of the simple Crop tool, as it does not have a button"
+            ),
             Tool::Save => "Save current screenshot",
         }
     }

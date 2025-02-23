@@ -1,4 +1,4 @@
-use diesel::{prelude::*, SqliteConnection};
+use diesel::{SqliteConnection, prelude::*};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 
 use self::models::Screenshot;

@@ -29,15 +29,15 @@ mod underlying {
     };
 
     use gtk4::{
+        CompositeTemplate,
         glib::{self, Properties},
         prelude::*,
         subclass::prelude::*,
-        CompositeTemplate,
     };
 
     use super::should_start_saving_immediately;
     use crate::{
-        editor::{operations::Tool, EditorWindow},
+        editor::{EditorWindow, operations::Tool},
         ext::DisposeExt,
     };
 

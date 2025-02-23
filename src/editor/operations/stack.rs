@@ -1,8 +1,8 @@
 use cairo::Context;
 use kcshot_data::{
+    Text,
     colour::Colour,
     geometry::{Point, Rectangle},
-    Text,
 };
 use kcshot_screenshot::Window;
 use tracing::{error, warn};

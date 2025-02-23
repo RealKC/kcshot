@@ -6,18 +6,18 @@ use std::{
 use cairo::Context;
 use diesel::SqliteConnection;
 use gtk4::{
+    Allocation, CompositeTemplate,
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     gio,
-    glib::{self, clone, Propagation, Properties},
+    glib::{self, Propagation, Properties, clone},
     prelude::*,
     subclass::prelude::*,
-    Allocation, CompositeTemplate,
 };
 use kcshot_data::geometry::{Point, Rectangle};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::error;
 
-use super::{textdialog::TextDialog, toolbar, utils::ContextLogger, Colour};
+use super::{Colour, textdialog::TextDialog, toolbar, utils::ContextLogger};
 use crate::{
     editor::{
         operations::{OperationStack, SelectionMode, Tool},

@@ -16,10 +16,10 @@ impl TextDialog {
 
 mod underlying {
     use gtk4::{
+        CompositeTemplate,
         glib::{self, Properties, WeakRef},
         prelude::*,
         subclass::prelude::*,
-        CompositeTemplate,
     };
     use kcshot_data::Text;
 
@@ -92,7 +92,9 @@ mod underlying {
                         image.operation_stack.finish_current_operation();
                     });
             } else {
-                tracing::warn!("Failed to upgrade editor weak ref to strong ref. Did this TextDialog get OK'ed after its parent died?");
+                tracing::warn!(
+                    "Failed to upgrade editor weak ref to strong ref. Did this TextDialog get OK'ed after its parent died?"
+                );
             }
         }
     }

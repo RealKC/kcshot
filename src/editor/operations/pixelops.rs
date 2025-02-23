@@ -4,7 +4,7 @@ use gtk4::{
     gdk_pixbuf::{Colorspace, Pixbuf},
 };
 use kcshot_data::geometry::Rectangle;
-use rand::{prelude::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, prelude::StdRng};
 use stackblur_iter::{blur_argb as stackblur, imgref::ImgRefMut};
 
 use super::Error;

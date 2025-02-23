@@ -23,16 +23,16 @@ mod underlying {
     use std::cell::RefCell;
 
     use gtk4::{
+        CompositeTemplate,
         glib::{self, Properties, WeakRef},
         prelude::*,
         subclass::prelude::*,
-        CompositeTemplate,
     };
     use kcshot_data::colour::Colour;
     use tokio::sync::oneshot;
 
     use crate::{
-        editor::{colourchooser::ColourChooserWidget, EditorWindow},
+        editor::{EditorWindow, colourchooser::ColourChooserWidget},
         ext::DisposeExt,
     };
 

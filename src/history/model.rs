@@ -39,7 +39,7 @@ mod underlying {
 
     use gtk4::{
         gio,
-        glib::{self, prelude::*, Object},
+        glib::{self, Object, prelude::*},
         subclass::prelude::*,
     };
 
@@ -85,11 +85,7 @@ mod underlying {
         fn item(&self, position: u32) -> Option<Object> {
             let last_fetched_screenshot_index = {
                 let len = self.screenshots.borrow().len();
-                if len > 0 {
-                    len - 1
-                } else {
-                    0
-                }
+                if len > 0 { len - 1 } else { 0 }
             };
 
             if position as usize > last_fetched_screenshot_index
@@ -102,7 +98,9 @@ mod underlying {
                 let new_screenshots = match new_screenshots {
                     Ok(n) => n,
                     Err(why) => {
-                        tracing::error!("Encountered error: {why:?}\n\twhile trying to fetch {COUNT} items from the database,\n\tstarting at index: {last_fetched_screenshot_index}");
+                        tracing::error!(
+                            "Encountered error: {why:?}\n\twhile trying to fetch {COUNT} items from the database,\n\tstarting at index: {last_fetched_screenshot_index}"
+                        );
                         return None;
                     }
                 };

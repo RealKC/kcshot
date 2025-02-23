@@ -1,6 +1,6 @@
 use cairo::{Context, Error as CairoError};
 use gtk4::pango::FontDescription;
-use kcshot_data::{colour::Colour, geometry::*, Text};
+use kcshot_data::{Text, colour::Colour, geometry::*};
 use pangocairo::functions::{create_layout, show_layout, update_layout};
 use rand::Rng;
 
