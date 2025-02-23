@@ -28,6 +28,7 @@ manual_ok_or = "warn"
 no_effect_underscore_binding = "warn"
 redundant_else = "warn"
 single_match_else = "warn"
+zero_prefixed_literal = "allow"
 
 [workspace.dependencies]
 cairo = { package = "cairo-rs", version = "0.20.5", features = ["png"] }
