@@ -59,7 +59,9 @@ fn handle_tag_end(pango_markup: &mut String, tag: TagEnd) {
         | TagEnd::DefinitionList
         | TagEnd::DefinitionListTitle
         | TagEnd::DefinitionListDefinition
-        | TagEnd::MetadataBlock(_) => return,
+        | TagEnd::MetadataBlock(_)
+        | TagEnd::Subscript
+        | TagEnd::Superscript => return,
     }
     .expect(ERROR_MSG);
 }
@@ -89,7 +91,9 @@ fn handle_tag_start(pango_markup: &mut String, tag: Tag) {
         | Tag::DefinitionList
         | Tag::DefinitionListTitle
         | Tag::DefinitionListDefinition
-        | Tag::MetadataBlock(_) => return,
+        | Tag::MetadataBlock(_)
+        | Tag::Subscript
+        | Tag::Superscript => return,
     }
     .expect(ERROR_MSG);
 }

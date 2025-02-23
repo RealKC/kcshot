@@ -52,7 +52,7 @@ kcshot-screenshot = { path = "./kcshot-screenshot" }
 cairo.workspace = true
 gdk4-x11 = "0.9.4"
 pangocairo = "0.20.4"
-pulldown-cmark = { version = "0.12.2", default-features = false }
+pulldown-cmark = { version = "0.13.0", default-features = false }
 pulldown-cmark-escape = "0.11.0"
 regex = "1.11.1"
 stackblur-iter = "0.2.0"
