@@ -8,8 +8,8 @@ use kcshot_data::{
 use xcb::{
     shape,
     x::{
-        self, ImageFormat as XImageFormat, MapState, Window as XWindow, ATOM_ATOM, ATOM_CARDINAL,
-        ATOM_NONE, ATOM_WINDOW,
+        self, ATOM_ATOM, ATOM_CARDINAL, ATOM_NONE, ATOM_WINDOW, ImageFormat as XImageFormat,
+        MapState, Window as XWindow,
     },
     xfixes,
 };
@@ -174,10 +174,10 @@ fn overlay_cursor(cursor: xfixes::GetCursorImageReply, screenshot: &mut [u8], bo
             reason = "Identity ops add a symmetry that makes the code nicer and easier to read."
         )]
         for y in 0..h_draw {
-            let r = cursor[y * w + x] >> 0 & 0xff;
-            let g = cursor[y * w + x] >> 8 & 0xff;
-            let b = cursor[y * w + x] >> 16 & 0xff;
-            let a = cursor[y * w + x] >> 24 & 0xff;
+            let r = (cursor[y * w + x] >> 00) & 0xff;
+            let g = (cursor[y * w + x] >> 08) & 0xff;
+            let b = (cursor[y * w + x] >> 16) & 0xff;
+            let a = (cursor[y * w + x] >> 24) & 0xff;
 
             // We multiply by 4 because the screenshot is stored in RGB-Unused byte format
             let pixel_idx = 4 * bounds.w as usize * (cy + y) + 4 * (cx + x);
