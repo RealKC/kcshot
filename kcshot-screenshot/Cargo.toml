@@ -12,7 +12,7 @@ workspace = true
 kcshot-data = { path = "../kcshot-data" }
 
 # Actually taking the screeenshot
-ashpd = { version = "0.10.2", default-features = false, features = [
+ashpd = { version = "0.11.0", default-features = false, features = [
     "gtk4",
     "tokio",
     "tracing",
