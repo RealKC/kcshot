@@ -5,7 +5,9 @@ use super::EditorWindow;
 
 glib::wrapper! {
     pub struct ColourChooserDialog(ObjectSubclass<underlying::ColourChooserDialog>)
-        @extends gtk4::Widget, gtk4::Window;
+        @extends gtk4::Widget, gtk4::Window,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
+                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native;
 }
 
 impl ColourChooserDialog {

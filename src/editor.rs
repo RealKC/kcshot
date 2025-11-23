@@ -16,7 +16,8 @@ mod utils;
 glib::wrapper! {
     pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)
         @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
-        @implements gio::ActionMap;
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
+                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native, gio::ActionMap, gio::ActionGroup;
 }
 
 impl EditorWindow {

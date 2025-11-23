@@ -10,7 +10,9 @@ use crate::{
 };
 
 glib::wrapper! {
-    pub struct KCShot(ObjectSubclass<underlying::KCShot>) @extends gio::Application, gtk4::Application, @implements gio::ActionGroup, gio::ActionMap;
+    pub struct KCShot(ObjectSubclass<underlying::KCShot>)
+    @extends gio::Application, gtk4::Application,
+    @implements gio::ActionGroup, gio::ActionMap;
 }
 
 impl Default for KCShot {
@@ -78,6 +80,7 @@ mod underlying {
     use std::{
         cell::{Cell, OnceCell, RefCell},
         ffi::OsString,
+        ops::ControlFlow,
         sync::LazyLock,
     };
 
@@ -253,31 +256,31 @@ mod underlying {
 
             self.obj().activate();
 
-            glib::ExitCode::from(-1)
+            glib::ExitCode::from(0)
         }
 
         // This is called in remote instances
         fn local_command_line(
             &self,
             arguments: &mut gio::subclass::ArgumentList,
-        ) -> Option<glib::ExitCode> {
+        ) -> ControlFlow<glib::ExitCode> {
             let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".into());
             let usage = format!(
                 r#"Usage:
-  {prog_name} [OPTION...]
+          {prog_name} [OPTION...]
 
-Help Options:
-  -h, --help           Show help options
+        Help Options:
+          -h, --help           Show help options
 
-Application Options:
-  -n, --no-window      Don't show any windows
-  -s, --screenshot     Take a screenshot (mutually exclusive with -n)
-"#
+        Application Options:
+          -n, --no-window      Don't show any windows
+          -s, --screenshot     Take a screenshot (mutually exclusive with -n)
+        "#
             );
 
             if arguments.contains(&"-h".into()) || arguments.contains(&"--help".into()) {
                 eprintln!("{usage}");
-                return Some(glib::ExitCode::SUCCESS);
+                return ControlFlow::Break(glib::ExitCode::SUCCESS);
             }
 
             let take_screenshot = arguments.iter().any(|os| SCREENSHOT_FLAGS_OS.contains(os));
@@ -288,10 +291,10 @@ Application Options:
                     "{}: {} and {} are mutually exclusive\n{}",
                     prog_name, SCREENSHOT_FLAGS[LONG], NO_WINDOW_FLAGS[LONG], usage
                 );
-                return Some(glib::ExitCode::FAILURE);
+                return ControlFlow::Break(glib::ExitCode::FAILURE);
             }
 
-            None
+            ControlFlow::Continue(())
         }
 
         fn startup(&self) {

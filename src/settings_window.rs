@@ -2,7 +2,9 @@ use gtk4::glib;
 
 glib::wrapper! {
     pub struct SettingsWindow(ObjectSubclass<underlying::SettingsWindow>)
-        @extends gtk4::Widget, gtk4::Window;
+        @extends gtk4::Widget, gtk4::Window,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
+                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native;
 }
 
 impl Default for SettingsWindow {

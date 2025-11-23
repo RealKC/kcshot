@@ -4,7 +4,8 @@ use crate::editor::Colour;
 
 glib::wrapper! {
     pub struct ColourChooserWidget(ObjectSubclass<underlying::ColourChooserWidget>)
-        @extends gtk4::Widget;
+        @extends gtk4::Widget,
+        @implements gtk4::Box, gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible;
 }
 
 impl ColourChooserWidget {

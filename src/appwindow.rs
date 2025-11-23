@@ -1,10 +1,12 @@
-use gtk4::glib;
+use gtk4::{gio, glib};
 
 use crate::{history::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
-        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow;
+        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
+                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native, gio::ActionMap, gio::ActionGroup;
 }
 
 impl AppWindow {

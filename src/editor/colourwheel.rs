@@ -19,7 +19,8 @@ enum Drag {
 
 glib::wrapper! {
     pub struct ColourWheel(ObjectSubclass<underlying::ColourWheel>)
-        @extends gtk4::Widget;
+        @extends gtk4::Widget,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible;
 }
 
 impl Default for ColourWheel {
@@ -556,6 +557,7 @@ mod underlying {
             self.obj().dispose_children();
         }
     }
+
     impl WidgetImpl for ColourWheel {
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             self.parent_snapshot(snapshot);

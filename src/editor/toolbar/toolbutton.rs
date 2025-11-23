@@ -4,7 +4,8 @@ use crate::editor::operations::Tool;
 
 glib::wrapper! {
     pub struct ToolButton(ObjectSubclass<underlying::ToolButton>)
-        @extends gtk4::Widget;
+        @extends gtk4::Widget,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible;
 }
 
 impl ToolButton {

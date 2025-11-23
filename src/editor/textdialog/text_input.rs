@@ -6,7 +6,8 @@ use crate::editor::EditorWindow;
 
 glib::wrapper! {
     pub struct TextInput(ObjectSubclass<underlying::TextInput>)
-        @extends gtk4::Widget;
+        @extends gtk4::Widget,
+        @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible;
 }
 
 impl TextInput {
