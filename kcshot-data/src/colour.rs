@@ -2,10 +2,11 @@ use std::borrow::Cow;
 
 use gtk4::{
     gdk::RGBA,
-    glib::{self, prelude::*},
+    glib::{self, ValueDelegate, prelude::*},
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, ValueDelegate)]
+#[value_delegate(from = u32)]
 pub struct Colour {
     pub red: u8,
     pub green: u8,
@@ -81,6 +82,35 @@ impl FromVariant for Colour {
 impl From<Colour> for glib::Variant {
     fn from(value: Colour) -> Self {
         value.serialise_to_u32().to_variant()
+    }
+}
+
+impl From<Colour> for RGBA {
+    fn from(value: Colour) -> Self {
+        RGBA::new(
+            value.red as f32 / 255.0,
+            value.green as f32 / 255.0,
+            value.blue as f32 / 255.0,
+            value.alpha as f32 / 255.0,
+        )
+    }
+}
+
+impl From<u32> for Colour {
+    fn from(value: u32) -> Self {
+        Colour::deserialise_from_u32(value)
+    }
+}
+
+impl From<Colour> for u32 {
+    fn from(value: Colour) -> Self {
+        value.serialise_to_u32()
+    }
+}
+
+impl From<&Colour> for u32 {
+    fn from(value: &Colour) -> Self {
+        value.serialise_to_u32()
     }
 }
 

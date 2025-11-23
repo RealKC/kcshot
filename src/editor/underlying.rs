@@ -1,6 +1,7 @@
 use std::{
     backtrace::Backtrace,
     cell::{Cell, OnceCell, RefCell},
+    marker::PhantomData,
 };
 
 use cairo::Context;
@@ -13,7 +14,10 @@ use gtk4::{
     prelude::*,
     subclass::prelude::*,
 };
-use kcshot_data::geometry::{Point, Rectangle};
+use kcshot_data::{
+    geometry::{Point, Rectangle},
+    settings::Settings,
+};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::error;
 
@@ -78,6 +82,12 @@ impl Image {
 pub struct EditorWindow {
     #[property(name = "editing-starts-with-cropping", set, construct_only)]
     editing_started_with_cropping: Cell<bool>,
+    #[property(name = "primary-colour", get = Self::get_primary_color, set = Self::set_primary_color)]
+    /// Colour used for filling in shapes
+    primary_colour: PhantomData<Colour>,
+    #[property(name = "secondary-colour", get = Self::get_secondary_color, set = Self::set_secondary_color)]
+    /// Colour used for lines, bubble text, normal text and pencil
+    secondary_colour: PhantomData<Colour>,
 
     pub(super) image: RefCell<Option<Image>>,
 
@@ -95,6 +105,47 @@ pub struct EditorWindow {
     is_in_with_image_mut: Cell<bool>,
 }
 
+impl EditorWindow {
+    fn get_primary_color(&self) -> Colour {
+        self.with_image("get primary_colour", |image| {
+            image.operation_stack.primary_colour
+        })
+        .unwrap()
+    }
+
+    fn set_primary_color(&self, colour: Colour) {
+        tracing::info!("primary");
+        self.with_image_mut("set_primary_colour", |image| {
+            image.operation_stack.primary_colour = colour;
+        });
+
+        let settings = Settings::open();
+        if let Err(why) = settings.try_set_last_used_primary_colour(colour) {
+            tracing::warn!("Failed to update `last-used-primary-colour` setting value: {why}");
+        }
+        self.obj().notify("primary-colour");
+    }
+
+    fn get_secondary_color(&self) -> Colour {
+        self.with_image("get secondary_colour", |image| {
+            image.operation_stack.secondary_colour
+        })
+        .unwrap()
+    }
+
+    fn set_secondary_color(&self, colour: Colour) {
+        self.with_image_mut("set_secondary_colour", |image| {
+            image.operation_stack.secondary_colour = colour;
+        });
+
+        let settings = Settings::open();
+        if let Err(why) = settings.try_set_last_used_secondary_colour(colour) {
+            tracing::warn!("Failed to update `last-used-secondary-colour` setting value: {why}");
+        }
+        self.obj().notify("secondary-colour");
+    }
+}
+
 impl Default for EditorWindow {
     fn default() -> Self {
         let (colour_tx, colour_rx) = mpsc::channel(8);
@@ -109,6 +160,8 @@ impl Default for EditorWindow {
             colour_rx: RefCell::new(colour_rx),
             colour_requested: Default::default(),
             is_in_with_image_mut: Default::default(),
+            primary_colour: PhantomData,
+            secondary_colour: PhantomData,
         }
     }
 }
@@ -150,6 +203,18 @@ impl ObjectImpl for EditorWindow {
             h: image.height() as f64,
         };
 
+        let settings = Settings::open();
+        self.image.replace(Some(Image {
+            surface: image,
+            operation_stack: OperationStack::new(
+                windows,
+                screen_dimensions,
+                self.editing_started_with_cropping.get(),
+                settings.last_used_primary_colour(),
+                settings.last_used_secondary_colour(),
+            ),
+        }));
+
         self.overlay.connect_get_child_position({
             let obj = obj.clone();
             move |_, widget| obj.imp().on_get_child_position(widget)
@@ -171,15 +236,6 @@ impl ObjectImpl for EditorWindow {
         ));
 
         self.setup_actions();
-
-        self.image.replace(Some(Image {
-            surface: image,
-            operation_stack: OperationStack::new(
-                windows,
-                screen_dimensions,
-                self.editing_started_with_cropping.get(),
-            ),
-        }));
     }
 
     fn dispose(&self) {

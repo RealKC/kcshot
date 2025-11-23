@@ -1,6 +1,6 @@
 using Gtk 4.0;
 
-template $KCShotToolbarWidget : Gtk.Widget {
+template $KCShotToolbarWidget: Gtk.Widget {
     $KCShotToolButton group_source {
         editor: bind template.editor;
     }
@@ -79,30 +79,18 @@ template $KCShotToolbarWidget : Gtk.Widget {
         editor: bind template.editor;
     }
 
-    Gtk.Button primary {
+    $KCShotColourButton primary {
         clicked => $on_primary_colour_clicked() swapped;
-
         visible: false;
         tooltip-text: "Set primary colour";
-
-        Gtk.DrawingArea primary_button_drawing_area {
-            accessible-role: img;
-            width-request: 20;
-            height-request: 20;
-        }
+        colour: bind (template.editor as <$KCShotEditorWindow>).primary-colour;
     }
 
-    Gtk.Button secondary {
+    $KCShotColourButton secondary {
         clicked => $on_secondary_colour_clicked() swapped;
-
         visible: false;
         tooltip-text: "Set secondary colour";
-
-        Gtk.DrawingArea secondary_button_drawing_area {
-            accessible-role: img;
-            width-request: 20;
-            height-request: 20;
-        }
+        colour: bind (template.editor as <$KCShotEditorWindow>).secondary-colour;
     }
 
     Gtk.SpinButton line_width_spinner {
@@ -116,6 +104,7 @@ template $KCShotToolbarWidget : Gtk.Widget {
             page-increment: 1.0;
             page-size: 1.0;
         };
+
         climb-rate: 0.5;
         digits: 1;
         numeric: true;

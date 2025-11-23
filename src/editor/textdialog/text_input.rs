@@ -160,7 +160,7 @@ mod underlying {
         async fn on_colour_button_clicked(&self, _: &gtk4::Button) {
             let editor = self.obj().editor().unwrap();
 
-            let dialog = ColourChooserDialog::new(&editor);
+            let dialog = ColourChooserDialog::new(&editor, editor.secondary_colour());
             dialog.set_transient_for(self.parent_dialog.upgrade().as_ref());
             dialog.show();
             editor.set_secondary_colour(dialog.colour().await);

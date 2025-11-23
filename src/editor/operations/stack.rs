@@ -51,6 +51,8 @@ impl OperationStack {
         windows: Vec<Window>,
         screen_dimensions: Rectangle,
         editing_started_with_cropping: bool,
+        primary_colour: Colour,
+        secondary_colour: Colour,
     ) -> Self {
         Self {
             operations: vec![],
@@ -62,18 +64,8 @@ impl OperationStack {
             },
             current_operation: None,
             autoincrement_bubble_number: 1,
-            primary_colour: Colour {
-                red: 127,
-                green: 0,
-                blue: 127,
-                alpha: 255,
-            },
-            secondary_colour: Colour {
-                red: 0,
-                green: 127,
-                blue: 127,
-                alpha: 255,
-            },
+            primary_colour,
+            secondary_colour,
             windows,
             current_window: None,
             is_in_crop_drag: false,

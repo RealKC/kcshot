@@ -11,8 +11,11 @@ glib::wrapper! {
 }
 
 impl ColourChooserDialog {
-    pub fn new(editor: &EditorWindow) -> Self {
-        glib::Object::builder().property("editor", editor).build()
+    pub fn new(editor: &EditorWindow, initial_colour: Colour) -> Self {
+        glib::Object::builder()
+            .property("editor", editor)
+            .property("initial-colour", initial_colour)
+            .build()
     }
 
     pub async fn colour(&self) -> Colour {
@@ -22,7 +25,7 @@ impl ColourChooserDialog {
 }
 
 mod underlying {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use gtk4::{
         CompositeTemplate,
@@ -44,6 +47,8 @@ mod underlying {
     pub struct ColourChooserDialog {
         #[property(get, set)]
         editor: WeakRef<EditorWindow>,
+        #[property(name = "initial-colour", set = Self::set_initial_colour, construct_only)]
+        colour: PhantomData<Colour>,
 
         #[template_child]
         colour_chooser: TemplateChild<ColourChooserWidget>,
@@ -58,6 +63,7 @@ mod underlying {
 
             Self {
                 editor: Default::default(),
+                colour: PhantomData,
                 colour_chooser: Default::default(),
                 colour_rx: RefCell::new(Some(colour_rx)),
                 colour_tx: RefCell::new(Some(colour_tx)),
@@ -92,6 +98,12 @@ mod underlying {
 
     impl WidgetImpl for ColourChooserDialog {}
     impl WindowImpl for ColourChooserDialog {}
+
+    impl ColourChooserDialog {
+        fn set_initial_colour(&self, colour: Colour) {
+            self.colour_chooser.set_colour(colour);
+        }
+    }
 
     #[gtk4::template_callbacks]
     impl ColourChooserDialog {

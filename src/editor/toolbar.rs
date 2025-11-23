@@ -60,16 +60,14 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
-    use kcshot_data::colour::Colour;
 
     use super::toolbutton::{ToolButton, should_start_saving_immediately};
     use crate::{
         editor::{
-            EditorWindow, colourchooserdialog::ColourChooserDialog, operations::Tool,
-            utils::CairoExt,
+            EditorWindow, colourbutton::ColourButton, colourchooserdialog::ColourChooserDialog,
+            operations::Tool,
         },
         ext::DisposeExt,
-        log_if_err,
     };
 
     #[derive(Debug, Default, Properties, CompositeTemplate)]
@@ -83,13 +81,9 @@ mod underlying {
         #[template_child]
         pub(super) group_source: TemplateChild<ToolButton>,
         #[template_child]
-        primary: TemplateChild<gtk4::Button>,
+        primary: TemplateChild<ColourButton>,
         #[template_child]
-        primary_button_drawing_area: TemplateChild<gtk4::DrawingArea>,
-        #[template_child]
-        secondary: TemplateChild<gtk4::Button>,
-        #[template_child]
-        secondary_button_drawing_area: TemplateChild<gtk4::DrawingArea>,
+        secondary: TemplateChild<ColourButton>,
     }
 
     #[glib::object_subclass]
@@ -104,6 +98,8 @@ mod underlying {
 
             klass.bind_template();
             klass.bind_template_callbacks();
+
+            ColourButton::static_type();
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -123,16 +119,6 @@ mod underlying {
             let is_group_source_active = !should_start_saving_immediately(group_source_tool)
                 || self.editing_started_with_cropping.get();
             self.group_source.set_active(is_group_source_active);
-
-            self.primary_button_drawing_area.set_draw_func({
-                let editor = self.editor();
-                move |_, cairo, _, _| Self::primary_color_draw_func(editor.clone(), cairo)
-            });
-
-            self.secondary_button_drawing_area.set_draw_func({
-                let editor = self.editor();
-                move |_, cairo, _, _| Self::secondary_color_draw_func(editor.clone(), cairo)
-            });
         }
 
         fn dispose(&self) {
@@ -149,81 +135,27 @@ mod underlying {
             self.editor.upgrade().unwrap()
         }
 
-        fn primary_color_draw_func(editor: EditorWindow, cairo: &cairo::Context) {
-            cairo.set_operator(cairo::Operator::Over);
-
-            let primary_colour = editor.primary_colour();
-            if primary_colour.alpha != 0 {
-                cairo.rectangle(0.0, 0.0, 20.0, 20.0);
-                cairo.set_source_colour(primary_colour);
-                log_if_err!(cairo.fill());
-            } else {
-                // Instead of drawing nothing (what a fully transparent colour is) we draw a
-                // checkerboard pattern instead
-                cairo.set_source_colour(Colour {
-                    red: 0xff,
-                    green: 0x00,
-                    blue: 0xdc,
-                    alpha: 0xff,
-                });
-                cairo.rectangle(0.0, 0.0, 10.0, 10.0);
-                log_if_err!(cairo.fill());
-                cairo.rectangle(10.0, 10.0, 10.0, 10.0);
-                log_if_err!(cairo.fill());
-
-                cairo.set_source_colour(Colour::BLACK);
-                cairo.rectangle(0.0, 10.0, 10.0, 10.0);
-                log_if_err!(cairo.fill());
-                cairo.rectangle(10.0, 0.0, 10.0, 10.0);
-                log_if_err!(cairo.fill());
-            }
-
-            cairo.set_source_colour(Colour::BLACK);
-            cairo.rectangle(0.0, 0.0, 20.0, 20.0);
-            cairo.set_line_width(1.0);
-            log_if_err!(cairo.stroke());
-        }
-
-        fn secondary_color_draw_func(editor: EditorWindow, cairo: &cairo::Context) {
-            cairo.set_operator(cairo::Operator::Over);
-
-            // The interior contour of the square
-            cairo.set_source_colour(Colour::BLACK);
-            cairo.rectangle(5.0, 5.0, 10.0, 10.0);
-            cairo.set_line_width(1.0);
-            log_if_err!(cairo.stroke());
-
-            // The empty square representing the border
-            cairo.set_source_colour(editor.secondary_colour());
-            cairo.rectangle(3.0, 3.0, 14.0, 14.0);
-            cairo.set_line_width(4.0);
-            log_if_err!(cairo.stroke());
-
-            // The exterior contour of the square
-            cairo.set_source_colour(Colour::BLACK);
-            cairo.rectangle(1.0, 1.0, 18.0, 18.0);
-            cairo.set_line_width(1.0);
-            log_if_err!(cairo.stroke());
-        }
-
         #[template_callback]
         async fn on_primary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = ColourChooserDialog::new(&self.editor());
+            let dialog = ColourChooserDialog::new(&self.editor(), self.editor().primary_colour());
 
-            let drawing_area = self.primary_button_drawing_area.get();
             dialog.show();
-            self.editor().set_primary_colour(dialog.colour().await);
-            drawing_area.queue_draw();
+
+            let colour = dialog.colour().await;
+            self.editor().set_primary_colour(colour);
+            self.primary.set_colour(colour);
         }
 
         #[template_callback]
         async fn on_secondary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = ColourChooserDialog::new(&self.editor());
+            let dialog = ColourChooserDialog::new(&self.editor(), self.editor().secondary_colour());
 
-            let drawing_area = self.primary_button_drawing_area.get();
             dialog.show();
-            self.editor().set_secondary_colour(dialog.colour().await);
-            drawing_area.queue_draw();
+
+            let colour = dialog.colour().await;
+
+            self.editor().set_secondary_colour(colour);
+            self.secondary.set_colour(colour);
         }
 
         #[template_callback]
