@@ -194,13 +194,12 @@ impl OperationStack {
         if let Some(mut operation) = self.current_operation.take() {
             if self.current_tool == Tool::Crop {
                 self.ignore_windows = true;
-                if let Operation::Crop(rect) = operation {
-                    if should_crop_selected_window_or_screen(rect) {
-                        if let Some(current_window) = self.current_window {
-                            // FIXME: We should allow selecting the content rect somehow
-                            operation = Operation::Crop(self.windows[current_window].outer_rect);
-                        }
-                    }
+                if let Operation::Crop(rect) = operation
+                    && should_crop_selected_window_or_screen(rect)
+                    && let Some(current_window) = self.current_window
+                {
+                    // FIXME: We should allow selecting the content rect somehow
+                    operation = Operation::Crop(self.windows[current_window].outer_rect);
                 }
             }
 
@@ -252,12 +251,11 @@ impl OperationStack {
             }
         }
 
-        if let Some(operation) = &self.current_operation {
-            if let Err(why) =
+        if let Some(operation) = &self.current_operation
+            && let Err(why) =
                 operation.execute(cairo, is_in_draw_event, !self.editing_started_with_cropping)
-            {
-                error!("Got error trying to execute {operation:?}: {why}");
-            }
+        {
+            error!("Got error trying to execute {operation:?}: {why}");
         }
 
         // We only want to draw window "crop indicators" when:
@@ -280,41 +278,39 @@ impl OperationStack {
             self.dimmen_manual_selection_or_whole_screen(cairo);
         }
 
-        if should_draw_windows {
-            if let Some(idx) = self.current_window {
-                let Rectangle { x, y, w, h } = match self.selection_mode {
-                    SelectionMode::WindowsWithDecorations => self.windows[idx].outer_rect,
-                    SelectionMode::WindowsWithoutDecorations => self.windows[idx].content_rect,
-                };
-                log_if_err!(cairo.save());
+        if should_draw_windows && let Some(idx) = self.current_window {
+            let Rectangle { x, y, w, h } = match self.selection_mode {
+                SelectionMode::WindowsWithDecorations => self.windows[idx].outer_rect,
+                SelectionMode::WindowsWithoutDecorations => self.windows[idx].content_rect,
+            };
+            log_if_err!(cairo.save());
 
-                cairo.rectangle(x, y, w, h);
-                // When we are in draw events (aka this is being shown to the user), we want to make it clear
-                // they are selecting the region which will be cropped
-                cairo.set_source_colour(Colour {
-                    red: 0,
-                    green: 127,
-                    blue: 190,
-                    alpha: 255,
-                });
+            cairo.rectangle(x, y, w, h);
+            // When we are in draw events (aka this is being shown to the user), we want to make it clear
+            // they are selecting the region which will be cropped
+            cairo.set_source_colour(Colour {
+                red: 0,
+                green: 127,
+                blue: 190,
+                alpha: 255,
+            });
 
-                if !self.editing_started_with_cropping {
-                    cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
-                }
-
-                log_if_err!(cairo.stroke());
-
-                if self.editing_started_with_cropping {
-                    shapes::dimmen_rectangle_around(
-                        cairo,
-                        self.screen_dimensions,
-                        Rectangle { x, y, w, h },
-                    );
-                    log_if_err!(cairo.fill());
-                }
-
-                log_if_err!(cairo.restore());
+            if !self.editing_started_with_cropping {
+                cairo.set_dash(&[4.0, 21.0, 4.0], 0.0);
             }
+
+            log_if_err!(cairo.stroke());
+
+            if self.editing_started_with_cropping {
+                shapes::dimmen_rectangle_around(
+                    cairo,
+                    self.screen_dimensions,
+                    Rectangle { x, y, w, h },
+                );
+                log_if_err!(cairo.fill());
+            }
+
+            log_if_err!(cairo.restore());
         }
     }
 
