@@ -25,7 +25,6 @@ impl KCShot {
     pub fn new() -> Self {
         glib::Object::builder()
             .property("application-id", "kc.kcshot")
-            .property("flags", gio::ApplicationFlags::HANDLES_COMMAND_LINE)
             .build()
     }
 
@@ -79,9 +78,7 @@ impl KCShot {
 mod underlying {
     use std::{
         cell::{Cell, OnceCell, RefCell},
-        ffi::OsString,
         ops::ControlFlow,
-        sync::LazyLock,
     };
 
     use diesel::SqliteConnection;
@@ -101,6 +98,9 @@ mod underlying {
         systray,
     };
 
+    const NO_WINDOW_OPTION: &str = "no-window";
+    const SCREENSHOT_OPTION: &str = "screenshot";
+
     pub struct KCShot {
         pub(super) show_main_window: Cell<bool>,
         pub(super) take_screenshot: Cell<bool>,
@@ -119,6 +119,46 @@ mod underlying {
 
         pub(super) fn model_notifier(&self) -> ModelNotifier {
             self.model_notifier.get().cloned().unwrap()
+        }
+
+        fn add_cli_args(&self) {
+            let app = self.obj();
+
+            app.add_main_option(
+                NO_WINDOW_OPTION,
+                glib::Char::from(b'n'),
+                glib::OptionFlags::NONE,
+                glib::OptionArg::None,
+                "Don't show any windows",
+                None,
+            );
+
+            app.add_main_option(
+                SCREENSHOT_OPTION,
+                glib::Char::from(b's'),
+                glib::OptionFlags::NONE,
+                glib::OptionArg::None,
+                &format!("Take a screenshot (mutually exclusive with --{NO_WINDOW_OPTION})"),
+                None,
+            );
+        }
+
+        fn setup_actions(&self) {
+            let show_main_window = gio::ActionEntry::builder("show-main-window")
+                .activate(|app: &super::KCShot, _, _| app.main_window().present())
+                .build();
+
+            let new_editor_window = gio::ActionEntry::builder("new-editor-window")
+                .activate(|app: &super::KCShot, _, _| {
+                    let editing_starts_with_cropping =
+                        Settings::open().editing_starts_with_cropping();
+
+                    EditorWindow::show(app.upcast_ref(), editing_starts_with_cropping);
+                })
+                .build();
+
+            self.obj()
+                .add_action_entries([show_main_window, new_editor_window]);
         }
     }
 
@@ -170,6 +210,8 @@ mod underlying {
         fn constructed(&self) {
             self.parent_constructed();
 
+            self.add_cli_args();
+
             match db::open() {
                 Ok(conn) => self.database_connection.replace(Some(conn)),
                 Err(why) => {
@@ -204,15 +246,6 @@ mod underlying {
         }
     }
 
-    const LONG: usize = 1;
-
-    static SCREENSHOT_FLAGS_OS: LazyLock<Vec<OsString>> =
-        LazyLock::new(|| vec!["-s".into(), "--screenshot".into()]);
-    const SCREENSHOT_FLAGS: &[&str] = &["-s", "--screenshot"];
-    static NO_WINDOW_FLAGS_OS: LazyLock<Vec<OsString>> =
-        LazyLock::new(|| vec!["-n".into(), "--no-window".into()]);
-    const NO_WINDOW_FLAGS: &[&str] = &["-n", "--no-window"];
-
     impl ApplicationImpl for KCShot {
         fn activate(&self) {
             self.parent_activate();
@@ -240,65 +273,42 @@ mod underlying {
             }
         }
 
-        // This is called in the primary instance
-        fn command_line(&self, command_line: &gio::ApplicationCommandLine) -> glib::ExitCode {
-            let mut show_main_window = true;
-            for argument in command_line.arguments() {
-                if NO_WINDOW_FLAGS_OS.contains(&argument) {
-                    show_main_window = false;
-                    self.take_screenshot.set(false);
-                } else if SCREENSHOT_FLAGS_OS.contains(&argument) {
-                    self.take_screenshot.set(true);
-                    show_main_window = false;
-                }
-            }
-            self.show_main_window.set(show_main_window);
-
-            self.obj().activate();
-
-            glib::ExitCode::from(0)
-        }
-
-        // This is called in remote instances
-        fn local_command_line(
-            &self,
-            arguments: &mut gio::subclass::ArgumentList,
-        ) -> ControlFlow<glib::ExitCode> {
-            let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".into());
-            let usage = format!(
-                r#"Usage:
-          {prog_name} [OPTION...]
-
-        Help Options:
-          -h, --help           Show help options
-
-        Application Options:
-          -n, --no-window      Don't show any windows
-          -s, --screenshot     Take a screenshot (mutually exclusive with -n)
-        "#
-            );
-
-            if arguments.contains(&"-h".into()) || arguments.contains(&"--help".into()) {
-                eprintln!("{usage}");
-                return ControlFlow::Break(glib::ExitCode::SUCCESS);
-            }
-
-            let take_screenshot = arguments.iter().any(|os| SCREENSHOT_FLAGS_OS.contains(os));
-            let no_window = arguments.iter().any(|os| NO_WINDOW_FLAGS_OS.contains(os));
-
-            if take_screenshot && no_window {
-                eprintln!(
-                    "{}: {} and {} are mutually exclusive\n{}",
-                    prog_name, SCREENSHOT_FLAGS[LONG], NO_WINDOW_FLAGS[LONG], usage
-                );
+        fn handle_local_options(&self, options: &glib::VariantDict) -> ControlFlow<glib::ExitCode> {
+            if let Err(err) = self.obj().register(None::<&gio::Cancellable>) {
+                tracing::error!("Failed to register app: {err}");
                 return ControlFlow::Break(glib::ExitCode::FAILURE);
             }
 
-            ControlFlow::Continue(())
+            match (
+                options.contains(NO_WINDOW_OPTION),
+                options.contains(SCREENSHOT_OPTION),
+            ) {
+                (true, true) => {
+                    let prog_name = glib::prgname().unwrap_or_else(|| "kcshot".into());
+
+                    eprintln!(
+                        "{prog_name}: --{NO_WINDOW_OPTION} and --{SCREENSHOT_OPTION} mutually exclusive"
+                    );
+
+                    ControlFlow::Break(glib::ExitCode::FAILURE)
+                }
+                (true, false) => self.parent_handle_local_options(options),
+                (false, true) => {
+                    self.obj().activate_action("new-editor-window", None);
+
+                    ControlFlow::Break(glib::ExitCode::SUCCESS)
+                }
+                (false, false) => {
+                    self.obj().activate_action("show-main-window", None);
+                    ControlFlow::Break(glib::ExitCode::SUCCESS)
+                }
+            }
         }
 
         fn startup(&self) {
             self.parent_startup();
+
+            self.setup_actions();
 
             // This hold has no matching release intentionally so that the application keeps running
             // in the background even when no top-level windows are spawned. (This is the case when
