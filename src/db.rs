@@ -24,7 +24,7 @@ pub enum OpenHistoryError {
 
 pub fn open() -> Result<SqliteConnection, OpenHistoryError> {
     let path = if cfg!(feature = "xdg-paths") {
-        xdg::BaseDirectories::with_prefix("kcshot")?.place_state_file("history.db")?
+        xdg::BaseDirectories::with_prefix("kcshot").place_state_file("history.db")?
     } else {
         std::env::current_dir()?.join("history.db")
     };

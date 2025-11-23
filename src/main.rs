@@ -77,7 +77,7 @@ fn make_file_writer() -> Result<fs::File, LogFileError> {
         return Err(LogFileError::DisabledByEnv);
     }
 
-    let base_directories = xdg::BaseDirectories::with_prefix("kcshot")?;
+    let base_directories = xdg::BaseDirectories::with_prefix("kcshot");
     let pid = std::process::id();
     let path = base_directories.place_state_file(format!("logs/kcshot-{pid}.log"))?;
 

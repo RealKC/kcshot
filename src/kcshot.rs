@@ -327,8 +327,8 @@ mod underlying {
             if settings.saved_screenshots_path().is_empty() {
                 let default_folder = if cfg!(feature = "xdg-paths") {
                     xdg::BaseDirectories::with_prefix("kcshot")
-                        .unwrap()
                         .get_data_home()
+                        .unwrap()
                         .join("Screenshots")
                 } else {
                     std::env::current_dir().unwrap().join("Screenshots")
