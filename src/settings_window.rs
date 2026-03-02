@@ -90,28 +90,6 @@ mod underlying {
     impl SettingsWindow {
         #[template_callback]
         async fn on_screenshot_directory_clicked(&self, _: adw::ActionRow) {
-            // let folder_chooser = gtk4::FileChooserDialog::new(
-            //     Some("Choose a folder for your screenshot history"),
-            //     Some(self.obj().as_ref()),
-            //     gtk4::FileChooserAction::SelectFolder,
-            //     &[
-            //         ("Cancel", gtk4::ResponseType::Cancel),
-            //         ("Apply", gtk4::ResponseType::Apply),
-            //     ],
-            // );
-            // folder_chooser.connect_response(|this, response| {
-            //     if response == gtk4::ResponseType::Apply {
-            //         let folder = this.file().unwrap();
-            //         Settings::open().set_saved_screenshots_path(
-            //             &folder
-            //                 .path()
-            //                 .and_then(|path| path.to_str().map(str::to_owned))
-            //                 .unwrap(),
-            //         );
-            //     }
-            //     this.destroy();
-            // });
-
             let window = KCShot::the().main_window();
             let file_dialog = gtk4::FileDialog::builder()
                 .modal(true)
