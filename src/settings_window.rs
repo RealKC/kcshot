@@ -2,9 +2,9 @@ use gtk4::glib;
 
 glib::wrapper! {
     pub struct SettingsWindow(ObjectSubclass<underlying::SettingsWindow>)
-        @extends gtk4::Widget, gtk4::Window,
+        @extends gtk4::Widget, adw::PreferencesDialog,
         @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
-                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native;
+                    gtk4::ShortcutManager, adw::Dialog, gtk4::Root, gtk4::Native;
 }
 
 impl Default for SettingsWindow {
@@ -16,22 +16,25 @@ impl Default for SettingsWindow {
 mod underlying {
     use std::cell::OnceCell;
 
+    use adw::subclass::{
+        dialog::AdwDialogImpl, prelude::PreferencesDialogImpl, window::AdwWindowImpl,
+    };
     use gtk4::{CompositeTemplate, glib, prelude::*, subclass::prelude::*};
     use kcshot_data::settings::Settings;
 
-    use crate::ext::DisposeExt;
+    use crate::{ext::DisposeExt, kcshot::KCShot};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(file = "src/settings_window.blp")]
     pub struct SettingsWindow {
         #[template_child]
-        screenshot_directory_chooser_button: TemplateChild<gtk4::Button>,
+        screenshot_directory_row: TemplateChild<adw::PreferencesRow>,
         #[template_child]
-        history_enabled_switch: TemplateChild<gtk4::Switch>,
+        history_enabled_switch: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        capture_mouse_switch: TemplateChild<gtk4::Switch>,
+        capture_mouse_switch: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        editing_starts_by_cropping_switch: TemplateChild<gtk4::Switch>,
+        editing_starts_by_cropping_switch: TemplateChild<adw::SwitchRow>,
 
         settings: OnceCell<Settings>,
     }
@@ -40,7 +43,7 @@ mod underlying {
     impl ObjectSubclass for SettingsWindow {
         const NAME: &'static str = "KCShotSettingsWindow";
         type Type = super::SettingsWindow;
-        type ParentType = gtk4::Window;
+        type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("kcshot-settings-window");
@@ -61,10 +64,7 @@ mod underlying {
             let settings = self.settings.get_or_init(Settings::open);
 
             settings
-                .bind_saved_screenshots_path(
-                    &self.screenshot_directory_chooser_button.get(),
-                    "label",
-                )
+                .bind_saved_screenshots_path(&self.screenshot_directory_row.get(), "subtitle")
                 .build();
 
             settings
@@ -89,20 +89,36 @@ mod underlying {
     #[gtk4::template_callbacks]
     impl SettingsWindow {
         #[template_callback]
-        fn on_screenshot_directory_clicked(&self, _: gtk4::Button) {
-            let folder_chooser = gtk4::FileChooserDialog::new(
-                Some("Choose a folder for your screenshot history"),
-                Some(self.obj().as_ref()),
-                gtk4::FileChooserAction::SelectFolder,
-                &[
-                    ("Cancel", gtk4::ResponseType::Cancel),
-                    ("Apply", gtk4::ResponseType::Apply),
-                ],
-            );
+        async fn on_screenshot_directory_clicked(&self, _: adw::ActionRow) {
+            // let folder_chooser = gtk4::FileChooserDialog::new(
+            //     Some("Choose a folder for your screenshot history"),
+            //     Some(self.obj().as_ref()),
+            //     gtk4::FileChooserAction::SelectFolder,
+            //     &[
+            //         ("Cancel", gtk4::ResponseType::Cancel),
+            //         ("Apply", gtk4::ResponseType::Apply),
+            //     ],
+            // );
+            // folder_chooser.connect_response(|this, response| {
+            //     if response == gtk4::ResponseType::Apply {
+            //         let folder = this.file().unwrap();
+            //         Settings::open().set_saved_screenshots_path(
+            //             &folder
+            //                 .path()
+            //                 .and_then(|path| path.to_str().map(str::to_owned))
+            //                 .unwrap(),
+            //         );
+            //     }
+            //     this.destroy();
+            // });
 
-            folder_chooser.connect_response(|this, response| {
-                if response == gtk4::ResponseType::Apply {
-                    let folder = this.file().unwrap();
+            let window = KCShot::the().main_window();
+            let file_dialog = gtk4::FileDialog::builder()
+                .modal(true)
+                .title("Choose a folder")
+                .build();
+            match file_dialog.select_folder_future(Some(&window)).await {
+                Ok(folder) => {
                     Settings::open().set_saved_screenshots_path(
                         &folder
                             .path()
@@ -110,12 +126,14 @@ mod underlying {
                             .unwrap(),
                     );
                 }
-
-                this.destroy();
-            });
+                Err(e) => {
+                    tracing::error!("Failed picking new screenshot folder: {e:#?}")
+                }
+            };
         }
     }
 
     impl WidgetImpl for SettingsWindow {}
-    impl WindowImpl for SettingsWindow {}
+    impl PreferencesDialogImpl for SettingsWindow {}
+    impl AdwDialogImpl for SettingsWindow {}
 }

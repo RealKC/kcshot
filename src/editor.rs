@@ -22,14 +22,14 @@ glib::wrapper! {
 }
 
 impl EditorWindow {
-    pub fn new(app: &gtk4::Application, editing_starts_with_cropping: bool) -> Self {
+    pub fn new(app: &adw::Application, editing_starts_with_cropping: bool) -> Self {
         glib::Object::builder::<Self>()
             .property("application", app)
             .property("editing-starts-with-cropping", editing_starts_with_cropping)
             .build()
     }
 
-    pub fn show(app: &gtk4::Application, editing_starts_with_cropping: bool) {
+    pub fn show(app: &adw::Application, editing_starts_with_cropping: bool) {
         let window = Self::new(app, editing_starts_with_cropping);
         window.set_decorated(false);
         window.show();

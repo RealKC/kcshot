@@ -1,75 +1,40 @@
 using Gtk 4.0;
+using Adw 1;
 
-template $KCShotSettingsWindow : Gtk.Window {
-    title: 'kcshot - Settings';
+template $KCShotSettingsWindow : Adw.PreferencesDialog {
+    Adw.PreferencesPage {
+        icon-name: 'applications-system-symbolic';
+        title: 'Overview';
 
-    child: Gtk.Notebook {
-        Gtk.NotebookPage {
-            tab: Gtk.Label { label: 'General'; };
-            child: Gtk.Box {
-                orientation: vertical;
-                spacing: 4;
-                margin-top: 5;
-                margin-bottom: 10;
-                margin-start: 10;
-                margin-end: 10;
+        Adw.PreferencesGroup {
+            title: 'General';
 
-                Gtk.Box {
-                    orientation: horizontal;
-                    spacing: 6;
+            Adw.ActionRow screenshot_directory_row {
+                styles [
+                    "property",
+                ]
 
-                    Gtk.Label { label: 'Screenshot directory'; }
+                title: 'Screenshot directory';
 
-                    Gtk.Button screenshot_directory_chooser_button {
-                        clicked => $on_screenshot_directory_clicked() swapped;
-                    }
+                activatable-widget: Gtk.Button {};
+                activated => $on_screenshot_directory_clicked() swapped;
+
+                Gtk.Image {
+                    icon-name: 'folder-open-symbolic';
                 }
+            }
 
-                Gtk.Box {
-                    orientation: horizontal;
-                    spacing: 6;
-                    homogeneous: true;
+            Adw.SwitchRow history_enabled_switch {
+               title: 'Enable history';
+            }
 
-                    Gtk.Label {
-                        label: 'Enable history';
-                        halign: start;
-                    }
+            Adw.SwitchRow capture_mouse_switch {
+                title: 'Capture mouse cursor';
+            }
 
-                    Gtk.Switch history_enabled_switch {
-                        halign: end;
-                    }
-                }
-
-                Gtk.Box {
-                    orientation: horizontal;
-                    spacing: 6;
-                    homogeneous: true;
-
-                    Gtk.Label {
-                        label: 'Capture mouse cursor';
-                        halign: start;
-                    }
-
-                    Gtk.Switch capture_mouse_switch {
-                        halign: end;
-                    }
-                }
-
-                Gtk.Box {
-                    orientation: horizontal;
-                    spacing: 6;
-                    homogeneous: true;
-
-                    Gtk.Label {
-                        label: 'Editing starts by cropping';
-                        halign: start;
-                    }
-
-                    Gtk.Switch editing_starts_by_cropping_switch {
-                        halign: end;
-                    }
-                }
-            };
+            Adw.SwitchRow editing_starts_by_cropping_switch {
+                title: 'Editing starts by cropping';
+            }
         }
-    };
+    }
 }

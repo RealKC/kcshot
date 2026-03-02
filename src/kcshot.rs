@@ -11,8 +11,8 @@ use crate::{
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>)
-    @extends gio::Application, gtk4::Application,
-    @implements gio::ActionGroup, gio::ActionMap;
+    @extends gio::Application, adw::Application,
+    @implements gio::ActionGroup, gio::ActionMap, gtk4::Application;
 }
 
 impl Default for KCShot {
@@ -81,6 +81,7 @@ mod underlying {
         ops::ControlFlow,
     };
 
+    use adw::subclass::prelude::AdwApplicationImpl;
     use diesel::SqliteConnection;
     use gtk4::{
         gdk,
@@ -203,7 +204,7 @@ mod underlying {
     impl ObjectSubclass for KCShot {
         const NAME: &'static str = "KCShot";
         type Type = super::KCShot;
-        type ParentType = gtk4::Application;
+        type ParentType = adw::Application;
     }
 
     impl ObjectImpl for KCShot {
@@ -351,4 +352,5 @@ mod underlying {
     }
 
     impl GtkApplicationImpl for KCShot {}
+    impl AdwApplicationImpl for KCShot {}
 }

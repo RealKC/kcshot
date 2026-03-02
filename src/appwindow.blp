@@ -1,95 +1,117 @@
 using Gtk 4.0;
+using Adw 1;
 
-template $KCShotAppWindow : Gtk.ApplicationWindow {
+menu main-menu {
+  section {
+    item {
+      label: 'Preferences';
+      action: "app.settings";
+    }
+
+    item {
+      label: 'About';
+      action: "app.about";
+    }
+  }
+}
+
+template $KCShotAppWindow : Adw.ApplicationWindow {
     hide-on-close: true;
+    default-width: 800;
+    default-height: 800;
+    title: 'kcshot';
 
-    Gtk.Box {
-        orientation: horizontal;
+    Adw.Breakpoint {
+        condition ("max-width: 400sp")
 
-        Gtk.Frame {
-            Gtk.Box {
-                orientation: vertical;
-                spacing: 0;
-
-                Gtk.Button {
-                    child: Gtk.Label {
-                        label: 'Capture';
-                        halign: start;
-                    };
-
-                    clicked => $on_capture_clicked() swapped;
-                }
-
-                Gtk.Button {
-                    child: Gtk.Label {
-                        label: 'Settings';
-                        halign: start;
-                    };
-
-                    clicked => $on_settings_clicked() swapped;
-                }
-
-                Gtk.Button {
-                    child: Gtk.Label {
-                        label: 'Screenshots folder';
-                        halign: start;
-                    };
-
-                    clicked => $on_screenshots_folder_clicked() swapped;
-                }
-
-                Gtk.Button history_button {
-                    child: Gtk.Label {
-                        label: 'History';
-                        halign: start;
-                    };
-
-                    clicked => $on_history_clicked() swapped;
-                }
-
-                Gtk.Button {
-                    child: Gtk.Label {
-                        label: 'Quit kcshot';
-                        halign: start;
-                    };
-
-                    clicked => $on_quit_clicked() swapped;
-                }
-            }
-        }
-
-        Gtk.Frame {
-            Gtk.Stack stack {
-                Gtk.StackPage {
-                    name: 'message';
-                    child: Gtk.Box {
-                        orientation: vertical;
-                        spacing: 2;
-
-                        Gtk.Label {
-                            label: '(´• ω •`)';
-                            styles [ 'kc-label-emoji' ]
-                        }
-
-                        Gtk.Label {
-                            label: 'The history is disabled';
-                            styles [ 'kc-history-disabled-note' ]
-                        }
-                    };
-                }
-
-                Gtk.StackPage {
-                    name: 'image-grid';
-                    child: Gtk.ScrolledWindow {
-                        propagate-natural-width: true;
-                        min-content-height: 600;
-
-                        child: Gtk.GridView image_grid {
-                            min-columns: 3;
-                        };
-                    };
-                }
-            }
+        setters {
+            split_view.collapsed: true;
         }
     }
+
+    content: Adw.ToolbarView {
+        content: Adw.OverlaySplitView split_view {
+            sidebar: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                    [end]
+                    Gtk.MenuButton {
+                        menu-model: main-menu;
+                        icon-name: 'open-menu-symbolic';
+                    }
+                }
+
+                Gtk.Box {
+                    orientation: vertical;
+                    spacing: 4;
+                    margin-start: 4;
+                    margin-end: 4;
+                    margin-top: 4;
+                    margin-bottom: 4;
+
+                    Gtk.Button {
+                        child: Gtk.Label {
+                            label: 'Capture';
+                            halign: start;
+                        };
+
+                        clicked => $on_capture_clicked() swapped;
+                    }
+
+                    Gtk.Button {
+                        child: Gtk.Label {
+                            label: 'Screenshots folder';
+                            halign: start;
+                        };
+
+                        clicked => $on_screenshots_folder_clicked() swapped;
+                    }
+
+                    Gtk.Button history_button {
+                        child: Gtk.Label {
+                            label: 'History';
+                            halign: start;
+                        };
+
+                        clicked => $on_history_clicked() swapped;
+                    }
+
+                    Gtk.Button {
+                        child: Gtk.Label {
+                            label: 'Quit kcshot';
+                            halign: start;
+                        };
+
+                        clicked => $on_quit_clicked() swapped;
+                    }
+                }
+            };
+
+            content: Adw.NavigationPage {
+                title: 'Content';
+                Gtk.Stack stack {
+                    Gtk.StackPage {
+                        name: 'message';
+                        child: Adw.StatusPage {
+                            title: '(´• ω •`)';
+                            description: 'The history is disabled';
+                            icon-name: 'action-unavailable-symbolic';
+                        };
+                    }
+
+                    Gtk.StackPage {
+                        name: 'image-grid';
+                        child: Gtk.ScrolledWindow {
+                            propagate-natural-width: true;
+                            min-content-height: 600;
+
+                            child: Gtk.GridView image_grid {
+                                min-columns: 3;
+                            };
+                        };
+                    }
+                }
+            };
+        };
+    };
 }
