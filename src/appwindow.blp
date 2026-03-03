@@ -50,67 +50,68 @@ template $KCShotAppWindow : Adw.ApplicationWindow {
                     margin-bottom: 4;
 
                     Gtk.Button {
-                        child: Gtk.Label {
+                        child: Adw.ButtonContent {
                             label: 'Capture';
-                            halign: start;
+                            icon-name: 'camera-photo-symbolic';
                         };
 
                         clicked => $on_capture_clicked() swapped;
                     }
 
                     Gtk.Button {
-                        child: Gtk.Label {
+                        child: Adw.ButtonContent {
                             label: 'Screenshots folder';
-                            halign: start;
+                            icon-name: 'folder-open-symbolic';
                         };
 
                         clicked => $on_screenshots_folder_clicked() swapped;
                     }
 
                     Gtk.Button history_button {
-                        child: Gtk.Label {
+                        child: Adw.ButtonContent {
                             label: 'History';
-                            halign: start;
+                            icon-name: 'document-open-recent-symbolic';
                         };
 
                         clicked => $on_history_clicked() swapped;
                     }
-
-                    Gtk.Button {
-                        child: Gtk.Label {
-                            label: 'Quit kcshot';
-                            halign: start;
-                        };
-
-                        clicked => $on_quit_clicked() swapped;
-                    }
                 }
             };
 
-            content: Adw.NavigationPage {
-                title: 'Content';
-                Gtk.Stack stack {
-                    Gtk.StackPage {
-                        name: 'message';
-                        child: Adw.StatusPage {
-                            title: '(´• ω •`)';
-                            description: 'The history is disabled';
-                            icon-name: 'action-unavailable-symbolic';
-                        };
-                    }
-
-                    Gtk.StackPage {
-                        name: 'image-grid';
-                        child: Gtk.ScrolledWindow {
-                            propagate-natural-width: true;
-                            min-content-height: 600;
-
-                            child: Gtk.GridView image_grid {
-                                min-columns: 3;
-                            };
-                        };
-                    }
+            content: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                    title-widget: Adw.WindowTitle {
+                        title: 'History';
+                    };
                 }
+
+                content: Adw.NavigationPage {
+                    title: 'Content';
+
+                    Gtk.Stack stack {
+                        Gtk.StackPage {
+                            name: 'message';
+                            child: Adw.StatusPage {
+                                title: '(´• ω •`)';
+                                description: 'The history is disabled';
+                                icon-name: 'action-unavailable-symbolic';
+                            };
+                        }
+
+                        Gtk.StackPage {
+                            name: 'image-grid';
+                            child: Gtk.ScrolledWindow {
+                                propagate-natural-width: true;
+                                min-content-height: 600;
+
+                                child: Gtk.GridView image_grid {
+                                    min-columns: 3;
+                                };
+                            };
+                        }
+                    }
+                };
             };
         };
     };
