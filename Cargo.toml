@@ -50,6 +50,7 @@ kcshot-data = { path = "./kcshot-data" }
 # UI-related dependencies
 gtk4.workspace = true
 adw.workspace = true
+gtk4-layer-shell = "0.8.1"
 ksni = "0.3.1"
 
 # Screenshot editing & capturing
