@@ -139,7 +139,7 @@ mod underlying {
         async fn on_primary_colour_clicked(&self, _: &gtk4::Button) {
             let dialog = ColourChooserDialog::new(&self.editor(), self.editor().primary_colour());
 
-            dialog.show();
+            dialog.present();
 
             let colour = dialog.colour().await;
             self.editor().set_primary_colour(colour);
@@ -150,7 +150,7 @@ mod underlying {
         async fn on_secondary_colour_clicked(&self, _: &gtk4::Button) {
             let dialog = ColourChooserDialog::new(&self.editor(), self.editor().secondary_colour());
 
-            dialog.show();
+            dialog.present();
 
             let colour = dialog.colour().await;
 

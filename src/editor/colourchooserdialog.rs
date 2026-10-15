@@ -115,10 +115,10 @@ mod underlying {
         #[template_callback]
         async fn on_colour_picker_clicked(&self, _: &gtk4::Button) {
             if let Some(editor) = self.editor.upgrade() {
-                self.obj().hide();
+                self.obj().set_visible(false);
                 let colour = editor.pick_colour().await;
                 self.colour_chooser.set_colour(colour);
-                self.obj().show();
+                self.obj().present();
             }
         }
 

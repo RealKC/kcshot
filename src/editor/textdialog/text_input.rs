@@ -71,7 +71,7 @@ mod underlying {
         #[template_child]
         colour_button_drawing_area: TemplateChild<gtk4::DrawingArea>,
         #[template_child]
-        pub(super) font_button: TemplateChild<gtk4::FontButton>,
+        pub(super) font_button: TemplateChild<gtk4::FontDialogButton>,
         #[template_child]
         pub(super) input_view: TemplateChild<gtk4::TextView>,
         #[template_child]
@@ -162,7 +162,7 @@ mod underlying {
 
             let dialog = ColourChooserDialog::new(&editor, editor.secondary_colour());
             dialog.set_transient_for(self.parent_dialog.upgrade().as_ref());
-            dialog.show();
+            dialog.present();
             editor.set_secondary_colour(dialog.colour().await);
 
             self.colour_button_drawing_area.queue_draw();
