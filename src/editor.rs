@@ -32,7 +32,7 @@ impl EditorWindow {
     pub fn show(app: &adw::Application, editing_starts_with_cropping: bool) {
         let window = Self::new(app, editing_starts_with_cropping);
         window.set_decorated(false);
-        window.show();
+        window.present();
         window.fullscreen();
         window.set_title(Some("kcshot.window.screenshot"));
 
@@ -41,6 +41,7 @@ impl EditorWindow {
             .and_then(|native| native.surface())
             .and_downcast::<gdk4_x11::X11Surface>();
 
+        #[expect(deprecated, reason = "We want to support X11 for now, still")]
         if let Some(surface) = surface {
             surface.set_skip_taskbar_hint(true);
             surface.set_skip_pager_hint(true);

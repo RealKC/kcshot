@@ -342,7 +342,7 @@ mod underlying {
             gtk4::Window::set_default_icon_name("kcshot");
 
             let provider = gtk4::CssProvider::new();
-            provider.load_from_data(include_str!("style.css"));
+            provider.load_from_string(include_str!("style.css"));
             gtk4::style_context_add_provider_for_display(
                 &gdk::Display::default().unwrap(),
                 &provider,

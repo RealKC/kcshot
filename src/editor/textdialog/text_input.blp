@@ -1,6 +1,6 @@
 using Gtk 4.0;
 
-template $KCShotTextInput : Gtk.Widget {
+template $KCShotTextInput: Gtk.Widget {
     layout-manager: Gtk.BoxLayout {
         orientation: vertical;
         spacing: 2;
@@ -13,15 +13,18 @@ template $KCShotTextInput : Gtk.Widget {
         margin-start: 10;
         margin-end: 10;
 
-        Gtk.FontButton font_button {
+        Gtk.FontDialogButton font_button {
             margin-bottom: 5;
+
+            dialog: Gtk.FontDialog {
+                title: _("Choose a font");
+            };
         }
 
         Gtk.Button colour_button {
             margin-bottom: 5;
             width-request: 25;
             height-request: 25;
-
             clicked => $on_colour_button_clicked() swapped;
 
             child: Gtk.DrawingArea colour_button_drawing_area {
@@ -41,7 +44,10 @@ template $KCShotTextInput : Gtk.Widget {
             orientation: vertical;
             spacing: 2;
 
-            Gtk.Label { label: "Input"; }
+            Gtk.Label {
+                label: "Input";
+            }
+
             Gtk.TextView input_view {
                 margin-top: 7;
                 margin-start: 10;
@@ -60,7 +66,10 @@ template $KCShotTextInput : Gtk.Widget {
             orientation: vertical;
             spacing: 2;
 
-            Gtk.Label { label: "Preview"; }
+            Gtk.Label {
+                label: "Preview";
+            }
+
             Gtk.TextView preview {
                 margin-top: 7;
                 margin-end: 10;

@@ -305,7 +305,7 @@ impl EditorWindow {
             if image.operation_stack.current_tool() == Tool::Text {
                 let dialog = TextDialog::new(&self.obj());
                 dialog.set_transient_for(Some(&*self.obj()));
-                dialog.show();
+                dialog.present();
                 true
             } else if !image.operation_stack.current_tool().is_saving_tool() {
                 image.operation_stack.finish_current_operation();

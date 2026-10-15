@@ -63,7 +63,7 @@ mod underlying {
         pub(super) colour_wheel: OnceCell<ColourWheel>,
         pub(super) alpha: Cell<u8>,
 
-        colour_button: OnceCell<gtk4::ColorButton>,
+        colour_button: OnceCell<gtk4::ColorDialogButton>,
         vbox: OnceCell<gtk4::Box>,
     }
 
@@ -189,16 +189,18 @@ mod underlying {
             scale.set_hexpand(true);
             hbox.append(&scale);
 
-            let colour_button = self
-                .colour_button
-                .get_or_init(|| gtk4::ColorButton::with_rgba(&colour_wheel.rgba()));
+            let colour_button = self.colour_button.get_or_init(|| {
+                let button = gtk4::ColorDialogButton::new(Some(gtk4::ColorDialog::new()));
+                button.set_rgba(&colour_wheel.rgba());
+                button
+            });
             colour_wheel
                 .bind_property("rgba", colour_button, "rgba")
                 .flags(flags)
                 .transform_to(|binding, mut rgba: gdk::RGBA| {
                     let target = binding
                         .target()
-                        .and_downcast::<gtk4::ColorButton>()
+                        .and_downcast::<gtk4::ColorDialogButton>()
                         .unwrap();
 
                     rgba.set_alpha(target.rgba().alpha());
