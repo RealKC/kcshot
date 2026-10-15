@@ -462,6 +462,32 @@ impl EditorWindow {
             }
         ));
         obj.add_action(&redo_action);
+
+        let tool_action = gio::SimpleAction::new("set-tool", Some(&Tool::static_variant_type()));
+        tool_action.connect_activate(clone!(
+            #[weak]
+            obj,
+            move |_, tool| {
+                tracing::trace!("win.set-tool activated");
+
+                let Some(tool) = tool else {
+                    tracing::warn!("param given to win.set-tool was None");
+                    return;
+                };
+
+                let Some(tool) = tool.get::<Tool>() else {
+                    tracing::warn!("param is not of type Tool");
+                    return;
+                };
+
+                obj.set_current_tool(tool);
+
+                if tool.is_immediate_save() {
+                    obj.save_image();
+                }
+            }
+        ));
+        obj.add_action(&tool_action);
     }
 }
 

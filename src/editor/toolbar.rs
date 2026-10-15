@@ -61,7 +61,7 @@ mod underlying {
         subclass::prelude::*,
     };
 
-    use super::toolbutton::{ToolButton, should_start_saving_immediately};
+    use super::toolbutton::ToolButton;
     use crate::{
         editor::{
             EditorWindow, colourbutton::ColourButton, colourchooserdialog::ColourChooserDialog,
@@ -116,8 +116,8 @@ mod underlying {
                 Tool::CropAndSave
             };
             self.group_source.set_tool(group_source_tool);
-            let is_group_source_active = !should_start_saving_immediately(group_source_tool)
-                || self.editing_started_with_cropping.get();
+            let is_group_source_active =
+                group_source_tool.is_immediate_save() || self.editing_started_with_cropping.get();
             self.group_source.set_active(is_group_source_active);
         }
 
