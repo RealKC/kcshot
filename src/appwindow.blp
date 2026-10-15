@@ -2,24 +2,24 @@ using Gtk 4.0;
 using Adw 1;
 
 menu main-menu {
-  section {
-    item {
-      label: 'Preferences';
-      action: "app.settings";
-    }
+    section {
+        item {
+            label: 'Preferences';
+            action: "app.settings";
+        }
 
-    item {
-      label: 'About';
-      action: "app.about";
+        item {
+            label: 'About';
+            action: "app.about";
+        }
     }
-  }
 }
 
-template $KCShotAppWindow : Adw.ApplicationWindow {
+template $KCShotAppWindow: Adw.ApplicationWindow {
     hide-on-close: true;
     default-width: 800;
     default-height: 800;
-    title: 'kcshot';
+    title: _("kcshot");
 
     Adw.Breakpoint {
         condition ("max-width: 400sp")
@@ -50,9 +50,13 @@ template $KCShotAppWindow : Adw.ApplicationWindow {
                     margin-bottom: 4;
 
                     Gtk.Button {
+                        accessibility {
+                            label: "Take a screenshot";
+                        }
+
                         child: Adw.ButtonContent {
                             halign: start;
-                            label: 'Capture';
+                            label: _("Capture");
                             icon-name: 'camera-photo-symbolic';
                         };
 
@@ -60,9 +64,13 @@ template $KCShotAppWindow : Adw.ApplicationWindow {
                     }
 
                     Gtk.Button {
+                        accessibility {
+                            label: "Open screenshot folder";
+                        }
+
                         child: Adw.ButtonContent {
                             halign: start;
-                            label: 'Screenshots folder';
+                            label: _("Screenshots folder");
                             icon-name: 'folder-open-symbolic';
                         };
 
@@ -70,9 +78,13 @@ template $KCShotAppWindow : Adw.ApplicationWindow {
                     }
 
                     Gtk.Button history_button {
+                        accessibility {
+                            label: "Open history";
+                        }
+
                         child: Adw.ButtonContent {
                             halign: start;
-                            label: 'History';
+                            label: _("History");
                             icon-name: 'document-open-recent-symbolic';
                         };
 
@@ -85,25 +97,27 @@ template $KCShotAppWindow : Adw.ApplicationWindow {
                 [top]
                 Adw.HeaderBar {
                     title-widget: Adw.WindowTitle {
-                        title: 'History';
+                        title: _("History");
                     };
                 }
 
                 content: Adw.NavigationPage {
-                    title: 'Content';
+                    title: _("Content");
 
                     Gtk.Stack stack {
                         Gtk.StackPage {
                             name: 'message';
+
                             child: Adw.StatusPage {
-                                title: '(´• ω •`)';
-                                description: 'The history is disabled';
+                                title: _("(´• ω •`)");
+                                description: _("The history is disabled");
                                 icon-name: 'action-unavailable-symbolic';
                             };
                         }
 
                         Gtk.StackPage {
                             name: 'image-grid';
+
                             child: Gtk.ScrolledWindow {
                                 propagate-natural-width: true;
                                 min-content-height: 600;

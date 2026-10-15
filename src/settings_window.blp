@@ -1,39 +1,44 @@
 using Gtk 4.0;
 using Adw 1;
 
-template $KCShotSettingsWindow : Adw.PreferencesDialog {
+template $KCShotSettingsWindow: Adw.PreferencesDialog {
     Adw.PreferencesPage {
         icon-name: 'applications-system-symbolic';
-        title: 'Overview';
+        title: _("Overview");
 
         Adw.PreferencesGroup {
-            title: 'General';
+            title: _("General");
 
             Adw.ActionRow screenshot_directory_row {
                 styles [
                     "property",
                 ]
 
-                title: 'Screenshot directory';
+                title: _("Screenshot directory");
 
                 activatable-widget: Gtk.Button {};
+
                 activated => $on_screenshot_directory_clicked() swapped;
 
                 Gtk.Image {
+                    accessibility {
+                        label: "Open folder icon";
+                    }
+
                     icon-name: 'folder-open-symbolic';
                 }
             }
 
             Adw.SwitchRow history_enabled_switch {
-               title: 'Enable history';
+                title: _("Enable history");
             }
 
             Adw.SwitchRow capture_mouse_switch {
-                title: 'Capture mouse cursor';
+                title: _("Capture mouse cursor");
             }
 
             Adw.SwitchRow editing_starts_by_cropping_switch {
-                title: 'Editing starts by cropping';
+                title: _("Editing starts by cropping");
             }
         }
     }
