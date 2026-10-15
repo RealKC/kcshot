@@ -2,7 +2,6 @@ use std::{env, io, sync::OnceLock};
 
 use cairo::{self, Error as CairoError, ImageSurface};
 use kcshot_data::geometry::Rectangle;
-use tracing::error;
 
 mod portals;
 mod wayland;
