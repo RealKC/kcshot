@@ -103,7 +103,7 @@ mod underlying {
                     );
                 }
                 Err(e) => {
-                    tracing::error!("Failed picking new screenshot folder: {e:#?}")
+                    tracing::error!("Failed picking new screenshot folder: {e:#?}");
                 }
             };
         }
