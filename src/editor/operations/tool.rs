@@ -1,7 +1,7 @@
 use gtk4::glib;
 
 /// This enum is like [Operations] but without any associated data
-#[derive(Clone, Copy, Debug, PartialEq, Eq, glib::Enum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, glib::Enum, glib::Variant)]
 #[enum_type(name = "KCShotTool")]
 pub enum Tool {
     CropAndSave = 0,
@@ -88,5 +88,9 @@ impl Tool {
 
     pub const fn is_cropping_tool(self) -> bool {
         matches!(self, Self::CropAndSave | Self::Crop)
+    }
+
+    pub const fn is_immediate_save(self) -> bool {
+        matches!(self, Self::Save)
     }
 }

@@ -14,15 +14,6 @@ impl ToolButton {
     }
 }
 
-/// This functions returns whether the button calling this needs to immediately start the saving
-/// process on click
-///
-/// This is applicable only for the "crop-first" mode, as there the "Save" action is logically
-/// the final thing you do, and needing to click somewhere on screen would be weird
-pub fn should_start_saving_immediately(tool: Tool) -> bool {
-    matches!(tool, Tool::Save)
-}
-
 mod underlying {
     use std::{
         cell::{Cell, RefCell},
@@ -36,11 +27,7 @@ mod underlying {
         subclass::prelude::*,
     };
 
-    use super::should_start_saving_immediately;
-    use crate::{
-        editor::{EditorWindow, operations::Tool},
-        ext::DisposeExt,
-    };
+    use crate::{editor::operations::Tool, ext::DisposeExt};
 
     #[derive(Debug, Properties, CompositeTemplate)]
     #[template(file = "src/editor/toolbar/toolbutton.blp")]
@@ -52,8 +39,6 @@ mod underlying {
         primary: RefCell<Option<gtk4::Button>>,
         #[property(get, set)]
         secondary: RefCell<Option<gtk4::Button>>,
-        #[property(get, set)]
-        editor: RefCell<Option<EditorWindow>>,
         #[property(get, set = Self::set_tool, builder(Tool::CropAndSave))]
         tool: Cell<Tool>,
         #[property(set = Self::set_group)]
@@ -71,7 +56,6 @@ mod underlying {
                 spinner: Default::default(),
                 primary: Default::default(),
                 secondary: Default::default(),
-                editor: Default::default(),
                 tool: Cell::new(Tool::CropAndSave),
                 group: PhantomData,
                 toggle: Default::default(),
@@ -108,6 +92,7 @@ mod underlying {
             let tool = self.tool.get();
             self.image.set_resource(Some(tool.path()));
             self.toggle.set_tooltip_markup(Some(tool.tooltip()));
+            self.toggle.set_action_name(Some("win.set-tool"));
         }
 
         fn dispose(&self) {
@@ -119,17 +104,6 @@ mod underlying {
 
     #[gtk4::template_callbacks]
     impl ToolButton {
-        #[template_callback]
-        fn on_clicked(&self, _: &gtk4::ToggleButton) {
-            let editor = self.editor.borrow().clone().unwrap();
-            let tool = self.tool.get();
-
-            editor.set_current_tool(tool);
-            if should_start_saving_immediately(tool) {
-                editor.save_image();
-            }
-        }
-
         #[template_callback]
         fn on_toggled(&self, toggle: &gtk4::ToggleButton) {
             // This can probably be achieved using property bindings... somehow
@@ -157,6 +131,8 @@ mod underlying {
             self.tool.set(tool);
             self.image.set_resource(Some(tool.path()));
             self.toggle.set_tooltip_markup(Some(tool.tooltip()));
+            self.toggle
+                .set_action_target_value(Some(&tool.to_variant()));
         }
     }
 }
