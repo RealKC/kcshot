@@ -33,7 +33,10 @@ zero_prefixed_literal = "allow"
 [workspace.dependencies]
 cairo = { package = "cairo-rs", version = "0.22.0", features = ["png"] }
 gtk4 = { version = "0.11.0", features = ["blueprint", "v4_18"] }
-adw = { version = "0.9.1", package = "libadwaita", features = ["v1_8", "gtk_v4_18"] }
+adw = { version = "0.9.1", package = "libadwaita", features = [
+    "v1_8",
+    "gtk_v4_18",
+] }
 thiserror = "2.0.3"
 tokio = { version = "1.25.0", features = ["rt-multi-thread"] }
 tracing = "0.1.23"
@@ -66,7 +69,7 @@ diesel_migrations = "2.2.0"
 xdg = "3.0"
 
 # Miscellaneous
-rand = "0.9.0"
+rand = "0.10.3"
 
 # Logging and error reporting
 tracing.workspace = true
@@ -74,7 +77,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror.workspace = true
 
 [build-dependencies]
-glib-build-tools = "0.21.0"
+glib-build-tools = "0.22.8"
 
 [features]
 default = ["xdg-paths"]
