@@ -31,8 +31,12 @@ single_match_else = "warn"
 zero_prefixed_literal = "allow"
 
 [workspace.dependencies]
-cairo = { package = "cairo-rs", version = "0.21.2", features = ["png"] }
-gtk4 = { version = "0.10.2", features = ["blueprint"] }
+cairo = { package = "cairo-rs", version = "0.22.0", features = ["png"] }
+gtk4 = { version = "0.11.0", features = ["blueprint", "v4_18"] }
+adw = { version = "0.9.1", package = "libadwaita", features = [
+    "v1_8",
+    "gtk_v4_18",
+] }
 thiserror = "2.0.3"
 tokio = { version = "1.25.0", features = ["rt-multi-thread"] }
 tracing = "0.1.23"
@@ -45,18 +49,21 @@ kcshot-data = { path = "./kcshot-data" }
 
 # UI-related dependencies
 gtk4.workspace = true
-ksni = "0.3.1"
+adw.workspace = true
+gtk4-layer-shell = "0.8.1"
+ksni = "0.3.6"
 
 # Screenshot editing & capturing
 kcshot-screenshot = { path = "./kcshot-screenshot" }
 cairo.workspace = true
-gdk4-x11 = "0.10.1"
-pangocairo = "0.21.2"
+gdk4-x11 = { version = "0.11.0", features = ["v4_18"] }
+pangocairo = "0.22.0"
 pulldown-cmark = { version = "0.13.0", default-features = false }
 pulldown-cmark-escape = "0.11.0"
 regex = "1.11.1"
 stackblur-iter = "0.2.0"
 tokio.workspace = true
+wl-clipboard-rs = "0.9.4"
 
 # User settings, history
 diesel = { version = "2.2.6", features = ["sqlite"] }
@@ -64,7 +71,7 @@ diesel_migrations = "2.2.0"
 xdg = "3.0"
 
 # Miscellaneous
-rand = "0.9.0"
+rand = "0.10.3"
 
 # Logging and error reporting
 tracing.workspace = true
@@ -72,7 +79,7 @@ tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 thiserror.workspace = true
 
 [build-dependencies]
-glib-build-tools = "0.21.0"
+glib-build-tools = "0.22.8"
 
 [features]
 default = ["xdg-paths"]

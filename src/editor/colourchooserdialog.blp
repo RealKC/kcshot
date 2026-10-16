@@ -1,7 +1,7 @@
 using Gtk 4.0;
 
-template $KCShotColourChooserDialog : Gtk.Window {
-    title: "kcshot - Pick a colour";
+template $KCShotColourChooserDialog: Gtk.Window {
+    title: _("kcshot - Pick a colour");
     modal: true;
     destroy-with-parent: true;
     resizable: false;
@@ -20,27 +20,39 @@ template $KCShotColourChooserDialog : Gtk.Window {
             halign: end;
 
             Gtk.Button {
-                label: "Cancel";
+                label: _("Cancel");
                 margin-end: 10;
 
-                styles ["destructive-action"]
+                styles [
+                    "destructive-action",
+                ]
 
                 clicked => $on_cancel_clicked() swapped;
             }
 
             Gtk.Button {
+                accessibility {
+                    label: "Choose a color";
+                }
+
                 child: Gtk.Image {
+                    accessibility {
+                        label: "Color Picker icon";
+                    }
+
                     resource: "/kc/kcshot/editor/tool-colourpicker.png";
                 };
-                margin-end: 10;
 
+                margin-end: 10;
                 clicked => $on_colour_picker_clicked() swapped;
             }
 
             Gtk.Button {
-                label: "OK";
+                label: _("Ok");
 
-                styles ["suggested-action"]
+                styles [
+                    "suggested-action",
+                ]
 
                 clicked => $on_ok_clicked() swapped;
             }

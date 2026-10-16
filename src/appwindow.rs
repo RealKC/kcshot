@@ -4,9 +4,9 @@ use crate::{history::HistoryModel, kcshot::KCShot};
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
-        @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
+        @extends gtk4::Widget, adw::Window, gtk4::ApplicationWindow, adw::ApplicationWindow,
         @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
-                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native, gio::ActionMap, gio::ActionGroup;
+                    gtk4::ShortcutManager, gtk4::Root, gtk4::Native, gtk4::Window, gio::ActionMap, gio::ActionGroup;
 }
 
 impl AppWindow {
@@ -21,8 +21,12 @@ impl AppWindow {
 mod underlying {
     use std::{cell::RefCell, process::Command};
 
+    use adw::{
+        prelude::AdwDialogExt,
+        subclass::{prelude::AdwApplicationWindowImpl, window::AdwWindowImpl},
+    };
     use gtk4::{
-        CompositeTemplate, gdk,
+        CompositeTemplate, gdk, gio,
         glib::{self, Properties, clone},
         prelude::*,
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
@@ -67,7 +71,7 @@ mod underlying {
     impl ObjectSubclass for AppWindow {
         const NAME: &'static str = "KCShotAppWindow";
         type Type = super::AppWindow;
-        type ParentType = gtk4::ApplicationWindow;
+        type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("kcshot-app-window");
@@ -117,6 +121,8 @@ mod underlying {
             self.settings
                 .bind_is_history_enabled(&self.history_button.get(), "visible")
                 .build();
+
+            self.setup_actions();
         }
 
         fn dispose(&self) {
@@ -125,19 +131,34 @@ mod underlying {
     }
 
     impl WindowImpl for AppWindow {}
+    impl AdwWindowImpl for AppWindow {}
 
     #[gtk4::template_callbacks]
     impl AppWindow {
-        #[template_callback]
-        fn on_capture_clicked(&self, _: &gtk4::Button) {
-            let editing_starts_with_cropping = self.settings.editing_starts_with_cropping();
+        fn setup_actions(&self) {
+            let window = self.obj();
 
-            EditorWindow::show(KCShot::the().upcast_ref(), editing_starts_with_cropping);
+            // Add action "close" to `window` taking no parameter
+            let action_preferences = gio::ActionEntry::builder("settings")
+                .activate(clone!(
+                    #[weak]
+                    window,
+                    move |_, _, _| {
+                        SettingsWindow::default()
+                            .present(Some(window.upcast_ref::<gtk4::Widget>()));
+                    }
+                ))
+                .build();
+
+            let actions = gio::SimpleActionGroup::new();
+            actions.add_action_entries([action_preferences]);
+            window.insert_action_group("app", Some(&actions));
         }
 
         #[template_callback]
-        fn on_settings_clicked(&self, _: &gtk4::Button) {
-            SettingsWindow::default().show();
+        fn on_capture_clicked(&self, _: &gtk4::Button) {
+            let editing_starts_with_cropping = self.settings.editing_starts_with_cropping();
+            EditorWindow::show(KCShot::the().upcast_ref(), editing_starts_with_cropping);
         }
 
         #[template_callback]
@@ -170,10 +191,12 @@ mod underlying {
                 .width_request(300)
                 .build();
 
+            let list_item = list_item.downcast_ref::<gtk4::ListItem>().unwrap();
             list_item.set_child(Some(&picture));
         });
 
         factory.connect_bind(move |_this, list_item| {
+            let list_item = list_item.downcast_ref::<gtk4::ListItem>().unwrap();
             let object = list_item
                 .item()
                 .and_downcast::<RowData>()
@@ -224,5 +247,6 @@ mod underlying {
     }
 
     impl WidgetImpl for AppWindow {}
+    impl AdwApplicationWindowImpl for AppWindow {}
     impl ApplicationWindowImpl for AppWindow {}
 }

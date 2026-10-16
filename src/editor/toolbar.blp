@@ -1,16 +1,13 @@
 using Gtk 4.0;
 
 template $KCShotToolbarWidget: Gtk.Widget {
-    $KCShotToolButton group_source {
-        editor: bind template.editor;
-    }
+    $KCShotToolButton group_source {}
 
     $KCShotToolButton {
         tool: pencil;
         group: group_source;
         spinner: line_width_spinner;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
@@ -18,7 +15,6 @@ template $KCShotToolbarWidget: Gtk.Widget {
         group: group_source;
         spinner: line_width_spinner;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
@@ -26,7 +22,6 @@ template $KCShotToolbarWidget: Gtk.Widget {
         group: group_source;
         spinner: line_width_spinner;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
@@ -35,13 +30,11 @@ template $KCShotToolbarWidget: Gtk.Widget {
         spinner: line_width_spinner;
         primary: primary;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
         tool: highlight;
         group: group_source;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
@@ -50,19 +43,16 @@ template $KCShotToolbarWidget: Gtk.Widget {
         spinner: line_width_spinner;
         primary: primary;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
         tool: pixelate;
         group: group_source;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
         tool: blur;
         group: group_source;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
@@ -70,13 +60,11 @@ template $KCShotToolbarWidget: Gtk.Widget {
         group: group_source;
         primary: primary;
         secondary: secondary;
-        editor: bind template.editor;
     }
 
     $KCShotToolButton {
         tool: text;
         group: group_source;
-        editor: bind template.editor;
     }
 
     $KCShotColourButton primary {
@@ -97,9 +85,9 @@ template $KCShotToolbarWidget: Gtk.Widget {
         value-changed => $on_line_width_changed() swapped;
 
         adjustment: Gtk.Adjustment {
-            value: 4.0;
             lower: 1.0;
             upper: 1000.0;
+            value: 4.0;
             step-increment: 0.4;
             page-increment: 1.0;
             page-size: 1.0;
@@ -110,6 +98,6 @@ template $KCShotToolbarWidget: Gtk.Widget {
         numeric: true;
         value: 4.0;
         visible: false;
-        tooltip-text: "Adjust the width of lines";
+        tooltip-text: _("Adjust the width of lines");
     }
 }

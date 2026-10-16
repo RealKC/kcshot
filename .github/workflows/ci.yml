@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   rustfmt:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Setup toolchain
@@ -50,7 +50,7 @@ jobs:
       - run: cargo +nightly fmt --all -- --check
 
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - run: |
           sudo apt-get update -y
@@ -78,7 +78,7 @@ jobs:
         run: KCSHOT_LINTING=1 meson devenv -C builddir cargo clippy --manifest-path=../Cargo.toml -- -D warnings
   test:
     if: false
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - run: |
           sudo apt-get update -y

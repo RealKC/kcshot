@@ -3,10 +3,10 @@ use std::{collections::HashMap, fmt::Write as _};
 use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
-    gdk_pixbuf::Pixbuf,
     glib,
 };
 use kcshot_data::settings::Settings;
+use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
 use crate::{
     db,
@@ -33,7 +33,7 @@ pub trait PostCaptureAction {
         &self,
         model_notifier: &ModelNotifier,
         conn: &mut SqliteConnection,
-        pixbuf: &mut Pixbuf,
+        texture: &gdk::Texture,
     );
 }
 
@@ -57,7 +57,7 @@ impl PostCaptureAction for SaveToDisk {
         &self,
         model_notifier: &ModelNotifier,
         conn: &mut SqliteConnection,
-        pixbuf: &mut Pixbuf,
+        texture: &gdk::Texture,
     ) {
         let now = glib::DateTime::now_local()
             .unwrap()
@@ -77,7 +77,7 @@ impl PostCaptureAction for SaveToDisk {
 
         write!(path, "screenshot_{now}.png").expect("Writing to a string shouldn't fail");
 
-        if let Err(why) = pixbuf.savev(&path, "png", &[]) {
+        if let Err(why) = texture.save_to_png(&path) {
             tracing::error!("Failed to save screenshot to file: {why}");
         }
 
@@ -114,15 +114,24 @@ impl PostCaptureAction for CopyToClipboard {
         &self,
         _model_notifier: &ModelNotifier,
         _conn: &mut SqliteConnection,
-        pixbuf: &mut Pixbuf,
+        texture: &gdk::Texture,
     ) {
         let Some(display) = gdk::Display::default() else {
             tracing::error!("Failed to fetch gdk::Display, bailing...");
             return;
         };
-        let clipboard = display.clipboard();
 
-        clipboard.set_texture(&gdk::Texture::for_pixbuf(pixbuf));
+        if kcshot_screenshot::is_wayland() {
+            if let Err(why) = wl_clipboard_rs::copy::copy(
+                Options::new(),
+                Source::Bytes(texture.save_to_png_bytes().to_vec().into_boxed_slice()),
+                MimeType::Autodetect,
+            ) {
+                tracing::error!("Failed to add image to clipboard: {why:?}");
+            }
+        } else {
+            display.clipboard().set_texture(texture);
+        }
     }
 }
 
@@ -130,10 +139,10 @@ impl PostCaptureAction for CopyToClipboard {
 pub fn run_postcapture_actions(
     model_notifier: &ModelNotifier,
     conn: &mut SqliteConnection,
-    pixbuf: &mut Pixbuf,
+    texture: &gdk::Texture,
 ) {
     for action in get_actions_from_settings() {
-        action.handle(model_notifier, conn, pixbuf);
+        action.handle(model_notifier, conn, texture);
     }
 }
 

@@ -24,8 +24,8 @@ use tracing::error;
 use super::{Colour, textdialog::TextDialog, toolbar, utils::ContextLogger};
 use crate::{
     editor::{
+        cairo::SurfaceExt,
         operations::{OperationStack, SelectionMode, Tool},
-        utils,
     },
     ext::DisposeExt,
     history::ModelNotifier,
@@ -305,7 +305,7 @@ impl EditorWindow {
             if image.operation_stack.current_tool() == Tool::Text {
                 let dialog = TextDialog::new(&self.obj());
                 dialog.set_transient_for(Some(&*self.obj()));
-                dialog.show();
+                dialog.present();
                 true
             } else if !image.operation_stack.current_tool().is_saving_tool() {
                 image.operation_stack.finish_current_operation();
@@ -462,6 +462,32 @@ impl EditorWindow {
             }
         ));
         obj.add_action(&redo_action);
+
+        let tool_action = gio::SimpleAction::new("set-tool", Some(&Tool::static_variant_type()));
+        tool_action.connect_activate(clone!(
+            #[weak]
+            obj,
+            move |_, tool| {
+                tracing::trace!("win.set-tool activated");
+
+                let Some(tool) = tool else {
+                    tracing::warn!("param given to win.set-tool was None");
+                    return;
+                };
+
+                let Some(tool) = tool.get::<Tool>() else {
+                    tracing::warn!("param is not of type Tool");
+                    return;
+                };
+
+                obj.set_current_tool(tool);
+
+                if tool.is_immediate_save() {
+                    obj.save_image();
+                }
+            }
+        ));
+        obj.add_action(&tool_action);
     }
 }
 
@@ -505,12 +531,12 @@ impl EditorWindow {
 
         window.close();
 
-        match utils::pixbuf_for(&image.surface, rectangle) {
+        match image.surface.to_texture(rectangle) {
             // Process all post capture actions
-            Some(mut pixbuf) => run_postcapture_actions(model_notifier, conn, &mut pixbuf),
-            None => {
+            Ok(texture) => run_postcapture_actions(model_notifier, conn, &texture),
+            Err(why) => {
                 error!(
-                    "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
+                    "Failed to write surface: {:?} to PNG with crop region {:#?}: {why:?}",
                     image.surface,
                     rectangle.normalised()
                 );
