@@ -7,6 +7,7 @@ use kcshot_data::colour::Colour;
 use self::operations::Tool;
 use crate::kcshot::KCShot;
 
+mod cairo;
 pub mod colourbutton;
 mod colourchooser;
 mod colourchooserdialog;

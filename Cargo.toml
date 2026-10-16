@@ -51,7 +51,7 @@ kcshot-data = { path = "./kcshot-data" }
 gtk4.workspace = true
 adw.workspace = true
 gtk4-layer-shell = "0.8.1"
-ksni = "0.3.1"
+ksni = "0.3.6"
 
 # Screenshot editing & capturing
 kcshot-screenshot = { path = "./kcshot-screenshot" }
@@ -63,6 +63,7 @@ pulldown-cmark-escape = "0.11.0"
 regex = "1.11.1"
 stackblur-iter = "0.2.0"
 tokio.workspace = true
+wl-clipboard-rs = "0.9.4"
 
 # User settings, history
 diesel = { version = "2.2.6", features = ["sqlite"] }

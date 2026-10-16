@@ -24,8 +24,8 @@ use tracing::error;
 use super::{Colour, textdialog::TextDialog, toolbar, utils::ContextLogger};
 use crate::{
     editor::{
+        cairo::SurfaceExt,
         operations::{OperationStack, SelectionMode, Tool},
-        utils,
     },
     ext::DisposeExt,
     history::ModelNotifier,
@@ -531,12 +531,12 @@ impl EditorWindow {
 
         window.close();
 
-        match utils::pixbuf_for(&image.surface, rectangle) {
+        match image.surface.to_texture(rectangle) {
             // Process all post capture actions
-            Some(mut pixbuf) => run_postcapture_actions(model_notifier, conn, &mut pixbuf),
-            None => {
+            Ok(texture) => run_postcapture_actions(model_notifier, conn, &texture),
+            Err(why) => {
                 error!(
-                    "Failed to create a pixbuf from the surface: {:?} with crop region {:#?}",
+                    "Failed to write surface: {:?} to PNG with crop region {:#?}: {why:?}",
                     image.surface,
                     rectangle.normalised()
                 );

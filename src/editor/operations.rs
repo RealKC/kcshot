@@ -5,7 +5,7 @@ use pangocairo::functions::{create_layout, show_layout, update_layout};
 use rand::RngExt;
 
 pub use self::{stack::*, tool::*};
-use super::utils::CairoExt;
+use super::cairo::CairoExt;
 
 mod pixelops;
 mod shapes;
