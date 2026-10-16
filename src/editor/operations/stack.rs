@@ -9,7 +9,7 @@ use tracing::{error, warn};
 
 use super::{Operation, Tool};
 use crate::{
-    editor::{operations::shapes, utils::CairoExt},
+    editor::{cairo::CairoExt, operations::shapes},
     log_if_err,
 };
 

@@ -52,8 +52,8 @@ mod underlying {
     use super::parse;
     use crate::{
         editor::{
-            Colour, EditorWindow, colourchooserdialog::ColourChooserDialog, textdialog::TextDialog,
-            utils::CairoExt,
+            Colour, EditorWindow, cairo::CairoExt, colourchooserdialog::ColourChooserDialog,
+            textdialog::TextDialog,
         },
         ext::DisposeExt,
         log_if_err,

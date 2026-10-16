@@ -1,3 +1,5 @@
+use gtk4::cairo;
+
 use super::Point;
 
 #[derive(Clone, Copy, Debug)]
@@ -40,5 +42,12 @@ impl Rectangle {
     #[must_use]
     pub fn area(&self) -> f64 {
         self.w * self.h
+    }
+
+    #[must_use]
+    pub fn into_cairo(&self) -> cairo::Rectangle {
+        let Self { x, y, w, h } = *self;
+
+        cairo::Rectangle::new(x, y, w, h)
     }
 }
