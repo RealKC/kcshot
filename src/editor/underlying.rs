@@ -220,7 +220,12 @@ impl ObjectImpl for EditorWindow {
         });
 
         let toolbar = self.toolbar.get_or_init(|| {
-            toolbar::ToolbarWidget::new(&obj, self.editing_started_with_cropping.get())
+            toolbar::ToolbarWidget::new(
+                &obj,
+                self.editing_started_with_cropping.get(),
+                self.get_primary_color(),
+                self.get_secondary_color(),
+            )
         });
         self.overlay.add_overlay(toolbar);
 

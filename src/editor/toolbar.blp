@@ -71,14 +71,12 @@ template $KCShotToolbarWidget: Gtk.Widget {
         clicked => $on_primary_colour_clicked() swapped;
         visible: false;
         tooltip-text: "Set primary colour";
-        colour: bind (template.editor as <$KCShotEditorWindow>).primary-colour;
     }
 
     $KCShotColourButton secondary {
         clicked => $on_secondary_colour_clicked() swapped;
         visible: false;
         tooltip-text: "Set secondary colour";
-        colour: bind (template.editor as <$KCShotEditorWindow>).secondary-colour;
     }
 
     Gtk.SpinButton line_width_spinner {
