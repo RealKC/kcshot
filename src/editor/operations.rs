@@ -337,10 +337,6 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered a cairo error while trying to borrow something: {0}")]
     Borrow(#[from] cairo::BorrowError),
-    #[error("Couldn't make Pixbuf from ImageSurface with rect: {0:?}")]
-    Pixbuf(Rectangle),
-    #[error("`pixel_bytes` on a Pixbuf returned None")]
-    PixelBytes,
 }
 
 fn draw_text_at(
