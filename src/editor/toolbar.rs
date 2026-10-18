@@ -1,4 +1,5 @@
 use gtk4::{gdk, glib, prelude::*, subclass::prelude::*};
+use kcshot_data::colour::Colour;
 
 use self::toolbutton::ToolButton;
 use super::operations::Tool;
@@ -12,13 +13,20 @@ glib::wrapper! {
 }
 
 impl ToolbarWidget {
-    pub fn new(parent_editor: &super::EditorWindow, editing_started_with_cropping: bool) -> Self {
+    pub fn new(
+        parent_editor: &super::EditorWindow,
+        editing_started_with_cropping: bool,
+        primary_colour: Colour,
+        secondary_colour: Colour,
+    ) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("editor", parent_editor)
             .property(
                 "editing-started-with-cropping",
                 editing_started_with_cropping,
             )
+            .property("primary-colour", primary_colour)
+            .property("secondary-colour", secondary_colour)
             .build();
 
         // We want to start as hidden if editing started with cropping
@@ -52,7 +60,7 @@ impl ToolbarWidget {
 }
 
 mod underlying {
-    use std::cell::Cell;
+    use std::{cell::Cell, marker::PhantomData};
 
     use gtk4::{
         CompositeTemplate,
@@ -60,6 +68,7 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
+    use kcshot_data::colour::Colour;
 
     use super::toolbutton::ToolButton;
     use crate::{
@@ -78,6 +87,11 @@ mod underlying {
         pub(super) editor: WeakRef<EditorWindow>,
         #[property(get, set, construct_only)]
         editing_started_with_cropping: Cell<bool>,
+        #[property( set = Self::set_primary_colour)]
+        primary_colour: PhantomData<Cell<Colour>>,
+        #[property(set = Self::set_secondary_colour)]
+        secondary_colour: PhantomData<Cell<Colour>>,
+
         #[template_child]
         pub(super) group_source: TemplateChild<ToolButton>,
         #[template_child]
@@ -127,6 +141,16 @@ mod underlying {
     }
 
     impl WidgetImpl for ToolbarWidget {}
+
+    impl ToolbarWidget {
+        fn set_primary_colour(&self, colour: Colour) {
+            self.primary.set_colour(colour);
+        }
+
+        fn set_secondary_colour(&self, colour: Colour) {
+            self.secondary.set_colour(colour);
+        }
+    }
 
     #[gtk4::template_callbacks]
     impl ToolbarWidget {
