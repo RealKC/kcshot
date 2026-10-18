@@ -531,7 +531,7 @@ impl EditorWindow {
 
         window.close();
 
-        match image.surface.to_texture(rectangle) {
+        match image.surface.to_texture(rectangle.normalised()) {
             // Process all post capture actions
             Ok(texture) => run_postcapture_actions(model_notifier, conn, &texture),
             Err(why) => {
