@@ -136,25 +136,34 @@ mod underlying {
         }
 
         #[template_callback]
-        async fn on_primary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = ColourChooserDialog::new(&self.editor(), self.editor().primary_colour());
+        async fn on_primary_colour_clicked(&self, button: &gtk4::Button) {
+            let dialog = ColourChooserDialog::new(&self.editor(), self.primary.colour());
 
             dialog.present();
 
             let colour = dialog.colour().await;
-            self.editor().set_primary_colour(colour);
+
+            if let Err(why) = button.activate_action("win.set-primary-colour", Some(&colour.into()))
+            {
+                tracing::warn!("Failed to activate win.set-primary-colour: {why:?}");
+            }
+
             self.primary.set_colour(colour);
         }
 
         #[template_callback]
-        async fn on_secondary_colour_clicked(&self, _: &gtk4::Button) {
-            let dialog = ColourChooserDialog::new(&self.editor(), self.editor().secondary_colour());
+        async fn on_secondary_colour_clicked(&self, button: &gtk4::Button) {
+            let dialog = ColourChooserDialog::new(&self.editor(), self.secondary.colour());
 
             dialog.present();
 
             let colour = dialog.colour().await;
+            if let Err(why) =
+                button.activate_action("win.set-secondary-colour", Some(&colour.into()))
+            {
+                tracing::warn!("Failed to activate win.set-secondary-colour: {why:?}");
+            }
 
-            self.editor().set_secondary_colour(colour);
             self.secondary.set_colour(colour);
         }
 

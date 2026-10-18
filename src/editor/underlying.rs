@@ -9,7 +9,6 @@ use diesel::SqliteConnection;
 use gtk4::{
     Allocation, CompositeTemplate,
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
-    gio,
     glib::{self, Propagation, Properties, clone},
     prelude::*,
     subclass::prelude::*,
@@ -94,7 +93,7 @@ pub struct EditorWindow {
     #[template_child]
     overlay: TemplateChild<gtk4::Overlay>,
     #[template_child]
-    drawing_area: TemplateChild<gtk4::DrawingArea>,
+    pub(super) drawing_area: TemplateChild<gtk4::DrawingArea>,
 
     toolbar: OnceCell<toolbar::ToolbarWidget>,
 
@@ -429,65 +428,6 @@ impl EditorWindow {
                 image.operation_stack.selection_mode = SelectionMode::WindowsWithDecorations;
             }
         });
-    }
-}
-
-// Actions
-impl EditorWindow {
-    fn setup_actions(&self) {
-        let obj = self.obj();
-
-        let undo_action = gio::SimpleAction::new("undo", None);
-        undo_action.connect_activate(clone!(
-            #[weak]
-            obj,
-            move |_, _| {
-                obj.imp().with_image_mut("win.undo activated", |image| {
-                    image.operation_stack.undo();
-                    obj.imp().drawing_area.queue_draw();
-                });
-            }
-        ));
-        obj.add_action(&undo_action);
-
-        let redo_action = gio::SimpleAction::new("redo", None);
-        redo_action.connect_activate(clone!(
-            #[weak]
-            obj,
-            move |_, _| {
-                obj.imp().with_image_mut("win.redo activated", |image| {
-                    image.operation_stack.redo();
-                    obj.imp().drawing_area.queue_draw();
-                });
-            }
-        ));
-        obj.add_action(&redo_action);
-
-        let tool_action = gio::SimpleAction::new("set-tool", Some(&Tool::static_variant_type()));
-        tool_action.connect_activate(clone!(
-            #[weak]
-            obj,
-            move |_, tool| {
-                tracing::trace!("win.set-tool activated");
-
-                let Some(tool) = tool else {
-                    tracing::warn!("param given to win.set-tool was None");
-                    return;
-                };
-
-                let Some(tool) = tool.get::<Tool>() else {
-                    tracing::warn!("param is not of type Tool");
-                    return;
-                };
-
-                obj.set_current_tool(tool);
-
-                if tool.is_immediate_save() {
-                    obj.save_image();
-                }
-            }
-        ));
-        obj.add_action(&tool_action);
     }
 }
 
