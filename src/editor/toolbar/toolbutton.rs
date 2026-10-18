@@ -1,7 +1,5 @@
 use gtk4::{glib, prelude::*, subclass::prelude::*};
 
-use crate::editor::operations::Tool;
-
 glib::wrapper! {
     pub struct ToolButton(ObjectSubclass<underlying::ToolButton>)
         @extends gtk4::Widget,
