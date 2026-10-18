@@ -1,7 +1,4 @@
 use gtk4::{gio, glib, prelude::*, subclass::prelude::ObjectSubclassIsExt};
-use gtk4_layer_shell::{
-    Edge, KeyboardMode, Layer, LayerShell, is_supported as is_wlr_layer_shell_supported,
-};
 use kcshot_data::colour::Colour;
 
 use self::operations::Tool;
@@ -37,20 +34,6 @@ impl EditorWindow {
         let window = Self::new(app, editing_starts_with_cropping);
         window.set_decorated(false);
         window.set_title(Some("kcshot.window.screenshot"));
-
-        if is_wlr_layer_shell_supported() {
-            window.init_layer_shell();
-            window.set_layer(Layer::Overlay);
-            window.set_exclusive_zone(-200);
-            window.auto_exclusive_zone_enable();
-            window.set_keyboard_mode(KeyboardMode::OnDemand);
-
-            let edges = [Edge::Bottom, Edge::Top, Edge::Right, Edge::Left];
-
-            for edge in edges {
-                window.set_anchor(edge, true);
-            }
-        }
 
         window.fullscreen();
         window.present();
