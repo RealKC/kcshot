@@ -1,6 +1,3 @@
-use gtk4::gdk::{self, gdk_pixbuf::Pixbuf};
-use kcshot_data::geometry::Rectangle;
-
 #[macro_export]
 macro_rules! log_if_err {
     ($call:expr) => {
@@ -12,19 +9,6 @@ macro_rules! log_if_err {
             ),
         }
     };
-}
-
-pub fn pixbuf_for(surface: &cairo::Surface, rectangle: Rectangle) -> Option<Pixbuf> {
-    // We normalise the rectangle in case we get a rectangle with negative width and height
-    // which could happen when the user makes a rectangle by starting with the bottom-right corner
-    // instead of the top-left corner.
-    let Rectangle { x, y, w, h } = rectangle.normalised();
-    let src_x = x.floor() as i32;
-    let src_y = y.floor() as i32;
-    let width = w.ceil() as i32;
-    let height = h.ceil() as i32;
-
-    gdk::pixbuf_get_from_surface(surface, src_x, src_y, width, height)
 }
 
 pub struct ContextLogger<'s> {
