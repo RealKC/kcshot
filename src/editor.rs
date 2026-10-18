@@ -4,6 +4,7 @@ use kcshot_data::colour::Colour;
 use self::operations::Tool;
 use crate::kcshot::KCShot;
 
+mod actions;
 mod cairo;
 pub mod colourbutton;
 mod colourchooser;
@@ -52,6 +53,12 @@ impl EditorWindow {
 
     async fn pick_colour(&self) -> Colour {
         self.imp().pick_colour().await
+    }
+
+    fn get_current_tool(&self) -> Option<Tool> {
+        self.imp().with_image("get_current_tool", |image| {
+            image.operation_stack.current_tool()
+        })
     }
 
     fn set_current_tool(&self, tool: Tool) {
