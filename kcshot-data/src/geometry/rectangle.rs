@@ -45,8 +45,8 @@ impl Rectangle {
     }
 
     #[must_use]
-    pub fn into_cairo(&self) -> cairo::Rectangle {
-        let Self { x, y, w, h } = *self;
+    pub fn into_cairo(self) -> cairo::Rectangle {
+        let Self { x, y, w, h } = self;
 
         cairo::Rectangle::new(x, y, w, h)
     }

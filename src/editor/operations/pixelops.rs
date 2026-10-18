@@ -1,70 +1,76 @@
-use cairo::Context;
-use gtk4::{
-    gdk::prelude::GdkCairoContextExt,
-    gdk_pixbuf::{Colorspace, Pixbuf},
-};
+use cairo::{Context, ImageSurface};
 use kcshot_data::geometry::Rectangle;
 use rand::{RngExt, SeedableRng, prelude::StdRng};
 use stackblur_iter::{blur_argb as stackblur, imgref::ImgRefMut};
 
 use super::Error;
-use crate::editor::utils;
 
 /// How big will pixelate boxes be, in this case, we will group the rectangle into 4x4 boxes, which we will set all of its pixels to the same value
 const PIXELATE_SIZE: u64 = 4;
 
-pub fn blur(
-    cairo: &Context,
-    radius: usize,
-    rect @ Rectangle { x, y, .. }: Rectangle,
-) -> Result<(), Error> {
+fn copy_rect_to_image_surface(
+    surface: &cairo::Surface,
+    rect: &Rectangle,
+) -> Result<ImageSurface, Error> {
+    // This is more or less a Rust copy of:
+    // https://gitlab.gnome.org/GNOME/gtk/-/blob/e4db180344c8f6d60b3b043ad70980776b297d69/gdk/deprecated/gdkpixbuf.c#L50-72
+
+    let copy = ImageSurface::create(cairo::Format::ARgb32, rect.w as i32, rect.h as i32)?;
+
+    let context = Context::new(&copy)?;
+    context.set_operator(cairo::Operator::Source);
+    context.set_source_surface(surface, -rect.x, -rect.y)?;
+    context.paint()?;
+
+    Ok(copy)
+}
+
+fn get_bytes_per_pixel(fmt: cairo::Format) -> usize {
+    match fmt {
+        cairo::Format::ARgb32 | cairo::Format::Rgb24 => 4,
+        _ => panic!("Tried to get bytes per pixel of unsupported format: {fmt:?}"),
+    }
+}
+
+pub fn blur(cairo: &Context, radius: usize, rect: Rectangle) -> Result<(), Error> {
+    let rect @ Rectangle { x, y, w, h } = rect.normalised();
+
     if rect.area() < 1.0 {
         return Ok(());
     }
 
-    let pixbuf = utils::pixbuf_for(&cairo.target(), rect).ok_or(Error::Pixbuf(rect))?;
-    assert_eq!(
-        pixbuf.colorspace(),
-        Colorspace::Rgb,
-        "Blur only supports the Rgb colourspace"
-    );
-    assert_eq!(
-        pixbuf.bits_per_sample(),
-        8,
-        "Our blur can't handle Pixbufs that don't have 8 bits per sample"
-    );
+    let clipped_surface = copy_rect_to_image_surface(&cairo.target(), &rect)?;
 
-    let height = pixbuf.height() as usize;
-    let width = pixbuf.width() as usize;
-    let has_alpha = pixbuf.has_alpha();
-    let n_channels = pixbuf.n_channels() as usize;
+    let height = h as usize;
+    let width = w as usize;
+    let stride = clipped_surface.stride() as usize;
 
-    let mut pixels = pixbuf.pixel_bytes().ok_or(Error::PixelBytes)?.to_vec();
-    let extend_by = 4 - pixels.len() % n_channels;
+    let mut pixels = vec![];
+    clipped_surface.with_data(|bytes| pixels = bytes.to_vec())?;
 
-    pixels.resize(pixels.len() + extend_by, 0);
-
-    let (mut pixels, stride) = blur_rgb(
+    let (pixels, stride) = blur_rgb(
         pixels,
         width,
         height,
-        pixbuf.rowstride() as usize,
+        stride,
         radius,
-        n_channels,
+        get_bytes_per_pixel(clipped_surface.format()),
     );
 
     cairo.save()?;
     cairo.set_operator(cairo::Operator::Over);
-    let pixbuf = Pixbuf::from_mut_slice(
-        &mut pixels,
-        Colorspace::Rgb,
-        has_alpha,
-        8,
-        width as i32,
-        height as i32,
-        stride,
-    );
-    cairo.set_source_pixbuf(&pixbuf, x, y);
+    cairo.set_source_surface(
+        &ImageSurface::create_for_data(
+            pixels,
+            cairo::Format::Rgb24,
+            width as i32,
+            height as i32,
+            stride,
+        )?,
+        x,
+        y,
+    )?;
+    // cairo.set_source_surface(&*clipped_surface, x, y);
     cairo.paint()?;
     cairo.restore()?;
 
@@ -155,15 +161,19 @@ fn blur_rgb(
 }
 
 pub fn pixelate(cairo: &Context, rect: &Rectangle, seed: u64) -> Result<(), Error> {
+    if rect.area() < 1.0 {
+        return Ok(());
+    }
+
     let mut rng = StdRng::seed_from_u64(seed);
 
-    let pixbuf = utils::pixbuf_for(&cairo.target(), *rect).ok_or(Error::Pixbuf(*rect))?;
+    let mut clipped_surface = copy_rect_to_image_surface(&cairo.target(), rect)?;
 
-    // SAFETY: The pixbuf is newly created so there should be only one reference to the pixel data
-    let pixels = unsafe { pixbuf.pixels() };
+    let rowstride = clipped_surface.stride() as u64;
+    let bytes_per_pixel = get_bytes_per_pixel(clipped_surface.format()) as u64;
 
-    let rowstride = pixbuf.rowstride() as u64;
-    let bytes_per_pixel = pixbuf.n_channels() as u64 * (pixbuf.bits_per_sample() / 8) as u64;
+    let mut pixels = clipped_surface.data()?;
+
     let &Rectangle { x, y, w, h } = rect;
 
     for i in (0..(w as u64)).step_by(PIXELATE_SIZE as usize) {
@@ -192,9 +202,11 @@ pub fn pixelate(cairo: &Context, rect: &Rectangle, seed: u64) -> Result<(), Erro
         }
     }
 
+    drop(pixels);
+
     cairo.save()?;
     cairo.set_operator(cairo::Operator::Over);
-    cairo.set_source_pixbuf(&pixbuf, x, y);
+    cairo.set_source_surface(&clipped_surface, x, y)?;
     cairo.paint()?;
     cairo.restore()?;
 
