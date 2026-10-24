@@ -6,11 +6,11 @@ use gtk4::{
 };
 use kcshot_data::colour::Colour;
 
-use crate::editor::{operations::Tool, underlying::EditorWindow};
+use crate::editor::{imp::EditorWindow, operations::Tool};
 
 impl EditorWindow {
     pub fn setup_actions(&self) {
-        type This = super::EditorWindow;
+        type This = <EditorWindow as ObjectSubclass>::Type;
 
         let undo_action = gio::ActionEntry::builder("undo")
             .activate(move |this: &This, _, _| this.imp().undo())

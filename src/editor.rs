@@ -4,20 +4,19 @@ use kcshot_data::colour::Colour;
 use self::operations::Tool;
 use crate::kcshot::KCShot;
 
-mod actions;
 mod cairo;
 pub mod colourbutton;
 mod colourchooser;
 mod colourchooserdialog;
 mod colourwheel;
+mod imp;
 mod operations;
 mod textdialog;
 mod toolbar;
-mod underlying;
 mod utils;
 
 glib::wrapper! {
-    pub struct EditorWindow(ObjectSubclass<underlying::EditorWindow>)
+    pub struct EditorWindow(ObjectSubclass<imp::EditorWindow>)
         @extends gtk4::Widget, gtk4::Window, gtk4::ApplicationWindow,
         @implements gtk4::ConstraintTarget, gtk4::Buildable, gtk4::Accessible,
                     gtk4::ShortcutManager, gtk4::Root, gtk4::Native, gio::ActionMap, gio::ActionGroup;
@@ -77,7 +76,7 @@ impl EditorWindow {
         self.imp()
             .with_image_mut("EditorWindow::save_image", |image| {
                 KCShot::the().with_conn(|conn| {
-                    underlying::EditorWindow::do_save_surface(
+                    imp::EditorWindow::do_save_surface(
                         &KCShot::the().model_notifier(),
                         conn,
                         self.upcast_ref(),
