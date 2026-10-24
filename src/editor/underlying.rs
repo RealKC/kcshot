@@ -10,6 +10,7 @@ use gtk4::{
     Allocation, CompositeTemplate,
     gdk::{self, BUTTON_PRIMARY, BUTTON_SECONDARY},
     glib::{self, Propagation, Properties, clone},
+    graphene,
     prelude::*,
     subclass::prelude::*,
 };
@@ -101,6 +102,9 @@ pub struct EditorWindow {
     colour_rx: RefCell<Receiver<Colour>>,
     colour_requested: Cell<bool>,
 
+    toolbar_position: RefCell<Option<(i32, i32)>>,
+    toolbar_offset: RefCell<Option<(i32, i32)>>,
+
     is_in_with_image_mut: Cell<bool>,
 }
 
@@ -143,6 +147,27 @@ impl EditorWindow {
         }
         self.obj().notify("secondary-colour");
     }
+
+    fn is_moving_toolbar(&self) -> bool {
+        self.toolbar_offset.borrow().is_some()
+    }
+
+    fn set_toolbar_position(&self, x: i32, y: i32) {
+        *self.toolbar_position.borrow_mut() = Some((x, y));
+    }
+
+    fn toolbar_position(&self) -> (i32, i32) {
+        self.toolbar_position.borrow().unwrap()
+    }
+
+    fn set_toolbar_offset(&self, off_x: i32, off_y: i32) {
+        *self.toolbar_offset.borrow_mut() = Some((off_x, off_y));
+    }
+
+    fn finish_toolbar_move(&self, x: i32, y: i32) {
+        self.set_toolbar_position(x, y);
+        *self.toolbar_offset.borrow_mut() = None;
+    }
 }
 
 impl Default for EditorWindow {
@@ -161,6 +186,8 @@ impl Default for EditorWindow {
             is_in_with_image_mut: Default::default(),
             primary_colour: PhantomData,
             secondary_colour: PhantomData,
+            toolbar_position: Default::default(),
+            toolbar_offset: Default::default(),
         }
     }
 }
@@ -250,20 +277,45 @@ impl ObjectImpl for EditorWindow {
 
 impl EditorWindow {
     fn on_get_child_position(&self, widget: &gtk4::Widget) -> Option<Allocation> {
-        if widget.is::<gtk4::DrawingArea>() {
-            return Some(Allocation::new(0, 0, widget.width(), widget.height()));
-        }
+        let preferred_size = widget.preferred_size();
 
-        let (width, height) = self.with_image("get-child-position", |image| {
+        let (image_width, image_height) = self.with_image("get-child-position", |image| {
             (image.surface.width(), image.surface.height())
         })?;
 
-        Some(Allocation::new(
-            width / 2 - widget.width() / 2,
-            height / 5,
-            widget.width(),
-            widget.height().max(32),
-        ))
+        // Separate variable to avoid refcell-reborrow panics
+        let toolbar_position = *self.toolbar_position.borrow();
+
+        match (*self.toolbar_offset.borrow(), toolbar_position) {
+            (None, None) => {
+                let x = image_width / 2 - preferred_size.0.width() / 2;
+                let y = image_height / 5;
+                self.set_toolbar_position(x, y);
+
+                Some(Allocation::new(
+                    x,
+                    y,
+                    preferred_size.0.width(),
+                    preferred_size.0.height(), //.max(32),
+                ))
+            }
+            (None, Some((x, y))) => Some(Allocation::new(
+                x,
+                y,
+                preferred_size.0.width(),
+                preferred_size.0.height(), //.max(32),
+            )),
+            (Some((off_x, off_y)), _) => {
+                let start = self.toolbar_position();
+
+                Some(Allocation::new(
+                    start.0 + off_x,
+                    start.1 + off_y,
+                    preferred_size.0.width(),
+                    preferred_size.0.height(), //.max(32),
+                ))
+            }
+        }
     }
 }
 
@@ -275,10 +327,21 @@ impl EditorWindow {
         self.toolbar.get().unwrap()
     }
 
+    fn should_start_toolbar_move(&self, x: f64, y: f64) -> bool {
+        let toolbar_point = self
+            .obj()
+            .compute_point(self.toolbar(), &graphene::Point::new(x as f32, y as f32));
+
+        toolbar_point
+            .is_some_and(|point| self.toolbar().contains(point.x() as f64, point.y() as f64))
+    }
+
     #[template_callback]
     async fn on_mouse_button_pressed(&self, _: i32, x: f64, y: f64, click: &gtk4::GestureClick) {
         if click.current_button() == BUTTON_PRIMARY {
-            if self.colour_requested.get() {
+            if self.should_start_toolbar_move(x, y) {
+                self.set_toolbar_offset(0, 0);
+            } else if self.colour_requested.get() {
                 let colour = self.with_image("colour picker", |image| image.get_colour_at(x, y));
                 self.colour_requested.set(false);
                 self.colour_tx.send(colour.unwrap()).await.unwrap();
@@ -302,6 +365,11 @@ impl EditorWindow {
 
     #[template_callback]
     fn on_mouse_button_released(&self, _: i32, x: f64, y: f64, _: &gtk4::GestureClick) {
+        if self.is_moving_toolbar() {
+            self.finish_toolbar_move(x as i32, y as i32);
+            return;
+        }
+
         let should_queue_draw = self.with_image_mut("mouse button released event", |image| {
             // NOTE: image.operation_stack.finish_current_operation MUST be called in all
             //       branches of this if-chain, in order for tools to take part in the undo
@@ -337,19 +405,29 @@ impl EditorWindow {
 
     #[template_callback]
     fn on_drag_update(&self, x: f64, y: f64, _: &gtk4::GestureDrag) {
-        self.with_image_mut("drag update event", |image| {
-            image
-                .operation_stack
-                .update_current_operation_end_coordinate(x, y);
-            if image.operation_stack.current_tool().is_cropping_tool() {
-                image.operation_stack.set_is_in_crop_drag(true);
-            }
-            self.drawing_area.queue_draw();
-        });
+        if self.is_moving_toolbar() {
+            self.set_toolbar_offset(x as i32, y as i32);
+
+            self.overlay.queue_allocate();
+        } else {
+            self.with_image_mut("drag update event", |image| {
+                image
+                    .operation_stack
+                    .update_current_operation_end_coordinate(x, y);
+                if image.operation_stack.current_tool().is_cropping_tool() {
+                    image.operation_stack.set_is_in_crop_drag(true);
+                }
+                self.drawing_area.queue_draw();
+            });
+        }
     }
 
     #[template_callback]
     fn on_drag_end(&self, x: f64, y: f64, _: &gtk4::GestureDrag) {
+        if self.is_moving_toolbar() {
+            self.set_toolbar_offset(x as i32, y as i32);
+        }
+
         self.with_image_mut("drag end event", |image| {
             image
                 .operation_stack

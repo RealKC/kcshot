@@ -15,6 +15,8 @@
         <file>editor/tool-pencil.png</file>
         <file>editor/tool-colourpicker.png</file>
 
+        <file preprocess="xml-stripblanks" alias="icons/scalable/actions/draggable-symbolic.svg">editor/draggable-symbolic.svg</file>
+
         <!-- UI files generated from blueprints in build.rs -->
         <file preprocess="xml-stripblanks" alias="ui/history/context_menu.ui">history/context_menu.ui</file>
     </gresource>
