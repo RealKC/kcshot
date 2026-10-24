@@ -18,6 +18,10 @@ pub fn draw_rectangle(
     fill: Colour,
     line_width: f64,
 ) -> Result<(), Error> {
+    if rect.area() == 0.0 {
+        return Ok(());
+    }
+
     cairo.save()?;
     let Rectangle { x, y, w, h } = rect.normalised();
     cairo.rectangle(x, y, w, h);
@@ -78,6 +82,10 @@ pub fn draw_ellipse(
     fill: Colour,
     line_width: f64,
 ) -> Result<(), Error> {
+    if ellipse.is_empty() {
+        return Ok(());
+    }
+
     cairo.save()?;
     // Avoid initial line from previous point if one exists
     cairo.new_sub_path();
