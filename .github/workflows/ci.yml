@@ -14,7 +14,7 @@ on:
 name: CI
 
 env:
-  KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev meson ninja-build desktop-file-utils
+  KCSHOT_UBUNTU_DEPS: libdbus-1-dev pkg-config libgtk-4-dev libcairo-gobject2 libcairo2-dev meson ninja-build desktop-file-utils libadwaita-1-0 libadwaita-1-dev
 
 permissions:
   contents: read
