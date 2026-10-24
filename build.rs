@@ -33,18 +33,19 @@ fn main() {
 }
 
 fn compile_blueprints(blueprintc: &str, blueprints: &[&str], target: &str) {
-    let mut blueprintc = Command::new(blueprintc);
-    // blueprintc.args(["batch-compile", target, "src/"]);
-    blueprintc.arg("batch-compile");
-    blueprintc.arg(target);
-    blueprintc.arg("src/");
+    let mut blueprint = Command::new(blueprintc);
 
-    for blueprint in blueprints {
-        println!("cargo:rerun-if-changed={blueprint}");
-        blueprintc.arg(blueprint);
+    // blueprintc.args(["batch-compile", target, "src/"]);
+    blueprint.arg("batch-compile");
+    blueprint.arg(target);
+    blueprint.arg(std::fs::canonicalize("src/").unwrap());
+
+    for blueprint_file in blueprints {
+        println!("cargo:rerun-if-changed={blueprint_file}");
+        blueprint.arg(blueprint_file);
     }
 
-    let output = blueprintc
+    let output = blueprint
         .output()
         .expect("Failed to execute blueprint-compiler");
 
