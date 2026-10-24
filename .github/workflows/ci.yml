@@ -75,7 +75,7 @@ jobs:
       - name: Configure meson
         run: meson setup builddir
       - name: check
-        run: KCSHOT_LINTING=1 meson devenv -C builddir cargo clippy --manifest-path=../Cargo.toml -- -D warnings
+        run: meson test cargo-clippy --verbose -C builddir
   test:
     if: false
     runs-on: ubuntu-26.04
@@ -101,4 +101,4 @@ jobs:
       - name: Configure meson
         run: meson setup builddir
       - name: test
-        run: meson test --verbose -C builddir
+        run: meson test cargo-test --verbose -C builddir
