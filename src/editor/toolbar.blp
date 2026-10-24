@@ -1,6 +1,19 @@
 using Gtk 4.0;
 
 template $KCShotToolbarWidget: Gtk.Widget {
+    styles [
+        "background",
+        "kc-editor-toolbar",
+    ]
+
+    Gtk.Image {
+        icon-name: "draggable-symbolic";
+
+        styles [
+            "start",
+        ]
+    }
+
     $KCShotToolButton group_source {}
 
     $KCShotToolButton {
@@ -97,5 +110,13 @@ template $KCShotToolbarWidget: Gtk.Widget {
         value: 4.0;
         visible: false;
         tooltip-text: _("Adjust the width of lines");
+    }
+
+    Gtk.Image {
+        icon-name: "draggable-symbolic";
+
+        styles [
+            "end",
+        ]
     }
 }

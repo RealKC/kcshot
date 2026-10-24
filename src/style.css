@@ -5,3 +5,26 @@
 .kc-history-disabled-note {
     font-size: 3em;
 }
+
+.kc-editor-toolbar {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-right: 3px;
+    padding-left: 3px;
+    border: none;
+    border-radius: 5px;
+}
+
+.kc-editor-toolbar .start {
+    margin-left: 3px;
+}
+
+.kc-editor-toolbar .end {
+    margin-right: 3px;
+
+}
+
+.kc-editor-toolbar button {
+    margin-left: 3px;
+    margin-right: 3px;
+}
