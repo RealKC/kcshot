@@ -71,7 +71,9 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
     let screenshot = ImageSurface::create_for_data(
         image_buffer
             .into_vec()
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .flat_map(|c| [c[2], c[1], c[0], c[3]])
             .collect::<Vec<_>>(),
         CairoImageFormat::Rgb24,
