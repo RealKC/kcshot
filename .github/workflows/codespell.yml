@@ -12,7 +12,7 @@ jobs:
   codespell:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: codespell-project/actions-codespell@master
         with:
           check_filenames: true

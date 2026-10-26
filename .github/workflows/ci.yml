@@ -32,13 +32,13 @@ jobs:
   rustfmt:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@nightly
         id: toolchain-install
         with:
           components: rustfmt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -55,13 +55,13 @@ jobs:
       - run: |
           sudo apt-get update -y
           sudo apt install -y $KCSHOT_UBUNTU_DEPS
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@stable
         id: toolchain-install
         with:
           components: clippy
-      - uses: actions/cache@v3
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -83,11 +83,11 @@ jobs:
       - run: |
           sudo apt-get update -y
           sudo apt install -y $KCSHOT_UBUNTU_DEPS
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@stable
         id: toolchain-install
-      - uses: actions/cache@v3
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
