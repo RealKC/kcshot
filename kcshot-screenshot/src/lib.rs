@@ -95,7 +95,7 @@ impl WmFeatures {
             xorg::get_wm_features()
         }?;
 
-        if force_use_portals == "1" {
+        if force_use_portals == "1" || ashpd::is_sandboxed() {
             wm_features.screenshot_method = ScreenshotMethod::Portals;
         }
 
