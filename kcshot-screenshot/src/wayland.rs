@@ -70,6 +70,7 @@ pub(super) fn take_screenshot() -> Result<ImageSurface> {
 
     let screenshot = ImageSurface::create_for_data(
         image_buffer
+            .into_rgba8()
             .into_vec()
             .as_chunks::<4>()
             .0
