@@ -1,10 +1,7 @@
-use std::{process::Command, thread::Builder as ThreadBuilder};
+use std::{io::Cursor, process::Command, thread::Builder as ThreadBuilder};
 
-use gtk4::{
-    gdk_pixbuf::Pixbuf,
-    glib::{self},
-    prelude::*,
-};
+use gtk4::{glib, prelude::*};
+use image::{ImageError, ImageReader};
 use kcshot_data::settings::Settings;
 use ksni::TrayMethods;
 use tokio::{
@@ -96,14 +93,17 @@ enum Message {
     Quit,
 }
 
-fn load_icon() -> Result<ksni::Icon, glib::Error> {
+fn load_icon() -> Result<ksni::Icon, ImageError> {
     const ICON_BYTES: &[u8] = include_bytes!("../../resources/logo/tray.png");
 
-    let image = Pixbuf::from_read(ICON_BYTES)?;
+    let mut image_reader = ImageReader::new(Cursor::new(ICON_BYTES));
+    image_reader.set_format(image::ImageFormat::Png);
+
+    let image = image_reader.decode()?;
 
     let width = image.width();
     let height = image.height();
-    let mut raw_image_data = image.pixel_bytes().unwrap().to_vec();
+    let mut raw_image_data = image.into_rgba8().to_vec();
 
     // We convert the image to ARGB as that's the required format of the image as defined in the SNI spec
     for chunk in raw_image_data.chunks_mut(4) {
@@ -112,8 +112,8 @@ fn load_icon() -> Result<ksni::Icon, glib::Error> {
     }
 
     Ok(ksni::Icon {
-        width,
-        height,
+        width: width as i32,
+        height: height as i32,
         data: raw_image_data,
     })
 }

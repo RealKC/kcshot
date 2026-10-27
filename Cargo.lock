@@ -1161,6 +1161,7 @@ dependencies = [
  "gdk4-x11",
  "glib-build-tools",
  "gtk4",
+ "image",
  "kcshot-data",
  "kcshot-screenshot",
  "ksni",

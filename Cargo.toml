@@ -51,6 +51,7 @@ kcshot-data = { path = "./kcshot-data" }
 gtk4.workspace = true
 adw.workspace = true
 ksni = "0.3.6"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 
 # Screenshot editing & capturing
 kcshot-screenshot = { path = "./kcshot-screenshot" }
