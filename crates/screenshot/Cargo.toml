@@ -9,7 +9,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-kcshot-data = { path = "../kcshot-data" }
+kcshot-data.workspace = true
 
 # Actually taking the screeenshot
 ashpd = { version = "0.13.0", default-features = false, features = [

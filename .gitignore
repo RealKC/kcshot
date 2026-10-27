@@ -1,5 +1,6 @@
 /target
 screenshot*
+!/crates/screenshot
 *.db
 heaptrack.kcshot-rs.*
 builddir/
