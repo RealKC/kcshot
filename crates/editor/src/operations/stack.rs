@@ -21,12 +21,12 @@ pub struct OperationStack {
     current_tool: Tool,
     current_operation: Option<Operation>,
     autoincrement_bubble_number: i32,
-    pub primary_colour: Colour,
-    pub secondary_colour: Colour,
-    pub line_width: f64,
+    pub(crate) primary_colour: Colour,
+    pub(crate) secondary_colour: Colour,
+    pub(crate) line_width: f64,
 
     // State relating to crop selection
-    pub selection_mode: SelectionMode,
+    pub(crate) selection_mode: SelectionMode,
     is_in_crop_drag: bool,
     /// This in in stacking order
     windows: Vec<Window>,
@@ -35,7 +35,8 @@ pub struct OperationStack {
 
     /// Used for arrows, lines, pencil and the contours of rectangles
     editing_started_with_cropping: bool,
-    pub screen_dimensions: Rectangle,
+
+    pub(crate) screen_dimensions: Rectangle,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

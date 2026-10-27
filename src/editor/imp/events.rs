@@ -217,7 +217,7 @@ impl EditorWindow {
 
                     return true;
                 } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
-                    image.operation_stack.selection_mode = SelectionMode::WindowsWithoutDecorations;
+                    image.set_selection_mode(SelectionMode::WindowsWithoutDecorations);
                     return true;
                 }
 
@@ -251,7 +251,7 @@ impl EditorWindow {
             } else if key == gdk::Key::Escape {
                 self.obj().close();
             } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {
-                image.operation_stack.selection_mode = SelectionMode::WindowsWithDecorations;
+                image.set_selection_mode(SelectionMode::WindowsWithDecorations);
             }
         });
     }

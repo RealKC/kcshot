@@ -8,16 +8,14 @@ use crate::editor::{Colour, imp::EditorWindow, utils::ContextLogger};
 
 impl EditorWindow {
     pub fn get_primary_color(&self) -> Colour {
-        self.with_image("get primary_colour", |image| {
-            image.operation_stack.primary_colour
-        })
-        .unwrap()
+        self.with_image("get primary_colour", Image::current_primary_colour)
+            .unwrap()
     }
 
     pub fn set_primary_color(&self, colour: Colour) {
         tracing::info!("primary");
         self.with_image_mut("set_primary_colour", |image| {
-            image.operation_stack.primary_colour = colour;
+            image.set_current_primary_colour(colour);
         });
 
         let settings = Settings::open();
@@ -28,15 +26,13 @@ impl EditorWindow {
     }
 
     pub fn get_secondary_color(&self) -> Colour {
-        self.with_image("get secondary_colour", |image| {
-            image.operation_stack.secondary_colour
-        })
-        .unwrap()
+        self.with_image("get secondary_colour", Image::current_secondary_colour)
+            .unwrap()
     }
 
     pub fn set_secondary_color(&self, colour: Colour) {
         self.with_image_mut("set_secondary_colour", |image| {
-            image.operation_stack.secondary_colour = colour;
+            image.set_current_secondary_colour(colour);
         });
 
         let settings = Settings::open();

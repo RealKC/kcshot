@@ -66,7 +66,7 @@ impl EditorWindow {
 
     fn set_line_width(&self, line_width: f64) {
         self.imp().with_image_mut("set_line_width", |image| {
-            image.operation_stack.line_width = line_width;
+            image.set_current_line_width(line_width);
         });
     }
 

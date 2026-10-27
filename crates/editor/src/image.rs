@@ -7,7 +7,7 @@ use kcshot_data::{
 };
 use kcshot_screenshot::Window;
 
-use crate::operations::OperationStack;
+use crate::operations::{OperationStack, SelectionMode, Tool};
 
 #[derive(Debug)]
 pub struct Image {
@@ -92,6 +92,41 @@ impl Image {
             blue,
             alpha: 255,
         }
+    }
+
+    #[inline]
+    pub fn set_current_tool(&mut self, tool: Tool) {
+        self.operation_stack.set_current_tool(tool);
+    }
+
+    #[inline]
+    pub fn set_current_line_width(&mut self, line_width: f64) {
+        self.operation_stack.line_width = line_width;
+    }
+
+    #[inline]
+    pub fn set_selection_mode(&mut self, mode: SelectionMode) {
+        self.operation_stack.selection_mode = mode;
+    }
+
+    #[inline]
+    pub fn current_primary_colour(&self) -> Colour {
+        self.operation_stack.primary_colour
+    }
+
+    #[inline]
+    pub fn set_current_primary_colour(&mut self, colour: Colour) {
+        self.operation_stack.primary_colour = colour;
+    }
+
+    #[inline]
+    pub fn current_secondary_colour(&self) -> Colour {
+        self.operation_stack.secondary_colour
+    }
+
+    #[inline]
+    pub fn set_current_secondary_colour(&mut self, colour: Colour) {
+        self.operation_stack.secondary_colour = colour;
     }
 }
 
