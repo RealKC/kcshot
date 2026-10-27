@@ -8,3 +8,6 @@ opt-level = 3
 
 [profile.dev.package.kcshot-editor]
 opt-level = 3
+
+[profile.dev.package.image]
+opt-level = 3
