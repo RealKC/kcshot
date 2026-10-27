@@ -1,8 +1,8 @@
 use gtk4::{gdk, glib, prelude::*, subclass::prelude::*};
 use kcshot_data::colour::Colour;
+use kcshot_editor::operations::Tool;
 
 use self::toolbutton::ToolButton;
-use super::operations::Tool;
 
 mod toolbutton;
 
@@ -69,12 +69,12 @@ mod underlying {
         subclass::prelude::*,
     };
     use kcshot_data::colour::Colour;
+    use kcshot_editor::operations::Tool;
 
     use super::toolbutton::ToolButton;
     use crate::{
         editor::{
             EditorWindow, colourbutton::ColourButton, colourchooserdialog::ColourChooserDialog,
-            operations::Tool,
         },
         ext::DisposeExt,
     };

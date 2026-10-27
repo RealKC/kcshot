@@ -1,4 +1,5 @@
 use cairo::Context;
+use kcshot_cairo::{CairoExt as _, log_if_err};
 use kcshot_data::{
     Text,
     colour::Colour,
@@ -8,10 +9,7 @@ use kcshot_screenshot::Window;
 use tracing::{error, warn};
 
 use super::{Operation, Tool};
-use crate::{
-    editor::{cairo::CairoExt, operations::shapes},
-    log_if_err,
-};
+use crate::operations::shapes;
 
 #[derive(Debug)]
 pub struct OperationStack {

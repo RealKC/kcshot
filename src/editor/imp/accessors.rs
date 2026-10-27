@@ -2,12 +2,9 @@ use std::backtrace::Backtrace;
 
 use gtk4::{prelude::*, subclass::prelude::*};
 use kcshot_data::settings::Settings;
+use kcshot_editor::image::Image;
 
-use crate::editor::{
-    Colour,
-    imp::{EditorWindow, image::Image},
-    utils::ContextLogger,
-};
+use crate::editor::{Colour, imp::EditorWindow, utils::ContextLogger};
 
 impl EditorWindow {
     pub fn get_primary_color(&self) -> Colour {

@@ -24,8 +24,9 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
+    use kcshot_editor::operations::Tool;
 
-    use crate::{editor::operations::Tool, ext::DisposeExt};
+    use crate::ext::DisposeExt;
 
     #[derive(Debug, Properties, CompositeTemplate)]
     #[template(file = "src/editor/toolbar/toolbutton.blp")]

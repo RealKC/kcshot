@@ -16,22 +16,18 @@ use kcshot_data::{
     geometry::{Point, Rectangle},
     settings::Settings,
 };
+use kcshot_editor::image::Image;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::error;
 
 use crate::{
-    editor::{cairo::SurfaceExt, imp::image::Image, operations::OperationStack, toolbar},
-    ext::DisposeExt,
-    history::ModelNotifier,
-    kcshot::KCShot,
-    log_if_err,
+    editor::toolbar, ext::DisposeExt, history::ModelNotifier, kcshot::KCShot,
     postcapture::run_postcapture_actions,
 };
 
 mod accessors;
 mod actions;
 mod events;
-mod image;
 
 #[derive(Debug, Properties, CompositeTemplate)]
 #[properties(wrapper_type = super::EditorWindow)]
@@ -125,16 +121,14 @@ impl ObjectImpl for EditorWindow {
         };
 
         let settings = Settings::open();
-        self.image.replace(Some(Image {
-            surface: image,
-            operation_stack: OperationStack::new(
-                windows,
-                screen_dimensions,
-                self.editing_started_with_cropping.get(),
-                settings.last_used_primary_colour(),
-                settings.last_used_secondary_colour(),
-            ),
-        }));
+        self.image.replace(Some(Image::new(
+            image,
+            windows,
+            screen_dimensions,
+            self.editing_started_with_cropping.get(),
+            settings.last_used_primary_colour(),
+            settings.last_used_secondary_colour(),
+        )));
 
         self.overlay.connect_get_child_position({
             let obj = obj.clone();
@@ -155,9 +149,8 @@ impl ObjectImpl for EditorWindow {
             #[weak]
             obj,
             move |_, cairo, _, _| {
-                obj.imp().with_image("draw event", |image| {
-                    EditorWindow::do_draw(image, cairo, true);
-                });
+                obj.imp()
+                    .with_image("draw event", |image| image.draw_in(cairo, false));
             }
         ));
 
@@ -177,15 +170,6 @@ impl EditorWindow {
         self.colour_rx.borrow_mut().recv().await.unwrap()
     }
 
-    fn do_draw(image: &Image, cairo: &Context, is_in_draw_event: bool) {
-        cairo.set_operator(cairo::Operator::Source);
-        log_if_err!(cairo.set_source_surface(&image.surface, 0f64, 0f64));
-        log_if_err!(cairo.paint());
-        cairo.set_operator(cairo::Operator::Over);
-
-        image.operation_stack.execute(cairo, is_in_draw_event);
-    }
-
     pub(super) fn do_save_surface(
         model_notifier: &ModelNotifier,
         conn: &mut SqliteConnection,
@@ -201,24 +185,15 @@ impl EditorWindow {
             }
         };
 
-        Self::do_draw(image, &cairo, false);
-
-        let rectangle = image
-            .operation_stack
-            .crop_region(point)
-            .unwrap_or(image.operation_stack.screen_dimensions);
+        image.draw_in(&cairo, false);
 
         window.close();
 
-        match image.surface.to_texture(rectangle.normalised()) {
+        match image.to_texture(point) {
             // Process all post capture actions
             Ok(texture) => run_postcapture_actions(model_notifier, conn, &texture),
             Err(why) => {
-                error!(
-                    "Failed to write surface: {:?} to PNG with crop region {:#?}: {why:?}",
-                    image.surface,
-                    rectangle.normalised()
-                );
+                error!("Failed to get texture from image: {why:?}");
             }
         };
     }

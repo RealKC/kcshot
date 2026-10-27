@@ -5,8 +5,9 @@ use gtk4::{
     subclass::prelude::*,
 };
 use kcshot_data::colour::Colour;
+use kcshot_editor::operations::Tool;
 
-use crate::editor::{imp::EditorWindow, operations::Tool};
+use crate::editor::imp::EditorWindow;
 
 impl EditorWindow {
     pub fn setup_actions(&self) {

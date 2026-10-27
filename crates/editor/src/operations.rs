@@ -1,15 +1,15 @@
 use cairo::{Context, Error as CairoError};
-use gtk4::pango::FontDescription;
+use kcshot_cairo::CairoExt as _;
 use kcshot_data::{Text, colour::Colour, geometry::*};
-use pangocairo::functions::{create_layout, show_layout, update_layout};
+use pangocairo::pango::FontDescription;
 use rand::RngExt;
 
 pub use self::{stack::*, tool::*};
-use super::cairo::CairoExt;
 
 mod pixelops;
 mod shapes;
 mod stack;
+mod text;
 mod tool;
 
 const HIGHLIGHT_COLOUR: Colour = Colour {
@@ -245,7 +245,7 @@ impl Operation {
                 font_description,
             } => {
                 cairo.save()?;
-                draw_text_at(cairo, *top_left, text, *colour, font_description);
+                text::draw_text_at(cairo, *top_left, text, *colour, font_description);
                 cairo.restore()?;
             }
             Operation::DrawArrow {
@@ -287,7 +287,7 @@ impl Operation {
                 };
 
                 shapes::draw_ellipse(cairo, &ellipse, INVISIBLE, *bubble_colour, 1.0)?;
-                draw_text_centred_at(
+                text::draw_text_centred_at(
                     cairo,
                     *centre,
                     num_str.as_str(),
@@ -337,43 +337,4 @@ pub enum Error {
     Cairo(#[from] CairoError),
     #[error("Encountered a cairo error while trying to borrow something: {0}")]
     Borrow(#[from] cairo::BorrowError),
-}
-
-fn draw_text_at(
-    cairo: &Context,
-    Point { x, y }: Point,
-    text: &str,
-    colour: Colour,
-    font_description: &FontDescription,
-) {
-    let layout = create_layout(cairo);
-
-    layout.set_markup(text);
-    layout.set_font_description(Some(font_description));
-    cairo.move_to(x, y);
-    cairo.set_source_colour(colour);
-    update_layout(cairo, &layout);
-    show_layout(cairo, &layout);
-}
-
-fn draw_text_centred_at(
-    cairo: &Context,
-    Point { x, y }: Point,
-    text: &str,
-    colour: Colour,
-    font_description: &FontDescription,
-) {
-    let layout = create_layout(cairo);
-
-    layout.set_markup(text);
-    layout.set_font_description(Some(font_description));
-
-    let pixel_extents = layout.pixel_extents().1;
-    let w = pixel_extents.width() as f64;
-    let h = pixel_extents.height() as f64;
-
-    cairo.move_to(x - w / 2.0, y - h / 2.0);
-    cairo.set_source_colour(colour);
-    update_layout(cairo, &layout);
-    show_layout(cairo, &layout);
 }

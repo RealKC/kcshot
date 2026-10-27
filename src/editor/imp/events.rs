@@ -7,14 +7,10 @@ use gtk4::{
     subclass::prelude::*,
 };
 use kcshot_data::geometry::Point;
+use kcshot_editor::operations::{SelectionMode, Tool};
 
 use crate::{
-    editor::{
-        imp::EditorWindow,
-        operations::{SelectionMode, Tool},
-        textdialog::TextDialog,
-        toolbar,
-    },
+    editor::{imp::EditorWindow, textdialog::TextDialog, toolbar},
     kcshot::KCShot,
 };
 

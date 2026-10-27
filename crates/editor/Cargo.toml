@@ -1,0 +1,20 @@
+[package]
+name = "kcshot-editor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kcshot-screenshot.workspace = true
+kcshot-cairo.workspace = true
+kcshot-data.workspace = true
+cairo.workspace = true
+gtk4.workspace = true
+pangocairo = "0.22.0"
+rand = "0.10.3"
+stackblur-iter = "0.2.0"
+
+thiserror.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

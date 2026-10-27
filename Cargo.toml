@@ -8,7 +8,12 @@ license = "EUPL-1.2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["./crates/data", "./crates/screenshot"]
+members = [
+    "./crates/data",
+    "./crates/screenshot",
+    "crates/cairo",
+    "crates/editor",
+]
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
@@ -40,7 +45,9 @@ adw = { version = "0.9.1", package = "libadwaita", features = [
 thiserror = "2.0.3"
 tokio = { version = "1.25.0", features = ["rt-multi-thread"] }
 tracing = "0.1.23"
+kcshot-cairo = { path = "./crates/cairo" }
 kcshot-data = { path = "./crates/data" }
+kcshot-screenshot = { path = "./crates/screenshot" }
 
 [lints]
 workspace = true
@@ -53,16 +60,18 @@ gtk4.workspace = true
 adw.workspace = true
 ksni = "0.3.6"
 image = { version = "0.25.10", default-features = false, features = ["png"] }
+kcshot-cairo.workspace = true
+kcshot-editor = { path = "./crates/editor" }
+
 
 # Screenshot editing & capturing
-kcshot-screenshot = { path = "./crates/screenshot" }
+kcshot-screenshot.workspace = true
 cairo.workspace = true
 gdk4-x11 = { version = "0.11.0", features = ["v4_18"] }
 pangocairo = "0.22.0"
 pulldown-cmark = { version = "0.13.0", default-features = false }
 pulldown-cmark-escape = "0.11.0"
 regex = "1.11.1"
-stackblur-iter = "0.2.0"
 tokio.workspace = true
 wl-clipboard-rs = "0.9.4"
 

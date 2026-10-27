@@ -1,10 +1,10 @@
 use std::f64::consts::PI;
 
 use cairo::Context;
+use kcshot_cairo::CairoExt as _;
 use kcshot_data::{colour::Colour, geometry::*};
 
 use super::Error;
-use crate::editor::cairo::CairoExt;
 
 /// The length of the arrowhead will be 1/10th of the length of the body
 const ARROWHEAD_LENGTH_RATIO: f64 = 0.1;

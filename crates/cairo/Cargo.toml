@@ -1,0 +1,12 @@
+[package]
+name = "kcshot-cairo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kcshot-data.workspace = true
+cairo.workspace = true
+gtk4.workspace = true
+
+[lints]
+workspace = true

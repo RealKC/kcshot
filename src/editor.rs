@@ -1,16 +1,14 @@
 use gtk4::{gio, glib, prelude::*, subclass::prelude::ObjectSubclassIsExt};
 use kcshot_data::colour::Colour;
+use kcshot_editor::operations::Tool;
 
-use self::operations::Tool;
 use crate::kcshot::KCShot;
 
-mod cairo;
 pub mod colourbutton;
 mod colourchooser;
 mod colourchooserdialog;
 mod colourwheel;
 mod imp;
-mod operations;
 mod textdialog;
 mod toolbar;
 mod utils;

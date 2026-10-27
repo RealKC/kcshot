@@ -48,15 +48,14 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
+    use kcshot_cairo::{CairoExt as _, log_if_err};
 
     use super::parse;
     use crate::{
         editor::{
-            Colour, EditorWindow, cairo::CairoExt, colourchooserdialog::ColourChooserDialog,
-            textdialog::TextDialog,
+            Colour, EditorWindow, colourchooserdialog::ColourChooserDialog, textdialog::TextDialog,
         },
         ext::DisposeExt,
-        log_if_err,
     };
 
     #[derive(Debug, Default, Properties, CompositeTemplate)]

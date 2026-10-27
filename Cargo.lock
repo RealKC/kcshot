@@ -1162,7 +1162,9 @@ dependencies = [
  "glib-build-tools",
  "gtk4",
  "image",
+ "kcshot-cairo",
  "kcshot-data",
+ "kcshot-editor",
  "kcshot-screenshot",
  "ksni",
  "libadwaita",
@@ -1171,7 +1173,6 @@ dependencies = [
  "pulldown-cmark-escape",
  "rand",
  "regex",
- "stackblur-iter",
  "thiserror",
  "tokio",
  "tracing",
@@ -1181,11 +1182,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "kcshot-cairo"
+version = "0.1.0"
+dependencies = [
+ "cairo-rs",
+ "gtk4",
+ "kcshot-data",
+]
+
+[[package]]
 name = "kcshot-data"
 version = "0.1.0"
 dependencies = [
  "gsettings-macro",
  "gtk4",
+]
+
+[[package]]
+name = "kcshot-editor"
+version = "0.1.0"
+dependencies = [
+ "cairo-rs",
+ "gtk4",
+ "kcshot-cairo",
+ "kcshot-data",
+ "kcshot-screenshot",
+ "pangocairo",
+ "rand",
+ "stackblur-iter",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]

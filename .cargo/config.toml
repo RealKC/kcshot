@@ -5,3 +5,6 @@ KCSHOT_DISABLE_LOG_FILE = "1"
 
 [profile.dev.package.stackblur-iter]
 opt-level = 3
+
+[profile.dev.package.kcshot-editor]
+opt-level = 3
