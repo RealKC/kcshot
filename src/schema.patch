@@ -1,0 +1,18 @@
+diff --git a/src/db/schema.rs b/src/db/schema.rs
+--- a/src/db/schema.rs
++++ b/src/db/schema.rs
+@@ -8,13 +8,13 @@ diesel::table! {
+         url -> Nullable<Text>,
+     }
+ }
+
+ diesel::view! {
+     screenshots_ordered {
+-        idx -> Nullable<Binary>,
++        idx -> Nullable<Integer>,
+         id -> Nullable<Integer>,
+         path -> Nullable<Text>,
+         time -> Nullable<Text>,
+         url -> Nullable<Text>,
+     }
+ }

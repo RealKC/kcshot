@@ -73,15 +73,7 @@ impl EditorWindow {
     fn save_image(&self) {
         self.imp()
             .with_image_mut("EditorWindow::save_image", |image| {
-                KCShot::the().with_conn(|conn| {
-                    imp::EditorWindow::do_save_surface(
-                        &KCShot::the().model_notifier(),
-                        conn,
-                        self.upcast_ref(),
-                        image,
-                        None,
-                    );
-                });
+                imp::EditorWindow::do_save_surface(KCShot::the(), self.upcast_ref(), image, None);
             });
     }
 }

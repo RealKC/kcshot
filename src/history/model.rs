@@ -1,3 +1,4 @@
+use diesel::SqliteConnection;
 use gtk4::{
     gio::ListModel as GListModel,
     glib::{self},
@@ -7,18 +8,16 @@ use gtk4::{
 use super::RowData;
 
 glib::wrapper! {
-    pub struct HistoryModel(ObjectSubclass<underlying::ListModel>)
+    pub struct HistoryModel(ObjectSubclass<underlying::HistoryModel>)
         @implements GListModel;
 }
 
 impl HistoryModel {
-    /// Inserts a screenshot to the internally maintained list of screenshots.
-    ///
-    /// # Note
-    /// This does not call `GListModel::items_changed`, you'll have to call it
-    /// yourself properly.
-    pub fn insert_screenshot(&self, screenshot: RowData) {
-        self.imp().screenshots.borrow_mut().insert(0, screenshot);
+    pub fn with_database_connection<F, R>(&self, f: F) -> R
+    where
+        F: Fn(&mut SqliteConnection) -> R,
+    {
+        self.imp().with_database_connection(f)
     }
 }
 
@@ -28,15 +27,14 @@ impl Default for HistoryModel {
     }
 }
 
-/// This type is used to notify the HistoryModel that a new screenshot was taken, and it additionally
-/// carries a [`self::RowData`] with the newly taken screenshot.
-///
-/// It causes [`HistoryModel::insert_screenshot`] to be called.
-pub type ModelNotifier = tokio::sync::mpsc::Sender<RowData>;
-
 mod underlying {
-    use std::{cell::RefCell, rc::Rc};
+    use std::{cell::RefCell, collections::HashMap};
 
+    use adw::gio::prelude::ListModelExt;
+    use diesel::{
+        SqliteConnection,
+        sqlite::{SqliteChangeOps, SqliteUpdateRouter},
+    };
     use gtk4::{
         gio,
         glib::{self, Object, prelude::*},
@@ -44,79 +42,122 @@ mod underlying {
     };
 
     use super::RowData;
-    use crate::{db, kcshot::KCShot};
+    use crate::db::{self, schema};
 
     #[derive(Default)]
-    pub struct ListModel {
-        pub(super) screenshots: Rc<RefCell<Vec<RowData>>>,
+    pub struct HistoryModel {
+        pub(super) database_connection: RefCell<Option<SqliteConnection>>,
+
+        cache: RefCell<HashMap<u32, RowData>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for ListModel {
+    impl ObjectSubclass for HistoryModel {
         const NAME: &'static str = "KcshotListModel";
         type Type = super::HistoryModel;
         type ParentType = Object;
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ListModelImpl for ListModel {
+    impl HistoryModel {
+        pub(super) fn with_database_connection<F, R>(&self, f: F) -> R
+        where
+            F: Fn(&mut SqliteConnection) -> R,
+        {
+            let mut conn = self.database_connection.borrow_mut();
+            f(conn.as_mut().unwrap())
+        }
+
+        fn attach_update_hooks(
+            &self,
+            conn: &mut SqliteConnection,
+            tx: tokio::sync::mpsc::Sender<Event>,
+        ) {
+            conn.on_update(SqliteUpdateRouter::new().on(
+                schema::screenshots::table,
+                SqliteChangeOps::INSERT,
+                {
+                    let tx = tx.clone();
+                    move |event| {
+                        tracing::info!("Received insert for screenshots: {event:?}");
+
+                        let _ = tx.try_send(Event::Added);
+                    }
+                },
+            ));
+        }
+    }
+
+    impl ListModelImpl for HistoryModel {
         fn item_type(&self) -> glib::Type {
             RowData::static_type()
         }
 
         fn n_items(&self) -> u32 {
-            let n_items = KCShot::the().with_conn(db::number_of_history_itms);
-            match n_items {
-                Ok(n_items) => {
-                    assert!(
-                        0 <= n_items && n_items <= u32::MAX as i64,
-                        "n_items was {n_items} which is not within [0, u32::MAX]",
-                    );
-                    n_items as u32
-                }
-                Err(why) => {
-                    tracing::error!("Failed to get number of screenshots in history: {why}");
-                    panic!() // yolo
-                }
-            }
+            self.with_database_connection(db::number_of_history_itms)
+                .unwrap() as u32
         }
 
         #[tracing::instrument(skip(self))]
         fn item(&self, position: u32) -> Option<Object> {
-            let last_fetched_screenshot_index = {
-                let len = self.screenshots.borrow().len();
-                if len > 0 { len - 1 } else { 0 }
-            };
+            if let Some(cached) = self.cache.borrow().get(&position) {
+                tracing::trace!("Returned screenshot from cache: {cached:?}");
 
-            if position as usize > last_fetched_screenshot_index
-                || last_fetched_screenshot_index == 0
-            {
-                const COUNT: i64 = 15;
-                let new_screenshots = KCShot::the().with_conn(|conn| {
-                    db::fetch_screenshots(conn, last_fetched_screenshot_index as i64, COUNT)
-                });
-                let new_screenshots = match new_screenshots {
-                    Ok(n) => n,
-                    Err(why) => {
-                        tracing::error!(
-                            "Encountered error: {why:?}\n\twhile trying to fetch {COUNT} items from the database,\n\tstarting at index: {last_fetched_screenshot_index}"
-                        );
-                        return None;
-                    }
-                };
-
-                self.screenshots
-                    .borrow_mut()
-                    .extend(new_screenshots.into_iter().map(RowData::new));
+                return Some(cached.clone().upcast());
             }
 
-            self.screenshots
-                .borrow()
-                .get(position as usize)
-                .cloned()
-                .map(Cast::upcast)
+            let fetched = self.with_database_connection(|conn| {
+                db::get_screenshot_at_index(conn, position)
+                    .map(RowData::new)
+                    .ok()
+            });
+
+            if let Some(fetched) = fetched.clone() {
+                self.cache.borrow_mut().insert(position, fetched);
+            }
+
+            tracing::trace!("Fetched screenshot from database: {fetched:?}");
+
+            fetched.map(Cast::upcast)
         }
     }
 
-    impl ObjectImpl for ListModel {}
+    impl ObjectImpl for HistoryModel {
+        fn constructed(&self) {
+            let (tx, mut rx) = tokio::sync::mpsc::channel(16);
+
+            match db::open() {
+                Ok(mut conn) => {
+                    self.attach_update_hooks(&mut conn, tx);
+                    self.database_connection.replace(Some(conn))
+                }
+                Err(why) => {
+                    tracing::error!("Failed to open history: {why}");
+                    panic!(); // FIXME: It'd be nicer if we just popped a dialog or something
+                }
+            };
+
+            let weak_self = self.obj().downgrade();
+            glib::MainContext::default().spawn_local(async move {
+                while let Some(event) = rx.recv().await {
+                    #[expect(
+                        irrefutable_let_patterns,
+                        reason = "will stop being irrefutable once deletion is implemented"
+                    )]
+                    if let Event::Added = event {
+                        let Some(strong) = weak_self.upgrade() else {
+                            break;
+                        };
+
+                        *strong.imp().cache.borrow_mut() = HashMap::new();
+                        strong.items_changed(0, 0, 1);
+                    }
+                }
+            });
+        }
+    }
+
+    enum Event {
+        Added,
+    }
 }

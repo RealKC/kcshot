@@ -76,8 +76,10 @@ tokio.workspace = true
 wl-clipboard-rs = "0.9.4"
 
 # User settings, history
-diesel = { version = "2.2.6", features = ["sqlite"] }
-diesel_migrations = "2.2.0"
+diesel = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686", features = [
+    "sqlite",
+] }
+diesel_migrations = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686" }
 xdg = "3.0"
 
 # Miscellaneous

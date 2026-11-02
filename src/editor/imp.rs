@@ -4,7 +4,6 @@ use std::{
 };
 
 use cairo::Context;
-use diesel::SqliteConnection;
 use gtk4::{
     CompositeTemplate,
     glib::{self, Properties, clone},
@@ -21,8 +20,7 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::error;
 
 use crate::{
-    editor::toolbar, ext::DisposeExt, history::ModelNotifier, kcshot::KCShot,
-    postcapture::run_postcapture_actions,
+    editor::toolbar, ext::DisposeExt, kcshot::KCShot, postcapture::run_postcapture_actions,
 };
 
 mod accessors;
@@ -171,8 +169,7 @@ impl EditorWindow {
     }
 
     pub(super) fn do_save_surface(
-        model_notifier: &ModelNotifier,
-        conn: &mut SqliteConnection,
+        kcshot: KCShot,
         window: &gtk4::Window,
         image: &Image,
         point: Option<Point>,
@@ -191,7 +188,9 @@ impl EditorWindow {
 
         match image.to_texture(point) {
             // Process all post capture actions
-            Ok(texture) => run_postcapture_actions(model_notifier, conn, &texture),
+            Ok(texture) => kcshot
+                .history_model()
+                .with_database_connection(|conn| run_postcapture_actions(conn, &texture)),
             Err(why) => {
                 error!("Failed to get texture from image: {why:?}");
             }

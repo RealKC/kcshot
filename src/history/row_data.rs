@@ -11,7 +11,7 @@ impl RowData {
         let Screenshot {
             path, time, url, ..
         } = screenshot;
-        Self::new_from_components(path, time, url)
+        Self::new_from_components(path, time.unwrap(), url)
     }
 
     pub fn new_from_components(path: Option<String>, time: String, url: Option<String>) -> Self {

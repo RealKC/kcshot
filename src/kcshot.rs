@@ -1,13 +1,9 @@
 use std::path::PathBuf;
 
-use diesel::SqliteConnection;
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 use kcshot_data::settings::Settings;
 
-use crate::{
-    appwindow,
-    history::{HistoryModel, ModelNotifier},
-};
+use crate::{appwindow, history::HistoryModel};
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>)
@@ -35,24 +31,8 @@ impl KCShot {
             .expect("The global application should be of type `KCShot`")
     }
 
-    pub fn with_conn<F, R>(&self, f: F) -> R
-    where
-        F: Fn(&mut SqliteConnection) -> R,
-    {
-        let impl_ = self.imp();
-        let mut conn = impl_.database_connection.borrow_mut();
-        f(conn.as_mut().unwrap())
-    }
-
     pub fn screenshot_folder() -> PathBuf {
         Settings::open().saved_screenshots_path().into()
-    }
-
-    /// This is to be used for the purpose of notifying the [`crate::historymodel::HistoryMode`]
-    /// that a new screenshot was added, by sending a [`crate::historymodel::RowData`] with the
-    /// newly taken screenshot to it.
-    pub fn model_notifier(&self) -> ModelNotifier {
-        self.imp().model_notifier()
     }
 
     pub fn history_model(&self) -> HistoryModel {
@@ -82,7 +62,6 @@ mod underlying {
     };
 
     use adw::subclass::prelude::AdwApplicationImpl;
-    use diesel::SqliteConnection;
     use gtk4::{
         gdk,
         gio::{self, prelude::*},
@@ -92,12 +71,7 @@ mod underlying {
     };
 
     use super::Settings;
-    use crate::{
-        appwindow, db,
-        editor::EditorWindow,
-        history::{HistoryModel, ModelNotifier},
-        systray,
-    };
+    use crate::{appwindow, editor::EditorWindow, history::HistoryModel, systray};
 
     const NO_WINDOW_OPTION: &str = "no-window";
     const SCREENSHOT_OPTION: &str = "screenshot";
@@ -105,9 +79,7 @@ mod underlying {
     pub struct KCShot {
         pub(super) show_main_window: Cell<bool>,
         pub(super) take_screenshot: Cell<bool>,
-        pub(super) database_connection: RefCell<Option<SqliteConnection>>,
         history_model: RefCell<Option<HistoryModel>>,
-        model_notifier: OnceCell<ModelNotifier>,
         pub(super) systray_initialised: Cell<bool>,
         pub(super) window: OnceCell<appwindow::AppWindow>,
         pub(super) tokio_rt: Option<tokio::runtime::Runtime>,
@@ -116,10 +88,6 @@ mod underlying {
     impl KCShot {
         pub(super) fn history_model(&self) -> HistoryModel {
             self.history_model.borrow().clone().unwrap()
-        }
-
-        pub(super) fn model_notifier(&self) -> ModelNotifier {
-            self.model_notifier.get().cloned().unwrap()
         }
 
         fn add_cli_args(&self) {
@@ -168,9 +136,7 @@ mod underlying {
             Self {
                 show_main_window: Cell::new(true),
                 take_screenshot: Cell::new(false),
-                database_connection: Default::default(),
                 history_model: Default::default(),
-                model_notifier: Default::default(),
                 systray_initialised: Cell::new(false),
                 window: Default::default(),
                 tokio_rt: kcshot_screenshot::will_make_use_of_desktop_portals().then(|| {
@@ -190,9 +156,7 @@ mod underlying {
             f.debug_struct("KCShot")
                 .field("show_main_window", &self.show_main_window)
                 .field("take_screenshot", &self.take_screenshot)
-                .field("database_connection", &"<sqlite connection>")
                 .field("history_model", &self.history_model)
-                .field("model_notifier", &self.model_notifier)
                 .field("systray_initialised", &self.systray_initialised)
                 .field("window", &self.window)
                 .field("tokio_rt", &self.tokio_rt)
@@ -213,37 +177,7 @@ mod underlying {
 
             self.add_cli_args();
 
-            match db::open() {
-                Ok(conn) => self.database_connection.replace(Some(conn)),
-                Err(why) => {
-                    tracing::error!("Failed to open history: {why}");
-                    panic!(); // FIXME: It'd be nicer if we just popped a dialog or something
-                }
-            };
-
             self.history_model.replace(Some(HistoryModel::default()));
-            let (tx, mut rx) = tokio::sync::mpsc::channel(16);
-
-            self.model_notifier
-                .set(tx)
-                .expect("KCShot::constructed called multiple times on the same instance!");
-
-            let model = self.history_model();
-            // The purpose of this code is to ensure that the model behaves correctly to its consumers
-            // > Stated another way: in general, it is assumed that code making a series of accesses
-            // > to the model via the API, without returning to the mainloop, and without calling
-            // > other code, will continue to view the same contents of the model.
-            // (src: https://docs.gtk.org/gio/method.ListModel.items_changed.html)
-            //
-            // It appears that this is the proper way to achieve that.
-            glib::MainContext::default().spawn_local(async move {
-                while let Some(screenshot) = rx.recv().await {
-                    model.insert_screenshot(screenshot);
-                    // I've tried moving this items_changed call inside HistoryModel::insert_screenshot,
-                    // but the items showed up twice in the view if you had two windows opened for some reason.
-                    model.items_changed(0, 0, 1);
-                }
-            });
         }
     }
 

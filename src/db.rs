@@ -1,7 +1,7 @@
 use diesel::{SqliteConnection, prelude::*};
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
-use self::models::Screenshot;
+use crate::db::models::Screenshot;
 
 pub mod models;
 pub mod schema;
@@ -50,18 +50,13 @@ pub fn add_screenshot_to_history(
         .map(|_| ())
 }
 
-pub fn fetch_screenshots(
-    conn: &mut SqliteConnection,
-    start_at: i64,
-    count: i64,
-) -> QueryResult<Vec<Screenshot>> {
-    use schema::screenshots::dsl::*;
+pub fn get_screenshot_at_index(conn: &mut SqliteConnection, index: u32) -> QueryResult<Screenshot> {
+    use schema::screenshots_ordered::dsl::*;
 
-    screenshots
-        .limit(count)
-        .offset(start_at)
-        .order(id.desc())
-        .load::<Screenshot>(conn)
+    screenshots_ordered
+        .filter(idx.eq(index as i32))
+        .limit(1)
+        .first::<Screenshot>(conn)
 }
 
 pub fn number_of_history_itms(conn: &mut SqliteConnection) -> QueryResult<i64> {

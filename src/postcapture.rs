@@ -8,10 +8,7 @@ use gtk4::{
 use kcshot_data::settings::Settings;
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
-use crate::{
-    db,
-    history::{ModelNotifier, RowData},
-};
+use crate::db;
 
 /// Trait for the post capture actions.
 #[allow(
@@ -29,12 +26,7 @@ pub trait PostCaptureAction {
     fn description(&self) -> String;
 
     /// Gets called when executing the post capture action.
-    fn handle(
-        &self,
-        model_notifier: &ModelNotifier,
-        conn: &mut SqliteConnection,
-        texture: &gdk::Texture,
-    );
+    fn handle(&self, conn: &mut SqliteConnection, texture: &gdk::Texture);
 }
 
 /// This struct represents the action of saving the pixbuf to disk.
@@ -53,12 +45,7 @@ impl PostCaptureAction for SaveToDisk {
         "Saves the screenshot to the disk".to_owned()
     }
 
-    fn handle(
-        &self,
-        model_notifier: &ModelNotifier,
-        conn: &mut SqliteConnection,
-        texture: &gdk::Texture,
-    ) {
+    fn handle(&self, conn: &mut SqliteConnection, texture: &gdk::Texture) {
         let now = glib::DateTime::now_local()
             .unwrap()
             .format_iso8601()
@@ -84,12 +71,6 @@ impl PostCaptureAction for SaveToDisk {
         if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
         {
             tracing::error!("Failed to add screenshot to history: {why}");
-            return;
-        }
-        if let Err(why) =
-            model_notifier.blocking_send(RowData::new_from_components(Some(path), now, None))
-        {
-            tracing::error!("Failed to notify the history model that a new item was added: {why}");
         }
     }
 }
@@ -110,12 +91,7 @@ impl PostCaptureAction for CopyToClipboard {
         "Copies the picture to the clipboard".to_owned()
     }
 
-    fn handle(
-        &self,
-        _model_notifier: &ModelNotifier,
-        _conn: &mut SqliteConnection,
-        texture: &gdk::Texture,
-    ) {
+    fn handle(&self, _conn: &mut SqliteConnection, texture: &gdk::Texture) {
         let Some(display) = gdk::Display::default() else {
             tracing::error!("Failed to fetch gdk::Display, bailing...");
             return;
@@ -136,13 +112,9 @@ impl PostCaptureAction for CopyToClipboard {
 }
 
 /// Executes the post capture actions in the order they are defined in the settings.
-pub fn run_postcapture_actions(
-    model_notifier: &ModelNotifier,
-    conn: &mut SqliteConnection,
-    texture: &gdk::Texture,
-) {
+pub fn run_postcapture_actions(conn: &mut SqliteConnection, texture: &gdk::Texture) {
     for action in get_actions_from_settings() {
-        action.handle(model_notifier, conn, texture);
+        action.handle(conn, texture);
     }
 }
 

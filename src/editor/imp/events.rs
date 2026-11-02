@@ -128,15 +128,13 @@ impl EditorWindow {
             } else {
                 image.operation_stack.finish_current_operation();
 
-                KCShot::the().with_conn(|conn| {
-                    Self::do_save_surface(
-                        &KCShot::the().model_notifier(),
-                        conn,
-                        self.obj().upcast_ref(),
-                        image,
-                        Some(Point { x, y }),
-                    );
-                });
+                Self::do_save_surface(
+                    KCShot::the(),
+                    self.obj().upcast_ref(),
+                    image,
+                    Some(Point { x, y }),
+                );
+
                 false
             }
         });
@@ -205,15 +203,7 @@ impl EditorWindow {
                         return false;
                     }
 
-                    KCShot::the().with_conn(|conn| {
-                        Self::do_save_surface(
-                            &KCShot::the().model_notifier(),
-                            conn,
-                            self.obj().upcast_ref(),
-                            image,
-                            None,
-                        );
-                    });
+                    Self::do_save_surface(KCShot::the(), self.obj().upcast_ref(), image, None);
 
                     return true;
                 } else if key == gdk::Key::Shift_L || key == gdk::Key::Shift_R {

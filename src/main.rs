@@ -1,8 +1,3 @@
-#[macro_use]
-extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
-
 use std::{env, fs, io, path};
 
 use gtk4::{glib, prelude::*};

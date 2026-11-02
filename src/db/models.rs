@@ -1,7 +1,9 @@
-#[derive(Queryable, Clone)]
+#[derive(diesel::Queryable, Clone)]
+#[diesel(table_name = screenshots_ordered)]
 pub struct Screenshot {
-    pub id: i32,
+    pub idx: Option<i32>,
+    pub id: Option<i32>,
     pub path: Option<String>,
-    pub time: String,
+    pub time: Option<String>,
     pub url: Option<String>,
 }
