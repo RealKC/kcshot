@@ -77,7 +77,6 @@ jobs:
       - name: check
         run: meson test cargo-clippy --verbose -C builddir
   test:
-    if: false
     runs-on: ubuntu-26.04
     steps:
       - run: |
