@@ -6,7 +6,6 @@ use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt};
 use self::kcshot::KCShot;
 
 mod appwindow;
-mod db;
 mod editor;
 mod ext;
 mod history;

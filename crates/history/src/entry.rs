@@ -1,6 +1,6 @@
 use gtk4::{glib, subclass::prelude::*};
 
-use crate::db::models::Screenshot;
+use crate::screenshot::Screenshot;
 
 glib::wrapper! {
     pub struct RowData(ObjectSubclass<underlying::RowData>);

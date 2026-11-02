@@ -13,6 +13,7 @@ members = [
     "./crates/screenshot",
     "crates/cairo",
     "crates/editor",
+    "crates/history",
 ]
 
 [workspace.lints.rust]
@@ -48,6 +49,7 @@ tracing = "0.1.23"
 kcshot-cairo = { path = "./crates/cairo" }
 kcshot-data = { path = "./crates/data" }
 kcshot-screenshot = { path = "./crates/screenshot" }
+xdg = "3.0"
 
 [lints]
 workspace = true
@@ -62,6 +64,7 @@ ksni = "0.3.6"
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 kcshot-cairo.workspace = true
 kcshot-editor = { path = "./crates/editor" }
+kcshot-history = { path = "./crates/history" }
 
 
 # Screenshot editing & capturing
@@ -75,12 +78,7 @@ regex = "1.11.1"
 tokio.workspace = true
 wl-clipboard-rs = "0.9.4"
 
-# User settings, history
-diesel = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686", features = [
-    "sqlite",
-] }
-diesel_migrations = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686" }
-xdg = "3.0"
+xdg.workspace = true
 
 # Miscellaneous
 rand = "0.10.3"
@@ -95,6 +93,6 @@ glib-build-tools = "0.22.8"
 
 [features]
 default = ["xdg-paths"]
-xdg-paths = []
+xdg-paths = ["kcshot-history/xdg-paths"]
 # Only specify this when trying to diagnose memory leaks, it shouldn't be used for normal usage
 heaptrack = []

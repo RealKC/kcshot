@@ -1,0 +1,23 @@
+[package]
+name = "kcshot-history"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gtk4.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+xdg.workspace = true
+
+diesel = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686", features = [
+    "sqlite",
+] }
+diesel_migrations = { git = "https://github.com/diesel-rs/diesel", rev = "ae389cbd3ff14d2b5225d28037f4b74ab3bf4686" }
+
+
+[lints]
+workspace = true
+
+[features]
+xdg-paths = []

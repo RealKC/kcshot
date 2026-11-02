@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 use kcshot_data::settings::Settings;
+use kcshot_history::HistoryModel;
 
-use crate::{appwindow, history::HistoryModel};
+use crate::appwindow;
 
 glib::wrapper! {
     pub struct KCShot(ObjectSubclass<underlying::KCShot>)
@@ -69,9 +70,10 @@ mod underlying {
         prelude::*,
         subclass::prelude::*,
     };
+    use kcshot_history::HistoryModel;
 
     use super::Settings;
-    use crate::{appwindow, editor::EditorWindow, history::HistoryModel, systray};
+    use crate::{appwindow, editor::EditorWindow, systray};
 
     const NO_WINDOW_OPTION: &str = "no-window";
     const SCREENSHOT_OPTION: &str = "screenshot";

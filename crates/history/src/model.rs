@@ -5,8 +5,6 @@ use gtk4::{
     subclass::prelude::ObjectSubclassIsExt,
 };
 
-use super::RowData;
-
 glib::wrapper! {
     pub struct HistoryModel(ObjectSubclass<underlying::HistoryModel>)
         @implements GListModel;
@@ -30,19 +28,17 @@ impl Default for HistoryModel {
 mod underlying {
     use std::{cell::RefCell, collections::HashMap};
 
-    use adw::gio::prelude::ListModelExt;
     use diesel::{
         SqliteConnection,
         sqlite::{SqliteChangeOps, SqliteUpdateRouter},
     };
     use gtk4::{
-        gio,
-        glib::{self, Object, prelude::*},
+        gio::{self, prelude::*},
+        glib::{self, Object},
         subclass::prelude::*,
     };
 
-    use super::RowData;
-    use crate::db::{self, schema};
+    use crate::{entry::RowData, open, queries, schema};
 
     #[derive(Default)]
     pub struct HistoryModel {
@@ -94,7 +90,7 @@ mod underlying {
         }
 
         fn n_items(&self) -> u32 {
-            self.with_database_connection(db::number_of_history_itms)
+            self.with_database_connection(queries::number_of_history_itms)
                 .unwrap() as u32
         }
 
@@ -107,7 +103,7 @@ mod underlying {
             }
 
             let fetched = self.with_database_connection(|conn| {
-                db::get_screenshot_at_index(conn, position)
+                queries::get_screenshot_at_index(conn, position)
                     .map(RowData::new)
                     .ok()
             });
@@ -126,7 +122,7 @@ mod underlying {
         fn constructed(&self) {
             let (tx, mut rx) = tokio::sync::mpsc::channel(16);
 
-            match db::open() {
+            match open::open() {
                 Ok(mut conn) => {
                     self.attach_update_hooks(&mut conn, tx);
                     self.database_connection.replace(Some(conn))

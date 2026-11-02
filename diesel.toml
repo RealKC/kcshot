@@ -2,10 +2,10 @@
 # see https://diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "src/db/schema.rs"
+file = "crates/history/src/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 include_views = true
-patch_file = "src/schema.patch"
+patch_file = "crates/history/src/schema.patch"
 
 [migrations_directory]
-dir = "migrations"
+dir = "crates/history/migrations"

@@ -1157,8 +1157,6 @@ name = "kcshot"
 version = "0.1.0"
 dependencies = [
  "cairo-rs",
- "diesel",
- "diesel_migrations",
  "gdk4-x11",
  "glib-build-tools",
  "gtk4",
@@ -1166,6 +1164,7 @@ dependencies = [
  "kcshot-cairo",
  "kcshot-data",
  "kcshot-editor",
+ "kcshot-history",
  "kcshot-screenshot",
  "ksni",
  "libadwaita",
@@ -1213,6 +1212,19 @@ dependencies = [
  "stackblur-iter",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "kcshot-history"
+version = "0.1.0"
+dependencies = [
+ "diesel",
+ "diesel_migrations",
+ "gtk4",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "xdg",
 ]
 
 [[package]]

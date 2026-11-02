@@ -1,6 +1,7 @@
 use gtk4::{gio, glib};
+use kcshot_history::HistoryModel;
 
-use crate::{history::HistoryModel, kcshot::KCShot};
+use crate::kcshot::KCShot;
 
 glib::wrapper! {
     pub struct AppWindow(ObjectSubclass<underlying::AppWindow>)
@@ -32,9 +33,10 @@ mod underlying {
         subclass::{application_window::ApplicationWindowImpl, prelude::*},
     };
     use kcshot_data::settings::Settings;
+    use kcshot_history::{HistoryModel, RowData};
 
     use crate::{
-        editor::EditorWindow, ext::DisposeExt, history, history::RowData, kcshot::KCShot,
+        editor::EditorWindow, ext::DisposeExt, history, kcshot::KCShot,
         settings_window::SettingsWindow,
     };
 
@@ -43,7 +45,7 @@ mod underlying {
     #[template(file = "src/appwindow.blp")]
     pub struct AppWindow {
         #[property(get, set, construct_only)]
-        history_model: RefCell<super::HistoryModel>,
+        history_model: RefCell<HistoryModel>,
 
         #[template_child]
         image_grid: TemplateChild<gtk4::GridView>,

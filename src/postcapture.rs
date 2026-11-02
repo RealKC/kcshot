@@ -1,14 +1,12 @@
 use std::{collections::HashMap, fmt::Write as _};
 
-use diesel::SqliteConnection;
 use gtk4::{
     gdk::{self, prelude::*},
     glib,
 };
 use kcshot_data::settings::Settings;
+use kcshot_history::{diesel::SqliteConnection, queries};
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
-
-use crate::db;
 
 /// Trait for the post capture actions.
 #[allow(
@@ -68,7 +66,8 @@ impl PostCaptureAction for SaveToDisk {
             tracing::error!("Failed to save screenshot to file: {why}");
         }
 
-        if let Err(why) = db::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
+        if let Err(why) =
+            queries::add_screenshot_to_history(conn, Some(path.clone()), now.clone(), None)
         {
             tracing::error!("Failed to add screenshot to history: {why}");
         }
