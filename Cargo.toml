@@ -60,7 +60,7 @@ kcshot-data.workspace = true
 # UI-related dependencies
 gtk4.workspace = true
 adw.workspace = true
-ksni = "0.3.6"
+ksni = "0.3.7"
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 kcshot-cairo.workspace = true
 kcshot-editor = { path = "./crates/editor" }
