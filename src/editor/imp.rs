@@ -150,7 +150,7 @@ impl ObjectImpl for EditorWindow {
             obj,
             move |_, cairo, _, _| {
                 obj.imp()
-                    .with_image("draw event", |image| image.draw_in(cairo, false));
+                    .with_image("draw event", |image| image.draw_in(cairo, true));
             }
         ));
 
